@@ -30,15 +30,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const supabase = useRef(createClient()).current;
 
-  const fetchUserData = async (email: string) => {
-    console.log('[Auth] Fetching user data for:', email);
+  const fetchUserData = async (email: string, attempt = 1) => {
+    console.log(`[Auth] Fetching user data for: ${email} (attempt ${attempt})`);
     const { data, error } = await supabase
       .from('users')
       .select('email, full_name, credits')
       .eq('email', email)
       .maybeSingle();
     console.log('[Auth] User data:', data, 'error:', error);
-    setUser(data ?? null);
+
+    if (!data) {
+      if (attempt < 3) {
+        // Race condition: auth fired before DB insert (e.g. during registration)
+        console.log(`[Auth] No row yet, retrying in 1s...`);
+        await new Promise(r => setTimeout(r, 1000));
+        return fetchUserData(email, attempt + 1);
+      }
+      // After 3 attempts still no row → orphaned session, sign out
+      console.log('[Auth] No user row after retries, signing out');
+      await supabase.auth.signOut();
+      setSession(null);
+      setUser(null);
+    } else {
+      setUser(data);
+    }
   };
 
   const refreshUser = async () => {

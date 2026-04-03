@@ -56,6 +56,9 @@ export default function RegisterPage() {
     try {
       const supabase = createClient();
 
+      // Step 1: Create auth user (sign out first to avoid stale session conflicts)
+      await supabase.auth.signOut();
+
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: email.toLowerCase().trim(),
         password,
@@ -67,7 +70,9 @@ export default function RegisterPage() {
 
       console.log('[Register] Auth user created:', authData.user.id);
 
-      // Upsert to handle any previous partial registrations
+      // Step 2: Insert user row BEFORE opening a session (prevents race condition)
+      await supabase.auth.signOut();
+
       const { error: dbError } = await supabase.from('users').upsert({
         id: authData.user.id,
         email: email.toLowerCase().trim(),
@@ -79,6 +84,14 @@ export default function RegisterPage() {
         console.error('[Register] DB error:', dbError);
         throw dbError;
       }
+
+      // Step 3: Now sign in — onAuthStateChange fires AFTER user row exists
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: email.toLowerCase().trim(),
+        password,
+      });
+
+      if (signInError) throw signInError;
 
       console.log('[Register] Success!');
       setSuccess(true);
