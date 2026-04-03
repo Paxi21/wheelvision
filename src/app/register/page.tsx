@@ -34,15 +34,15 @@ export default function RegisterPage() {
   const [success, setSuccess] = useState(false);
   const { toast, showToast, closeToast } = useToast();
   const router = useRouter();
-  const { session, loading } = useAuth();
+  const { session, loading: authLoading } = useAuth();
 
   // Already logged in OR just registered → go to app
   useEffect(() => {
-    if (session && !loading) {
+    if (session && !authLoading) {
       console.log('[Register] Session ready, redirecting to /app');
       router.replace('/app');
     }
-  }, [session, loading, router]);
+  }, [session, authLoading, router]);
 
   const handleRegister = async (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();

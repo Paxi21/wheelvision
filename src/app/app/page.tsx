@@ -24,39 +24,25 @@ async function applyWatermark(imageUrl: string): Promise<string> {
       // Draw original image
       ctx.drawImage(img, 0, 0);
 
-      // Watermark style — smaller, more transparent
-      const fontSize = Math.max(14, Math.floor(img.naturalWidth * 0.09));
-      ctx.font        = `bold ${fontSize}px Arial, sans-serif`;
-      ctx.lineWidth   = fontSize * 0.06;
-      ctx.strokeStyle = 'rgba(0,0,0,0.12)';
-      ctx.fillStyle   = 'rgba(255,255,255,0.27)';
+      // Single diagonal watermark across the center
+      const fontSize = Math.max(32, Math.floor(img.naturalWidth * 0.07));
+      ctx.font         = `bold ${fontSize}px Arial, sans-serif`;
       ctx.textBaseline = 'middle';
+      ctx.textAlign    = 'center';
 
-      const text = 'WheelVision';
-      const angle = -Math.PI / 6; // −30°
+      ctx.save();
+      ctx.translate(img.naturalWidth * 0.5, img.naturalHeight * 0.5);
+      ctx.rotate(-Math.PI / 5); // −36° bottom-left to top-right
 
-      // 10 positions scattered across the image
-      const positions = [
-        { x: 0.10, y: 0.12 },
-        { x: 0.58, y: 0.08 },
-        { x: 0.82, y: 0.28 },
-        { x: 0.22, y: 0.38 },
-        { x: 0.65, y: 0.42 },
-        { x: 0.12, y: 0.62 },
-        { x: 0.45, y: 0.68 },
-        { x: 0.78, y: 0.72 },
-        { x: 0.32, y: 0.88 },
-        { x: 0.70, y: 0.90 },
-      ];
+      // Dark outline for contrast on light areas
+      ctx.strokeStyle = 'rgba(0,0,0,0.25)';
+      ctx.lineWidth   = fontSize * 0.08;
+      ctx.strokeText('WheelVision', 0, 0);
 
-      positions.forEach(({ x, y }) => {
-        ctx.save();
-        ctx.translate(img.naturalWidth * x, img.naturalHeight * y);
-        ctx.rotate(angle);
-        ctx.strokeText(text, 0, 0);
-        ctx.fillText(text, 0, 0);
-        ctx.restore();
-      });
+      // White semi-transparent fill
+      ctx.fillStyle = 'rgba(255,255,255,0.35)';
+      ctx.fillText('WheelVision', 0, 0);
+      ctx.restore();
 
       resolve(canvas.toDataURL('image/jpeg', 0.92));
     };
@@ -72,6 +58,7 @@ async function applyWatermark(imageUrl: string): Promise<string> {
 export default function AppPage() {
   const { session, user, loading: authLoading } = useAuth();
   const [localCredits, setLocalCredits] = useState<number | null>(null);
+  const [carBrand, setCarBrand] = useState('');
   const [carImage, setCarImage] = useState<string | null>(null);
   const [wheelImage, setWheelImage] = useState<string | null>(null);
   const [carFile, setCarFile] = useState<File | null>(null);
@@ -191,6 +178,7 @@ export default function AppPage() {
         body: JSON.stringify({
           car_image: carUrl,
           wheel_image: wheelUrl,
+          car_brand: carBrand.trim() || null,
         }),
       });
 
@@ -309,6 +297,19 @@ export default function AppPage() {
                   </p>
                 </label>
               )}
+              {/* Car brand input */}
+              <div className="mt-4">
+                <label className="text-xs font-medium text-[var(--text-secondary)] mb-1.5 block">
+                  Araç Markası <span className="text-[var(--accent-orange)]">(opsiyonel — jant logosu için)</span>
+                </label>
+                <input
+                  type="text"
+                  value={carBrand}
+                  onChange={(e) => setCarBrand(e.target.value)}
+                  placeholder="örn. BMW, Mercedes, Audi..."
+                  className="w-full bg-[var(--bg-dark)] border border-[var(--border-color)] rounded-xl px-4 py-2.5 text-sm text-white placeholder-[var(--text-secondary)] outline-none focus:border-[var(--accent-orange)] transition-colors"
+                />
+              </div>
             </div>
 
             {/* Wheel Upload */}

@@ -97,7 +97,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Geçersiz istek' }, { status: 400 });
     }
 
-    const { car_image, wheel_image } = body;
+    const { car_image, wheel_image, car_brand } = body;
 
     // Only accept Cloudinary URLs from our account — prevents SSRF via arbitrary URLs
     if (!isValidCloudinaryUrl(car_image) || !isValidCloudinaryUrl(wheel_image)) {
@@ -127,8 +127,9 @@ export async function POST(request: NextRequest) {
       user_email: user.email,
       car_image,
       wheel_image,
-      prompt:
-        'Replace only the wheel rims on this car. Keep the EXACT same car model, body color, background, lighting, and camera angle. Do not change anything else. Only the rim design changes.',
+      prompt: car_brand
+        ? `Replace the wheel rims on this car with the rim design from the second image. On the center cap of each replaced wheel, place the ${car_brand} logo. Keep the EXACT same car body, color, background, lighting, and camera angle. Do not change anything else.`
+        : 'Replace the wheel rims on this car with the rim design from the second image. Keep the EXACT same car body, color, background, lighting, and camera angle. Do not change anything else.',
     };
 
 
