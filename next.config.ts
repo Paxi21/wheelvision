@@ -41,7 +41,6 @@ const nextConfig: NextConfig = {
     minimumCacheTTL: 31536000, // 1 year — static demo images never change
     deviceSizes: [390, 640, 750, 828, 1080, 1200, 1920],
     imageSizes: [16, 32, 64, 96, 128, 256, 384],
-    quality: 80,
   },
 };
 
