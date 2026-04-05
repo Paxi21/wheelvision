@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthContext";
+import Footer from "@/components/Footer";
 import { Outfit } from "next/font/google";
 
 const outfit = Outfit({
@@ -11,6 +12,7 @@ const outfit = Outfit({
 });
 
 export const metadata: Metadata = {
+  icons: { icon: '/favicon.ico' },
   title: "WheelVision - AI Jant Görselleştirme",
   description: "Arabanıza hangi jant yakışır? Yapay zeka ile 30 saniyede görün — satın almadan önce deneyin.",
   keywords: "jant görselleştirme, AI jant, araba jant deneme, jant simülasyon, wheel visualization",
@@ -44,7 +46,10 @@ export default function RootLayout({
         <link rel="dns-prefetch" href="https://fal.media" />
       </head>
       <body className={`min-h-full flex flex-col ${outfit.className}`}>
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider>
+          {children}
+          <Footer />
+        </AuthProvider>
       </body>
     </html>
   );

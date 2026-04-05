@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import Navbar from '@/components/Navbar';
 import { createClient } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
@@ -350,13 +351,17 @@ export default function AppPage() {
           {(loading || resultImage) && (
             <div className="gradient-border p-4 md:p-6">
               {loading ? (
-                <div className="aspect-video max-w-3xl mx-auto bg-[var(--bg-dark)] rounded-xl flex flex-col items-center justify-center gap-4">
-                  <div className="relative w-14 h-14">
-                    <div className="absolute inset-0 border-4 border-[var(--accent-orange)] border-t-transparent rounded-full animate-spin" />
-                    <div className="absolute inset-2 border-4 border-[var(--accent-pink)] border-b-transparent rounded-full animate-spin" style={{ animationDirection: 'reverse', animationDuration: '0.8s' }} />
+                <div className="aspect-video max-w-3xl mx-auto bg-[var(--bg-dark)] rounded-xl flex flex-col items-center justify-center gap-5">
+                  {/* Logo + dönen halka */}
+                  <div className="relative flex items-center justify-center">
+                    <div className="absolute w-24 h-24 border-4 border-[var(--accent-orange)]/30 border-t-[var(--accent-orange)] rounded-full animate-spin" />
+                    <div className="absolute w-32 h-32 border-4 border-[var(--accent-purple)]/20 border-b-[var(--accent-purple)] rounded-full animate-spin" style={{ animationDirection: 'reverse', animationDuration: '1.8s' }} />
+                    <div className="relative z-10 animate-pulse">
+                      <Image src="/logo.png" alt="WheelVision" width={100} height={25} className="h-6 w-auto" />
+                    </div>
                   </div>
                   <div className="text-center">
-                    <p className="text-sm font-medium text-white">Görselleştiriliyor</p>
+                    <p className="text-sm font-medium text-white">Görselleştiriliyor...</p>
                     <p className="text-xs text-[var(--text-secondary)] mt-1">15–30 saniye sürebilir</p>
                   </div>
                 </div>

@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { User, Settings, LogOut, Coins, Menu, X } from 'lucide-react';
 import { useState } from 'react';
@@ -33,13 +34,8 @@ export default function Navbar() {
         <div className="flex items-center justify-between h-16">
 
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2 shrink-0">
-            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gradient-to-r from-[var(--accent-orange)] via-[var(--accent-pink)] to-[var(--accent-purple)] flex items-center justify-center">
-              <span className="text-white font-bold text-base sm:text-lg">W</span>
-            </div>
-            <span className="text-lg sm:text-xl font-bold">
-              Wheel<span className="gradient-text">Vision</span>
-            </span>
+          <Link href="/" className="shrink-0">
+            <Image src="/logo.png" alt="WheelVision" width={160} height={40} priority className="h-9 w-auto" />
           </Link>
 
           {/* Desktop Nav Links */}
