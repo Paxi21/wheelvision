@@ -12,7 +12,7 @@ const outfit = Outfit({
 });
 
 export const metadata: Metadata = {
-  icons: { icon: '/favicon.ico' },
+  icons: { icon: '/favicon.ico', apple: '/favicon.ico' },
   title: "WheelVision - AI Jant Görselleştirme",
   description: "Arabanıza hangi jant yakışır? Yapay zeka ile 30 saniyede görün — satın almadan önce deneyin.",
   keywords: "jant görselleştirme, AI jant, araba jant deneme, jant simülasyon, wheel visualization",

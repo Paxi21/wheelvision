@@ -35,7 +35,7 @@ export default function Navbar() {
 
           {/* Logo */}
           <Link href="/" className="shrink-0">
-            <Image src="/logo.png" alt="WheelVision" width={160} height={40} priority className="h-9 w-auto" />
+            <Image src="/logo.png" alt="WheelVision" width={200} height={50} priority className="h-12 w-auto" />
           </Link>
 
           {/* Desktop Nav Links */}
