@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import Navbar from '@/components/Navbar';
 import { ArrowRight, Sparkles, Zap, Shield, ChevronDown, Upload, Disc3, Eye, Play } from 'lucide-react';
 import { motion } from 'motion/react';
@@ -46,19 +47,20 @@ function BeforeAfterSlider() {
         <div
           ref={containerRef}
           className="relative select-none cursor-col-resize overflow-hidden rounded-[14px] aspect-[16/9] bg-black"
+          style={{ touchAction: 'none' }}
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
         >
           {/* AFTER */}
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={AFTER_IMG} alt="Yeni jantlı hali" draggable={false}
-               className="absolute inset-0 w-full h-full object-cover pointer-events-none" />
+          <Image src={AFTER_IMG} alt="Jant değişimi sonrası - AI görselleştirme" fill
+                 priority sizes="(max-width: 768px) 100vw, 900px"
+                 className="object-cover pointer-events-none" draggable={false} />
 
           {/* BEFORE — clipped left */}
           <div className="absolute inset-0" style={{ clipPath: `inset(0 ${100 - position}% 0 0)` }}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={BEFORE_IMG} alt="Orijinal hali" draggable={false}
-                 className="absolute inset-0 w-full h-full object-cover pointer-events-none" />
+            <Image src={BEFORE_IMG} alt="Jant değişimi öncesi - orijinal araba" fill
+                   sizes="(max-width: 768px) 100vw, 900px"
+                   className="object-cover pointer-events-none" draggable={false} />
           </div>
 
           {/* Labels */}
@@ -128,7 +130,7 @@ export default function Home() {
       <Navbar />
 
       {/* ── Hero ── */}
-      <section className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden pt-24 pb-16 px-6">
+      <section className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden pt-20 pb-12 px-4 sm:px-6">
         <Spotlight className="-top-40 left-1/2 -translate-x-1/2" fill="rgba(139, 92, 246, 0.25)" />
 
         {/* Background glows */}
@@ -157,7 +159,7 @@ export default function Home() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.1 }}
-            className="text-5xl md:text-6xl xl:text-7xl font-bold leading-[1.1] tracking-tight mb-5"
+            className="text-4xl sm:text-5xl md:text-6xl xl:text-7xl font-bold leading-[1.1] tracking-tight mb-4 sm:mb-5"
           >
             O Jant Arabana
             <br />
@@ -171,7 +173,7 @@ export default function Home() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
-            className="text-lg md:text-xl text-[#a1a1aa] mb-8 max-w-2xl"
+            className="text-base sm:text-lg md:text-xl text-[#a1a1aa] mb-6 sm:mb-8 max-w-2xl"
           >
             Binlerce lira harcamadan önce gör.
             Arabanın fotoğrafını yükle, jantı seç — AI <span className="text-white font-semibold">30 saniyede</span> arabana yerleştiriyor.
@@ -236,8 +238,8 @@ export default function Home() {
       </section>
 
       {/* ── Steps ── */}
-      <section id="nasil-calisir" className="py-24 relative">
-        <div className="max-w-[1400px] mx-auto px-6 lg:px-12">
+      <section id="nasil-calisir" className="py-14 sm:py-24 relative">
+        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-12">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
