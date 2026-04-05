@@ -35,7 +35,7 @@ export default function Navbar() {
 
           {/* Logo */}
           <Link href="/" className="shrink-0">
-            <Image src="/logo.png" alt="WheelVision" width={200} height={50} priority className="h-12 w-auto" />
+            <Image src="/logo.png" alt="WheelVision" width={220} height={55} priority className="h-12 w-auto" style={{ mixBlendMode: 'screen' }} />
           </Link>
 
           {/* Desktop Nav Links */}

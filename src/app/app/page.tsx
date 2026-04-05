@@ -357,7 +357,7 @@ export default function AppPage() {
                     <div className="absolute w-24 h-24 border-4 border-[var(--accent-orange)]/30 border-t-[var(--accent-orange)] rounded-full animate-spin" />
                     <div className="absolute w-32 h-32 border-4 border-[var(--accent-purple)]/20 border-b-[var(--accent-purple)] rounded-full animate-spin" style={{ animationDirection: 'reverse', animationDuration: '1.8s' }} />
                     <div className="relative z-10 animate-pulse">
-                      <Image src="/logo.png" alt="WheelVision" width={100} height={25} className="h-6 w-auto" />
+                      <Image src="/logo.png" alt="WheelVision" width={100} height={25} className="h-6 w-auto" style={{ mixBlendMode: 'screen' }} />
                     </div>
                   </div>
                   <div className="text-center">
