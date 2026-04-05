@@ -58,7 +58,6 @@ async function applyWatermark(imageUrl: string): Promise<string> {
 export default function AppPage() {
   const { session, user, loading: authLoading } = useAuth();
   const [localCredits, setLocalCredits] = useState<number | null>(null);
-  const [carBrand, setCarBrand] = useState('');
   const [carImage, setCarImage] = useState<string | null>(null);
   const [wheelImage, setWheelImage] = useState<string | null>(null);
   const [carFile, setCarFile] = useState<File | null>(null);
@@ -178,7 +177,6 @@ export default function AppPage() {
         body: JSON.stringify({
           car_image: carUrl,
           wheel_image: wheelUrl,
-          car_brand: carBrand.trim() || null,
         }),
       });
 
@@ -243,226 +241,149 @@ export default function AppPage() {
       <main className="min-h-screen pt-24 pb-12 px-4">
         <div className="max-w-[1400px] mx-auto px-6 lg:px-12">
           {/* Header */}
-          <div className="text-center mb-12">
-            <h1 className="text-3xl md:text-4xl font-bold mb-4">
+          <div className="text-center mb-8">
+            <h1 className="text-2xl md:text-3xl font-bold mb-1">
               Jant <span className="gradient-text">Görselleştirici</span>
             </h1>
-            <p className="text-[var(--text-secondary)]">
-              Araba ve jant fotoğraflarını yükleyin, AI gerisini halleder
+            <p className="text-sm text-[var(--text-secondary)]">
+              Araba ve jant fotoğrafını yükleyin
             </p>
           </div>
 
           {/* Upload Section */}
-          <div className="grid md:grid-cols-2 gap-6 mb-8">
+          <div className="grid md:grid-cols-2 gap-4 mb-6">
             {/* Car Upload */}
             <div className="card">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-[var(--accent-orange)] to-[var(--accent-pink)] flex items-center justify-center">
-                  <Car className="w-5 h-5 text-white" />
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-[var(--accent-orange)] to-[var(--accent-pink)] flex items-center justify-center">
+                  <Car className="w-4 h-4 text-white" />
                 </div>
-                <div>
-                  <h3 className="font-semibold">Araba Fotoğrafı</h3>
-                  <p className="text-sm text-[var(--text-secondary)]">Jantları değiştirilecek araba</p>
-                </div>
+                <h3 className="font-medium text-sm">Araba Fotoğrafı</h3>
               </div>
 
               {carImage ? (
                 <div className="relative">
-                  <img
-                    src={carImage}
-                    alt="Araba"
-                    className="w-full aspect-video object-cover rounded-xl"
-                  />
+                  <img src={carImage} alt="Araba" className="w-full aspect-video object-cover rounded-lg" />
                   <button
                     onClick={() => { setCarImage(null); setCarFile(null); setResultImage(null); }}
-                    className="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/50 flex items-center justify-center hover:bg-black/70 transition-colors"
+                    className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/60 flex items-center justify-center hover:bg-black/80 transition-colors"
                   >
-                    <X className="w-4 h-4" />
+                    <X className="w-3.5 h-3.5" />
                   </button>
                 </div>
               ) : (
                 <label className="upload-zone block cursor-pointer">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleCarUpload}
-                    className="hidden"
-                  />
-                  <Upload className="w-10 h-10 mx-auto mb-3 text-[var(--text-secondary)]" />
-                  <p className="text-[var(--text-secondary)]">
-                    Tıklayın veya sürükleyin
-                  </p>
-                  <p className="text-sm text-[var(--text-secondary)] mt-1">
-                    PNG, JPG, WEBP
-                  </p>
+                  <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleCarUpload} className="hidden" />
+                  <Upload className="w-8 h-8 mx-auto mb-2 text-[var(--text-secondary)]" />
+                  <p className="text-sm text-[var(--text-secondary)]">Tıklayın veya sürükleyin</p>
+                  <p className="text-xs text-[var(--text-secondary)]/60 mt-1">JPG, PNG, WEBP</p>
                 </label>
               )}
-              {/* Car brand input */}
-              <div className="mt-4">
-                <label className="text-xs font-medium text-[var(--text-secondary)] mb-1.5 block">
-                  Araç Markası <span className="text-[var(--accent-orange)]">(opsiyonel — jant logosu için)</span>
-                </label>
-                <input
-                  type="text"
-                  value={carBrand}
-                  onChange={(e) => setCarBrand(e.target.value)}
-                  placeholder="örn. BMW, Mercedes, Audi..."
-                  className="w-full bg-[var(--bg-dark)] border border-[var(--border-color)] rounded-xl px-4 py-2.5 text-sm text-white placeholder-[var(--text-secondary)] outline-none focus:border-[var(--accent-orange)] transition-colors"
-                />
-              </div>
             </div>
 
             {/* Wheel Upload */}
             <div className="card">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-[var(--accent-pink)] to-[var(--accent-purple)] flex items-center justify-center">
-                  <CircleDot className="w-5 h-5 text-white" />
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-[var(--accent-pink)] to-[var(--accent-purple)] flex items-center justify-center">
+                  <CircleDot className="w-4 h-4 text-white" />
                 </div>
-                <div>
-                  <h3 className="font-semibold">Jant Fotoğrafı</h3>
-                  <p className="text-sm text-[var(--text-secondary)]">Takılacak jant modeli</p>
-                </div>
+                <h3 className="font-medium text-sm">Jant Fotoğrafı</h3>
               </div>
 
               {wheelImage ? (
                 <div className="relative">
-                  <img
-                    src={wheelImage}
-                    alt="Jant"
-                    className="w-full aspect-video object-contain rounded-xl bg-[var(--bg-dark)]"
-                  />
+                  <img src={wheelImage} alt="Jant" className="w-full aspect-video object-contain rounded-lg bg-[var(--bg-dark)]" />
                   <button
                     onClick={() => { setWheelImage(null); setWheelFile(null); setResultImage(null); }}
-                    className="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/50 flex items-center justify-center hover:bg-black/70 transition-colors"
+                    className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/60 flex items-center justify-center hover:bg-black/80 transition-colors"
                   >
-                    <X className="w-4 h-4" />
+                    <X className="w-3.5 h-3.5" />
                   </button>
                 </div>
               ) : (
                 <label className="upload-zone block cursor-pointer">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleWheelUpload}
-                    className="hidden"
-                  />
-                  <Upload className="w-10 h-10 mx-auto mb-3 text-[var(--text-secondary)]" />
-                  <p className="text-[var(--text-secondary)]">
-                    Tıklayın veya sürükleyin
-                  </p>
-                  <p className="text-sm text-[var(--text-secondary)] mt-1">
-                    PNG, JPG, WEBP
-                  </p>
+                  <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleWheelUpload} className="hidden" />
+                  <Upload className="w-8 h-8 mx-auto mb-2 text-[var(--text-secondary)]" />
+                  <p className="text-sm text-[var(--text-secondary)]">Tıklayın veya sürükleyin</p>
+                  <p className="text-xs text-[var(--text-secondary)]/60 mt-1">JPG, PNG, WEBP</p>
                 </label>
               )}
             </div>
           </div>
 
-          {/* Error Message */}
+          {/* Error */}
           {error && (
-            <div className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-center">
+            <div className="mb-4 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm text-center">
               {error}
             </div>
           )}
 
-          {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
+          {/* Actions */}
+          <div className="flex items-center justify-center gap-3 mb-8">
             <button
               onClick={handleGenerate}
               disabled={!carImage || !wheelImage || loading}
-              className="btn-primary px-8 py-4 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="btn-primary px-8 py-3 flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {loading ? (
                 <>
-                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  Oluşturuluyor...
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  İşleniyor...
                 </>
               ) : (
                 <>
-                  <Sparkles className="w-5 h-5" />
-                  Jantları Değiştir
-                  <span className="ml-2 px-2 py-0.5 rounded-full bg-white/20 text-sm">
-                    1 Kredi
-                  </span>
+                  <Sparkles className="w-4 h-4" />
+                  Görselleştir
                 </>
               )}
             </button>
 
             {(carImage || wheelImage || resultImage) && (
-              <button
-                onClick={handleReset}
-                className="btn-secondary px-6 py-4 flex items-center gap-2"
-              >
-                <RefreshCw className="w-5 h-5" />
-                Sıfırla
+              <button onClick={handleReset} className="btn-secondary px-5 py-3 flex items-center gap-2">
+                <RefreshCw className="w-4 h-4" />
+                Temizle
               </button>
             )}
           </div>
 
-          {/* Result Section */}
+          {/* Result */}
           {(loading || resultImage) && (
-            <div className="gradient-border p-6 md:p-8">
-              <h3 className="text-xl font-semibold mb-4 text-center">
-                {loading ? 'AI Çalışıyor...' : 'Sonuç'}
-              </h3>
-
+            <div className="gradient-border p-4 md:p-6">
               {loading ? (
-                <div className="aspect-video max-w-3xl mx-auto bg-[var(--bg-dark)] rounded-xl flex flex-col items-center justify-center gap-6 relative overflow-hidden">
-                  {/* Animated gradient background */}
-                  <div className="absolute inset-0 opacity-10">
-                    <div className="absolute inset-0 bg-gradient-to-r from-[var(--accent-orange)] via-[var(--accent-pink)] to-[var(--accent-purple)] animate-pulse" />
-                  </div>
-                  {/* Spinning rings */}
-                  <div className="relative w-20 h-20">
+                <div className="aspect-video max-w-3xl mx-auto bg-[var(--bg-dark)] rounded-xl flex flex-col items-center justify-center gap-4">
+                  <div className="relative w-14 h-14">
                     <div className="absolute inset-0 border-4 border-[var(--accent-orange)] border-t-transparent rounded-full animate-spin" />
                     <div className="absolute inset-2 border-4 border-[var(--accent-pink)] border-b-transparent rounded-full animate-spin" style={{ animationDirection: 'reverse', animationDuration: '0.8s' }} />
-                    <div className="absolute inset-4 border-4 border-[var(--accent-purple)] border-t-transparent rounded-full animate-spin" style={{ animationDuration: '1.2s' }} />
                   </div>
-                  <div className="text-center relative z-10">
-                    <p className="font-medium text-white mb-1">AI Jantları Değiştiriyor</p>
-                    <p className="text-sm text-[var(--text-secondary)]">15-30 saniye sürebilir...</p>
-                  </div>
-                  {/* Progress dots */}
-                  <div className="flex gap-2 relative z-10">
-                    {[0, 1, 2].map((i) => (
-                      <div
-                        key={i}
-                        className="w-2 h-2 rounded-full bg-[var(--accent-orange)]"
-                        style={{ animation: `pulse 1.4s ease-in-out ${i * 0.2}s infinite` }}
-                      />
-                    ))}
+                  <div className="text-center">
+                    <p className="text-sm font-medium text-white">Görselleştiriliyor</p>
+                    <p className="text-xs text-[var(--text-secondary)] mt-1">15–30 saniye sürebilir</p>
                   </div>
                 </div>
               ) : resultImage && (
                 <div className="space-y-4">
                   <img
                     src={resultImage}
-                    alt="Sonuç"
-                    className="w-full max-w-3xl mx-auto rounded-xl"
+                    alt="Görselleştirme sonucu"
+                    className="w-full max-w-3xl mx-auto rounded-xl block"
                     loading="lazy"
                     decoding="async"
                   />
-                  <div className="flex flex-col items-center gap-3">
+                  <div className="flex justify-center">
                     <button
                       onClick={() => {
                         const link = document.createElement('a');
                         link.href = resultImage;
-                        link.download = 'wheelvision-result.jpg';
+                        link.download = 'wheelvision.jpg';
                         document.body.appendChild(link);
                         link.click();
                         document.body.removeChild(link);
                       }}
                       className="btn-secondary flex items-center gap-2"
                     >
-                      <Download className="w-5 h-5" />
+                      <Download className="w-4 h-4" />
                       İndir
                     </button>
-                    <p className="text-xs text-[var(--text-secondary)]">
-                      Filigransız indirmek için{' '}
-                      <a href="/pricing" className="text-[var(--accent-orange)] hover:underline">
-                        ücretli plana geçin
-                      </a>
-                    </p>
                   </div>
                 </div>
               )}
