@@ -33,23 +33,15 @@ const nextConfig: NextConfig = {
   },
   images: {
     remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: 'res.cloudinary.com',
-        pathname: '/dxcok7tox/**',
-      },
-      {
-        protocol: 'https',
-        hostname: 'fal.media',
-        pathname: '/**',
-      },
-      {
-        protocol: 'https',
-        hostname: '*.fal.media',
-        pathname: '/**',
-      },
+      { protocol: 'https', hostname: 'res.cloudinary.com', pathname: '/dxcok7tox/**' },
+      { protocol: 'https', hostname: 'fal.media', pathname: '/**' },
+      { protocol: 'https', hostname: '*.fal.media', pathname: '/**' },
     ],
     formats: ['image/avif', 'image/webp'],
+    minimumCacheTTL: 31536000, // 1 year — static demo images never change
+    deviceSizes: [390, 640, 750, 828, 1080, 1200, 1920],
+    imageSizes: [16, 32, 64, 96, 128, 256, 384],
+    quality: 80,
   },
 };
 

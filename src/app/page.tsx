@@ -42,7 +42,7 @@ function BeforeAfterSlider() {
       <div className="absolute -inset-4 rounded-3xl bg-gradient-to-r from-[#ec4899]/20 via-[#8b5cf6]/20 to-[#ec4899]/20 blur-2xl pointer-events-none" />
 
       {/* Gradient border */}
-      <div className="relative p-[2px] rounded-2xl"
+      <div className="slider-border relative p-[2px] rounded-2xl"
            style={{ background: 'linear-gradient(135deg, #ec4899, #8b5cf6, #ec4899)', backgroundSize: '200% 200%', animation: 'gradientShift 4s linear infinite' }}>
         <div
           ref={containerRef}
@@ -51,15 +51,17 @@ function BeforeAfterSlider() {
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
         >
-          {/* AFTER */}
+          {/* AFTER — LCP image, always visible */}
           <Image src={AFTER_IMG} alt="Jant değişimi sonrası - AI görselleştirme" fill
-                 priority sizes="(max-width: 768px) 100vw, 900px"
+                 priority fetchPriority="high"
+                 sizes="(max-width: 390px) 390px, (max-width: 640px) 640px, (max-width: 1024px) 828px, 900px"
                  className="object-cover pointer-events-none" draggable={false} />
 
-          {/* BEFORE — clipped left */}
+          {/* BEFORE — clipped left, also above-the-fold */}
           <div className="absolute inset-0" style={{ clipPath: `inset(0 ${100 - position}% 0 0)` }}>
             <Image src={BEFORE_IMG} alt="Jant değişimi öncesi - orijinal araba" fill
-                   sizes="(max-width: 768px) 100vw, 900px"
+                   priority fetchPriority="high"
+                   sizes="(max-width: 390px) 390px, (max-width: 640px) 640px, (max-width: 1024px) 828px, 900px"
                    className="object-cover pointer-events-none" draggable={false} />
           </div>
 
@@ -100,6 +102,9 @@ function BeforeAfterSlider() {
           50%  { background-position: 100% 50%; }
           100% { background-position: 0% 50%; }
         }
+        @media (max-width: 640px), (prefers-reduced-motion: reduce) {
+          .slider-border { animation: none !important; }
+        }
       `}</style>
     </div>
   );
@@ -131,13 +136,15 @@ export default function Home() {
 
       {/* ── Hero ── */}
       <section className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden pt-20 pb-12 px-4 sm:px-6">
-        <Spotlight className="-top-40 left-1/2 -translate-x-1/2" fill="rgba(139, 92, 246, 0.25)" />
+        <div className="hidden sm:block">
+          <Spotlight className="-top-40 left-1/2 -translate-x-1/2" fill="rgba(139, 92, 246, 0.25)" />
+        </div>
 
-        {/* Background glows */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-0 left-1/4 w-[600px] h-[600px] rounded-full blur-[200px] opacity-20"
+        {/* Background glows — hidden on mobile to avoid GPU jank */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none hidden sm:block">
+          <div className="absolute top-0 left-1/4 w-[500px] h-[500px] rounded-full blur-[150px] opacity-15"
                style={{ background: 'radial-gradient(circle, #ec4899, transparent)' }} />
-          <div className="absolute bottom-0 right-1/4 w-[600px] h-[600px] rounded-full blur-[200px] opacity-20"
+          <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] rounded-full blur-[150px] opacity-15"
                style={{ background: 'radial-gradient(circle, #8b5cf6, transparent)' }} />
         </div>
 
@@ -147,7 +154,7 @@ export default function Home() {
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
+            transition={{ duration: 0.3 }}
             className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-[#8b5cf6]/40 bg-[#8b5cf6]/10 text-sm text-[#c4b5fd] font-medium mb-6"
           >
             <span className="w-2 h-2 rounded-full bg-[#8b5cf6] animate-pulse" />
@@ -158,7 +165,7 @@ export default function Home() {
           <motion.h1
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.1 }}
+            transition={{ duration: 0.4, delay: 0.05 }}
             className="text-4xl sm:text-5xl md:text-6xl xl:text-7xl font-bold leading-[1.1] tracking-tight mb-4 sm:mb-5"
           >
             O Jant Arabana
