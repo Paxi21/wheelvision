@@ -63,6 +63,12 @@ function isValidOutputImageUrl(url: unknown): url is string {
 }
 
 export async function POST(request: NextRequest) {
+  // Fail fast if server is misconfigured
+  if (!n8nUrl) {
+    console.error('[generate] N8N_WEBHOOK_URL environment variable is not set');
+    return NextResponse.json({ error: 'Servis yapılandırması eksik. Lütfen yönetici ile iletişime geçin.' }, { status: 503 });
+  }
+
   try {
     // 1. Auth token from Authorization header
     const authHeader = request.headers.get('authorization');
