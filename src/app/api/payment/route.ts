@@ -3,23 +3,36 @@ import crypto from 'crypto';
 
 export const dynamic = 'force-dynamic';
 
-function generateCheckoutFormInitializeRequest(
-  apiKey: string,
-  secretKey: string,
-  request: Record<string, unknown>
-): { authorization: string; randomKey: string; body: string } {
-  const randomKey = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-  const jsonRequest = JSON.stringify(request);
+class IyzicoHashGenerator {
+  private apiKey: string;
+  private secretKey: string;
 
-  // iyzico hash: SHA256(randomKey + jsonRequest + secretKey)
-  const hashStr = randomKey + jsonRequest + secretKey;
-  const hash = crypto.createHash('sha256').update(hashStr, 'utf8').digest('hex');
+  constructor(apiKey: string, secretKey: string) {
+    this.apiKey = apiKey;
+    this.secretKey = secretKey;
+  }
 
-  return {
-    authorization: `IYZWSv2 ${apiKey}:${hash}`,
-    randomKey,
-    body: jsonRequest,
-  };
+  generateHash(request: object): { authorization: string; rndKey: string } {
+    const rndKey = this.generateRandomString();
+    const jsonString = JSON.stringify(request);
+
+    // SHA1 hash of: randomKey + request + secretKey
+    const dataToHash = rndKey + jsonString + this.secretKey;
+    const sha1Hash = crypto.createHash('sha1').update(dataToHash, 'utf8').digest('base64');
+
+    // PKI string for header
+    const authorizationString = this.apiKey + ':' + sha1Hash;
+    const base64Auth = Buffer.from(authorizationString).toString('base64');
+
+    return {
+      authorization: 'IYZWS ' + base64Auth,
+      rndKey,
+    };
+  }
+
+  private generateRandomString(): string {
+    return crypto.randomBytes(8).toString('hex');
+  }
 }
 
 export async function POST(req: NextRequest) {
@@ -41,22 +54,29 @@ export async function POST(req: NextRequest) {
     const secretKey = process.env.IYZICO_SECRET_KEY!;
     const baseUrl   = process.env.IYZICO_BASE_URL!;
 
+    const conversationId = Date.now().toString();
+    const basketId       = 'B' + Date.now().toString();
+    const buyerId        = userId || 'BYR' + Date.now().toString();
+
     const requestBody = {
       locale: 'tr',
-      conversationId: Date.now().toString(),
+      conversationId,
       price: selectedPackage.price,
       paidPrice: selectedPackage.price,
       currency: 'TRY',
-      basketId: 'B' + Date.now(),
+      basketId,
       paymentGroup: 'PRODUCT',
       callbackUrl: process.env.NEXT_PUBLIC_BASE_URL + '/api/payment/callback',
+      enabledInstallments: [1, 2, 3, 6, 9],
       buyer: {
-        id: userId || 'BY' + Date.now(),
+        id: buyerId,
         name: 'Test',
         surname: 'User',
         gsmNumber: '+905350000000',
         email: userEmail || 'test@wheelvision.io',
         identityNumber: '74300864791',
+        lastLoginDate: '2024-01-01 12:00:00',
+        registrationDate: '2024-01-01 12:00:00',
         registrationAddress: 'Nidakule Goztepe, Merdivenkoy Mah. Bora Sk. No:1',
         ip: '85.34.78.112',
         city: 'Istanbul',
@@ -79,7 +99,7 @@ export async function POST(req: NextRequest) {
       },
       basketItems: [
         {
-          id: packageType,
+          id: 'BI' + Date.now().toString(),
           name: selectedPackage.name,
           category1: 'Dijital Urun',
           category2: 'Kredi Paketi',
@@ -89,9 +109,14 @@ export async function POST(req: NextRequest) {
       ],
     };
 
-    const { authorization, randomKey, body } = generateCheckoutFormInitializeRequest(apiKey, secretKey, requestBody);
+    const hashGenerator = new IyzicoHashGenerator(apiKey, secretKey);
+    const { authorization, rndKey } = hashGenerator.generateHash(requestBody);
 
+    console.log('=== IYZICO REQUEST ===');
     console.log('URL:', baseUrl + '/payment/iyzipos/checkoutform/initialize/auth/ecom');
+    console.log('Authorization:', authorization);
+    console.log('x-iyzi-rnd:', rndKey);
+    console.log('Body:', JSON.stringify(requestBody, null, 2));
 
     const response = await fetch(baseUrl + '/payment/iyzipos/checkoutform/initialize/auth/ecom', {
       method: 'POST',
@@ -99,13 +124,14 @@ export async function POST(req: NextRequest) {
         'Accept': 'application/json',
         'Content-Type': 'application/json',
         'Authorization': authorization,
-        'x-iyzi-rnd': randomKey,
+        'x-iyzi-rnd': rndKey,
       },
-      body,
+      body: JSON.stringify(requestBody),
     });
 
-    const result = await response.json() as Record<string, string>;
-    console.log('iyzico response:', JSON.stringify(result, null, 2));
+    const result = await response.json() as Record<string, unknown>;
+    console.log('=== IYZICO RESPONSE ===');
+    console.log(JSON.stringify(result, null, 2));
 
     if (result.status === 'success') {
       return NextResponse.json({
@@ -115,9 +141,8 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json({
-      error: result.errorMessage || 'Payment failed',
+      error: result.errorMessage || 'Odeme baslatilamadi',
       errorCode: result.errorCode,
-      errorGroup: result.errorGroup,
     }, { status: 500 });
 
   } catch (error) {
