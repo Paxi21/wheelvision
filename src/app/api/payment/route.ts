@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import crypto from 'crypto';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,120 +11,108 @@ const PACKAGES = {
 
 type PackageType = keyof typeof PACKAGES;
 
+function buildAuthHeader(apiKey: string, secretKey: string, rnd: string, body: object): string {
+  const hash = crypto
+    .createHmac('sha256', secretKey)
+    .update(rnd + JSON.stringify(body))
+    .digest('base64');
+  const raw = `apiKey:${apiKey}&randomKey:${rnd}&signature:${hash}`;
+  return 'IYZWS ' + Buffer.from(raw).toString('base64');
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json() as { packageType: PackageType; userEmail: string };
     const { packageType, userEmail } = body;
 
-    const selectedPackage = PACKAGES[packageType];
-    if (!selectedPackage) {
+    const pkg = PACKAGES[packageType];
+    if (!pkg) {
       return NextResponse.json({ error: 'Geçersiz paket türü' }, { status: 400 });
     }
 
-    if (!process.env.IYZICO_API_KEY || !process.env.IYZICO_SECRET_KEY) {
-      return NextResponse.json({ error: 'Ödeme sistemi yapılandırılmamış' }, { status: 500 });
-    }
+    const apiKey    = process.env.IYZICO_API_KEY!;
+    const secretKey = process.env.IYZICO_SECRET_KEY!;
+    const baseUrl   = process.env.IYZICO_BASE_URL ?? 'https://sandbox-api.iyzipay.com';
+    const appUrl    = process.env.NEXT_PUBLIC_BASE_URL ?? 'http://localhost:3000';
 
-    // Lazy-load to avoid Turbopack module resolution crash
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const Iyzipay = require('iyzipay');
-    const iyzipay = new Iyzipay({
-      apiKey: process.env.IYZICO_API_KEY,
-      secretKey: process.env.IYZICO_SECRET_KEY,
-      uri: process.env.IYZICO_BASE_URL ?? 'https://sandbox-api.iyzipay.com',
-    });
-
-    // Fetch user from Supabase to get real data
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
-    const { data: userData } = await supabase
-      .from('users')
-      .select('id, full_name')
-      .eq('email', userEmail)
-      .maybeSingle();
-
-    const userId = userData?.id ?? userEmail;
-    const fullName = userData?.full_name ?? 'WheelVision User';
-    const nameParts = fullName.trim().split(' ');
-    const firstName = nameParts[0] ?? 'WheelVision';
-    const lastName  = nameParts.slice(1).join(' ') || 'User';
-
+    const rnd            = crypto.randomBytes(8).toString('hex');
     const conversationId = `wv_${Date.now()}`;
     const basketId       = `bsk_${Date.now()}`;
-    const baseUrl        = process.env.NEXT_PUBLIC_BASE_URL ?? 'http://localhost:3000';
-    const callbackUrl    = `${baseUrl}/api/payment/callback`;
 
-    const requestData = {
-      locale: Iyzipay.LOCALE.TR,
+    const requestBody = {
+      locale: 'tr',
       conversationId,
-      price: selectedPackage.price,
-      paidPrice: selectedPackage.price,
-      currency: Iyzipay.CURRENCY.TRY,
+      price: pkg.price,
+      paidPrice: pkg.price,
+      currency: 'TRY',
       basketId,
-      paymentGroup: Iyzipay.PAYMENT_GROUP.PRODUCT,
-      callbackUrl,
+      paymentGroup: 'PRODUCT',
+      callbackUrl: `${appUrl}/api/payment/callback`,
       enabledInstallments: [1],
       buyer: {
-        id: String(userId),
-        name: firstName,
-        surname: lastName,
+        id: userEmail,
+        name: 'WheelVision',
+        surname: 'User',
         gsmNumber: '+905350000000',
         email: userEmail,
         identityNumber: '11111111111',
-        registrationAddress: 'Türkiye',
+        registrationAddress: 'Turkey',
         ip: request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? '85.34.78.112',
         city: 'Istanbul',
         country: 'Turkey',
       },
       shippingAddress: {
-        contactName: fullName,
+        contactName: 'WheelVision User',
         city: 'Istanbul',
         country: 'Turkey',
-        address: 'Türkiye',
+        address: 'Turkey',
       },
       billingAddress: {
-        contactName: fullName,
+        contactName: 'WheelVision User',
         city: 'Istanbul',
         country: 'Turkey',
-        address: 'Türkiye',
+        address: 'Turkey',
       },
       basketItems: [
         {
           id: packageType,
-          name: selectedPackage.name,
+          name: pkg.name,
           category1: 'Kredi Paketi',
-          itemType: Iyzipay.BASKET_ITEM_TYPE.VIRTUAL,
-          price: selectedPackage.price,
+          itemType: 'VIRTUAL',
+          price: pkg.price,
         },
       ],
     };
 
-    return new Promise<NextResponse>((resolve) => {
-      iyzipay.checkoutFormInitialize.create(
-        requestData,
-        (err: Error | null, result: Record<string, string>) => {
-          if (err) {
-            console.error('[iyzico] init error:', err.message);
-            resolve(NextResponse.json({ error: err.message }, { status: 500 }));
-            return;
-          }
-          if (result.status !== 'success') {
-            console.error('[iyzico] init failed:', result.errorCode, result.errorMessage);
-            resolve(NextResponse.json(
-              { error: result.errorMessage ?? 'iyzico hatası' },
-              { status: 500 }
-            ));
-            return;
-          }
-          resolve(NextResponse.json({
-            checkoutFormContent: result.checkoutFormContent,
-            token: result.token,
-          }));
-        }
-      );
-    });
+    const authorization = buildAuthHeader(apiKey, secretKey, rnd, requestBody);
+
+    const iyzResponse = await fetch(
+      `${baseUrl}/payment/iyzipos/checkoutform/initialize/auth/ecom`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': authorization,
+          'x-iyzi-rnd': rnd,
+        },
+        body: JSON.stringify(requestBody),
+      }
+    );
+
+    const result = await iyzResponse.json() as Record<string, string>;
+
+    if (result.status === 'success') {
+      return NextResponse.json({
+        checkoutFormContent: result.checkoutFormContent,
+        token: result.token,
+      });
+    }
+
+    console.error('[iyzico] init failed:', result.errorCode, result.errorMessage);
+    return NextResponse.json(
+      { error: result.errorMessage ?? 'iyzico hatası' },
+      { status: 500 }
+    );
 
   } catch (err) {
     console.error('[iyzico] unexpected error:', err);
