@@ -12,10 +12,12 @@ const CREDITS_MAP: Record<string, number> = {
 
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? 'http://localhost:3000';
 
+// iyzico auth: HMAC-SHA256(key=secretKey, data=apiKey+rnd+secretKey+JSON.stringify(body))
 function buildAuthHeader(apiKey: string, secretKey: string, rnd: string, body: object): string {
+  const hashStr = apiKey + rnd + secretKey + JSON.stringify(body);
   const hash = crypto
     .createHmac('sha256', secretKey)
-    .update(rnd + JSON.stringify(body))
+    .update(hashStr)
     .digest('base64');
   const raw = `apiKey:${apiKey}&randomKey:${rnd}&signature:${hash}`;
   return 'IYZWS ' + Buffer.from(raw).toString('base64');
