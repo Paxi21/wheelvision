@@ -79,7 +79,7 @@ export default function PricingPage() {
     {
       id: 'starter',
       name: t('starter'),
-      price: 1.99,
+      price: '₺49.99',
       period: t('oneTime'),
       icon: Zap,
       credits: 5,
@@ -99,7 +99,7 @@ export default function PricingPage() {
     {
       id: 'standard',
       name: t('standard'),
-      price: 4.99,
+      price: '₺99.99',
       period: t('oneTime'),
       icon: Crown,
       credits: 15,
@@ -119,7 +119,7 @@ export default function PricingPage() {
     {
       id: 'pro',
       name: t('pro'),
-      price: 9.99,
+      price: '₺199.99',
       period: t('oneTime'),
       icon: Lock,
       credits: 40,
@@ -254,7 +254,7 @@ export default function PricingPage() {
 }
 
 type PlanType = {
-  id: string; name: string; price: number; period: string; icon: React.ElementType;
+  id: string; name: string; price: number | string; period: string; icon: React.ElementType;
   credits: number; description: string; color: string; popular: boolean;
   watermarkBadge: boolean; features: { text: string; included: boolean; warn?: boolean }[];
   href: string; paidId: PaidPackage | null;
@@ -285,7 +285,7 @@ function PlanCard({
 
       <div className="mb-5">
         <div className="flex items-end gap-1">
-          <span className="text-4xl font-bold">{plan.price === 0 ? plan.name : `$${plan.price}`}</span>
+          <span className="text-4xl font-bold">{plan.price === 0 ? plan.name : plan.price}</span>
         </div>
         {plan.period && <p className="text-xs text-[var(--text-secondary)] mt-0.5">{plan.period}</p>}
         <p className="text-sm text-[var(--accent-orange)] font-medium mt-1">{plan.credits} {creditsLabel}</p>

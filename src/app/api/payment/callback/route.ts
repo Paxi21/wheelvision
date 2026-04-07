@@ -1,21 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
+export const dynamic = 'force-dynamic';
+
 const CREDITS_MAP: Record<string, number> = {
-  starter: 5,
+  starter:  5,
   standard: 15,
-  pro: 40,
+  pro:      40,
 };
 
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? 'http://localhost:3000';
 
+// iyzico POSTs form data to this endpoint after payment
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
-    const token = formData.get('token') as string;
+    const token = formData.get('token') as string | null;
 
     if (!token) {
-      return NextResponse.redirect(new URL('/pricing?status=failed', BASE_URL));
+      console.error('[callback] No token in form data');
+      return NextResponse.redirect(new URL('/en/pricing?status=failed', BASE_URL));
     }
 
     // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -32,40 +36,64 @@ export async function POST(request: NextRequest) {
     );
 
     return new Promise<NextResponse>((resolve) => {
-      iyzipay.checkoutForm.retrieve({ token }, async (err: Error | null, result: Record<string, unknown>) => {
-        if (err || result.status !== 'success' || result.paymentStatus !== 'SUCCESS') {
-          console.error('[callback] Payment verification failed:', err ?? result);
-          resolve(NextResponse.redirect(new URL('/pricing?status=failed', BASE_URL)));
-          return;
+      iyzipay.checkoutForm.retrieve(
+        { locale: 'tr', token },
+        async (err: Error | null, result: Record<string, unknown>) => {
+          if (err) {
+            console.error('[callback] retrieve error:', err.message);
+            resolve(NextResponse.redirect(new URL('/en/pricing?status=failed', BASE_URL)));
+            return;
+          }
+
+          if (result.status !== 'success' || result.paymentStatus !== 'SUCCESS') {
+            console.error('[callback] payment not successful:', result.paymentStatus, result.errorMessage);
+            resolve(NextResponse.redirect(new URL('/en/pricing?status=failed', BASE_URL)));
+            return;
+          }
+
+          const basketItems = result.basketItems as Array<{ id: string }> | undefined;
+          const buyer       = result.buyer as { id: string; email: string } | undefined;
+          const packageType = basketItems?.[0]?.id;
+          const buyerEmail  = buyer?.email;
+          const creditsToAdd = packageType ? (CREDITS_MAP[packageType] ?? 0) : 0;
+
+          if (!creditsToAdd || !buyerEmail) {
+            console.error('[callback] missing package/buyer info');
+            resolve(NextResponse.redirect(new URL('/en/pricing?status=failed', BASE_URL)));
+            return;
+          }
+
+          // Get current credits, then add
+          const { data: user } = await supabase
+            .from('users')
+            .select('credits')
+            .eq('email', buyerEmail)
+            .maybeSingle();
+
+          const { error: updateError } = await supabase
+            .from('users')
+            .update({
+              credits: (user?.credits ?? 0) + creditsToAdd,
+              plan: packageType,
+            })
+            .eq('email', buyerEmail);
+
+          if (updateError) {
+            console.error('[callback] supabase update error:', updateError.message);
+            resolve(NextResponse.redirect(new URL('/en/pricing?status=failed', BASE_URL)));
+            return;
+          }
+
+          console.log(`[callback] ✅ ${buyerEmail} +${creditsToAdd} credits (${packageType})`);
+          resolve(NextResponse.redirect(
+            new URL(`/en/pricing?status=success&credits=${creditsToAdd}`, BASE_URL)
+          ));
         }
-
-        const basketItems = result.basketItems as Array<{ id: string }>;
-        const buyer = result.buyer as { id: string };
-        const packageType = basketItems[0]?.id;
-        const buyerId = buyer?.id;
-        const creditsToAdd = CREDITS_MAP[packageType] ?? 0;
-
-        if (!creditsToAdd || !buyerId) {
-          resolve(NextResponse.redirect(new URL('/pricing?status=failed', BASE_URL)));
-          return;
-        }
-
-        const { data: user } = await supabase
-          .from('users')
-          .select('credits')
-          .eq('id', buyerId)
-          .maybeSingle();
-
-        await supabase
-          .from('users')
-          .update({ credits: (user?.credits ?? 0) + creditsToAdd, plan: packageType })
-          .eq('id', buyerId);
-
-        resolve(NextResponse.redirect(new URL(`/pricing?status=success&credits=${creditsToAdd}`, BASE_URL)));
-      });
+      );
     });
+
   } catch (err) {
-    console.error('[callback] Unexpected error:', err);
-    return NextResponse.redirect(new URL('/pricing?status=failed', BASE_URL));
+    console.error('[callback] unexpected error:', err);
+    return NextResponse.redirect(new URL('/en/pricing?status=failed', BASE_URL));
   }
 }

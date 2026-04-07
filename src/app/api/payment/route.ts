@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
+export const dynamic = 'force-dynamic';
+
 const PACKAGES = {
   starter:  { price: '49.99',  credits: 5,  name: 'Başlangıç Paketi' },
-  standard: { price: '129.99', credits: 15, name: 'Standart Paket' },
-  pro:      { price: '249.99', credits: 40, name: 'Pro Paket' },
+  standard: { price: '99.99',  credits: 15, name: 'Standart Paket'   },
+  pro:      { price: '199.99', credits: 40, name: 'Pro Paket'        },
 } as const;
 
 type PackageType = keyof typeof PACKAGES;
@@ -19,7 +21,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Geçersiz paket türü' }, { status: 400 });
     }
 
-    // Lazy-load iyzipay inside handler to avoid module-level crash
+    if (!process.env.IYZICO_API_KEY || !process.env.IYZICO_SECRET_KEY) {
+      return NextResponse.json({ error: 'Ödeme sistemi yapılandırılmamış' }, { status: 500 });
+    }
+
+    // Lazy-load to avoid Turbopack module resolution crash
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const Iyzipay = require('iyzipay');
     const iyzipay = new Iyzipay({
@@ -28,21 +34,27 @@ export async function POST(request: NextRequest) {
       uri: process.env.IYZICO_BASE_URL ?? 'https://sandbox-api.iyzipay.com',
     });
 
-    // Fetch user id from Supabase
+    // Fetch user from Supabase to get real data
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     );
     const { data: userData } = await supabase
       .from('users')
-      .select('id')
+      .select('id, full_name')
       .eq('email', userEmail)
       .maybeSingle();
 
-    const userId = String(userData?.id ?? userEmail);
-    const conversationId = `conv_${Date.now()}`;
-    const basketId = `basket_${Date.now()}`;
-    const callbackUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/api/payment/callback`;
+    const userId = userData?.id ?? userEmail;
+    const fullName = userData?.full_name ?? 'WheelVision User';
+    const nameParts = fullName.trim().split(' ');
+    const firstName = nameParts[0] ?? 'WheelVision';
+    const lastName  = nameParts.slice(1).join(' ') || 'User';
+
+    const conversationId = `wv_${Date.now()}`;
+    const basketId       = `bsk_${Date.now()}`;
+    const baseUrl        = process.env.NEXT_PUBLIC_BASE_URL ?? 'http://localhost:3000';
+    const callbackUrl    = `${baseUrl}/api/payment/callback`;
 
     const requestData = {
       locale: Iyzipay.LOCALE.TR,
@@ -53,26 +65,27 @@ export async function POST(request: NextRequest) {
       basketId,
       paymentGroup: Iyzipay.PAYMENT_GROUP.PRODUCT,
       callbackUrl,
+      enabledInstallments: [1],
       buyer: {
-        id: userId,
-        name: 'WheelVision',
-        surname: 'User',
+        id: String(userId),
+        name: firstName,
+        surname: lastName,
         gsmNumber: '+905350000000',
         email: userEmail,
         identityNumber: '11111111111',
         registrationAddress: 'Türkiye',
-        ip: '85.34.78.112',
+        ip: request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? '85.34.78.112',
         city: 'Istanbul',
         country: 'Turkey',
       },
       shippingAddress: {
-        contactName: 'WheelVision User',
+        contactName: fullName,
         city: 'Istanbul',
         country: 'Turkey',
         address: 'Türkiye',
       },
       billingAddress: {
-        contactName: 'WheelVision User',
+        contactName: fullName,
         city: 'Istanbul',
         country: 'Turkey',
         address: 'Türkiye',
@@ -89,26 +102,32 @@ export async function POST(request: NextRequest) {
     };
 
     return new Promise<NextResponse>((resolve) => {
-      iyzipay.checkoutFormInitialize.create(requestData, (err: Error | null, result: Record<string, string>) => {
-        if (err) {
-          console.error('[payment] iyzipay error:', err);
-          resolve(NextResponse.json({ error: err.message }, { status: 500 }));
-          return;
+      iyzipay.checkoutFormInitialize.create(
+        requestData,
+        (err: Error | null, result: Record<string, string>) => {
+          if (err) {
+            console.error('[iyzico] init error:', err.message);
+            resolve(NextResponse.json({ error: err.message }, { status: 500 }));
+            return;
+          }
+          if (result.status !== 'success') {
+            console.error('[iyzico] init failed:', result.errorCode, result.errorMessage);
+            resolve(NextResponse.json(
+              { error: result.errorMessage ?? 'iyzico hatası' },
+              { status: 500 }
+            ));
+            return;
+          }
+          resolve(NextResponse.json({
+            checkoutFormContent: result.checkoutFormContent,
+            token: result.token,
+          }));
         }
-        if (result.status !== 'success') {
-          console.error('[payment] iyzipay result error:', result.errorCode, result.errorMessage);
-          resolve(NextResponse.json({ error: result.errorMessage ?? 'iyzico hatası' }, { status: 500 }));
-          return;
-        }
-        resolve(NextResponse.json({
-          checkoutFormContent: result.checkoutFormContent,
-          token: result.token,
-        }));
-      });
+      );
     });
 
   } catch (err) {
-    console.error('[payment] Unexpected error:', err);
+    console.error('[iyzico] unexpected error:', err);
     return NextResponse.json({ error: String(err) }, { status: 500 });
   }
 }
