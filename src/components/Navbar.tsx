@@ -1,18 +1,21 @@
 'use client';
 
-import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { User, Settings, LogOut, Coins, Menu, X } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { createClient } from '@/lib/supabase';
+import { useTranslations } from 'next-intl';
+import { Link } from '@/i18n/navigation';
+import LanguageSwitcher from '@/components/LanguageSwitcher';
 
 export default function Navbar() {
   const pathname = usePathname();
   const { user } = useAuth();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const t = useTranslations('nav');
 
   const handleLogout = async () => {
     const supabase = createClient();
@@ -21,12 +24,15 @@ export default function Navbar() {
   };
 
   const navLinks = [
-    { href: '/app', label: 'Uygulama' },
-    { href: '/pricing', label: 'Fiyatlandırma' },
-    { href: '/history', label: 'Geçmiş' },
+    { href: '/app', label: t('app') },
+    { href: '/pricing', label: t('pricing') },
+    { href: '/history', label: t('history') },
   ];
 
   const closeMobile = () => setShowMobileMenu(false);
+
+  // Strip locale prefix for active check (localePrefix: always → /en/app, /tr/app)
+  const rawPath = pathname.replace(/^\/(en|tr)/, '') || '/';
 
   return (
     <nav className="glass fixed top-0 left-0 right-0 z-50 border-b border-[var(--border-color)]">
@@ -35,7 +41,7 @@ export default function Navbar() {
 
           {/* Logo */}
           <Link href="/" className="shrink-0">
-            <Image src="/logo.png" alt="WheelVision" width={220} height={55} priority className="h-12 w-auto" style={{ mixBlendMode: 'screen' }} />
+            <Image src="/logo.png" alt="WheelVision" width={220} height={55} priority className="h-12 w-auto" />
           </Link>
 
           {/* Desktop Nav Links */}
@@ -45,7 +51,7 @@ export default function Navbar() {
                 key={link.href}
                 href={link.href}
                 className={`text-sm font-medium transition-colors ${
-                  pathname === link.href
+                  rawPath === link.href
                     ? 'text-[var(--accent-orange)]'
                     : 'text-[var(--text-secondary)] hover:text-white'
                 }`}
@@ -55,8 +61,10 @@ export default function Navbar() {
             ))}
           </div>
 
-          {/* Desktop User Section */}
-          <div className="hidden md:flex items-center gap-4">
+          {/* Desktop Right */}
+          <div className="hidden md:flex items-center gap-3">
+            <LanguageSwitcher />
+
             {user ? (
               <>
                 <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[var(--bg-card)] border border-[var(--border-color)]">
@@ -75,11 +83,11 @@ export default function Navbar() {
                     <div className="absolute right-0 mt-2 w-48 py-2 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl shadow-xl">
                       <Link href="/settings" onClick={() => setShowUserMenu(false)}
                         className="flex items-center gap-2 px-4 py-2 text-sm text-[var(--text-secondary)] hover:text-white">
-                        <Settings className="w-4 h-4" />Ayarlar
+                        <Settings className="w-4 h-4" /> {t('settings')}
                       </Link>
                       <button onClick={handleLogout}
                         className="flex items-center gap-2 px-4 py-2 text-sm text-red-400 hover:text-red-300 w-full">
-                        <LogOut className="w-4 h-4" />Çıkış Yap
+                        <LogOut className="w-4 h-4" /> {t('logout')}
                       </button>
                     </div>
                   )}
@@ -87,14 +95,15 @@ export default function Navbar() {
               </>
             ) : (
               <div className="flex items-center gap-3">
-                <Link href="/login" className="btn-secondary text-sm">Giriş Yap</Link>
-                <Link href="/register" className="btn-primary text-sm">Kayıt Ol</Link>
+                <Link href="/login" className="btn-secondary text-sm">{t('login')}</Link>
+                <Link href="/register" className="btn-primary text-sm">{t('register')}</Link>
               </div>
             )}
           </div>
 
-          {/* Mobile Right: credits + hamburger */}
-          <div className="flex md:hidden items-center gap-3">
+          {/* Mobile Right */}
+          <div className="flex md:hidden items-center gap-2">
+            <LanguageSwitcher />
             {user && (
               <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[var(--bg-card)] border border-[var(--border-color)]">
                 <Coins className="w-3.5 h-3.5 text-[var(--accent-orange)]" />
@@ -111,7 +120,7 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* Mobile Menu Dropdown */}
+      {/* Mobile Menu */}
       {showMobileMenu && (
         <div className="md:hidden border-t border-[var(--border-color)] bg-[var(--bg-card)]">
           <div className="px-4 py-3 space-y-1">
@@ -121,7 +130,7 @@ export default function Navbar() {
                 href={link.href}
                 onClick={closeMobile}
                 className={`flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                  pathname === link.href
+                  rawPath === link.href
                     ? 'text-[var(--accent-orange)] bg-[var(--accent-orange)]/10'
                     : 'text-[var(--text-secondary)] hover:text-white hover:bg-white/5'
                 }`}
@@ -133,22 +142,20 @@ export default function Navbar() {
             <div className="border-t border-[var(--border-color)] pt-2 mt-2">
               {user ? (
                 <>
-                  <div className="px-3 py-2 text-sm text-[var(--text-secondary)]">
-                    {user.full_name}
-                  </div>
+                  <div className="px-3 py-2 text-sm text-[var(--text-secondary)]">{user.full_name}</div>
                   <Link href="/settings" onClick={closeMobile}
                     className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm text-[var(--text-secondary)] hover:text-white hover:bg-white/5">
-                    <Settings className="w-4 h-4" />Ayarlar
+                    <Settings className="w-4 h-4" /> {t('settings')}
                   </Link>
                   <button onClick={handleLogout}
                     className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm text-red-400 w-full hover:bg-white/5">
-                    <LogOut className="w-4 h-4" />Çıkış Yap
+                    <LogOut className="w-4 h-4" /> {t('logout')}
                   </button>
                 </>
               ) : (
                 <div className="flex flex-col gap-2 pt-1">
-                  <Link href="/login" onClick={closeMobile} className="btn-secondary text-sm text-center">Giriş Yap</Link>
-                  <Link href="/register" onClick={closeMobile} className="btn-primary text-sm text-center">Kayıt Ol</Link>
+                  <Link href="/login" onClick={closeMobile} className="btn-secondary text-sm text-center">{t('login')}</Link>
+                  <Link href="/register" onClick={closeMobile} className="btn-primary text-sm text-center">{t('register')}</Link>
                 </div>
               )}
             </div>

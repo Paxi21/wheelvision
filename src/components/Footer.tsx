@@ -1,15 +1,18 @@
 import Image from 'next/image';
-import Link from 'next/link';
+import { Link } from '@/i18n/navigation';
+import { getTranslations } from 'next-intl/server';
 
-export default function Footer() {
+export default async function Footer() {
+  const t = await getTranslations('footer');
+
   return (
     <footer className="border-t border-[var(--border-color)] bg-[var(--bg-card)] mt-auto">
       <div className="max-w-[1400px] mx-auto px-6 py-8 flex flex-col items-center gap-3">
         <Link href="/">
-          <Image src="/logo.png" alt="WheelVision" width={120} height={30} className="h-7 w-auto opacity-80 hover:opacity-100 transition-opacity" style={{ mixBlendMode: 'screen' }} />
+          <Image src="/logo.png" alt="WheelVision" width={120} height={30} className="h-7 w-auto opacity-80 hover:opacity-100 transition-opacity" />
         </Link>
         <p className="text-xs text-[var(--text-secondary)]">
-          © 2025 WheelVision. Tüm hakları saklıdır.
+          © 2026 WheelVision. {t('rights')}.
         </p>
       </div>
     </footer>
