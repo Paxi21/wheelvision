@@ -11,14 +11,46 @@ const PACKAGES = {
 
 type PackageType = keyof typeof PACKAGES;
 
-// iyzico auth: HMAC-SHA256(key=secretKey, data=apiKey+rnd+secretKey+JSON.stringify(body))
-function buildAuthHeader(apiKey: string, secretKey: string, rnd: string, body: object): string {
-  const hashStr = apiKey + rnd + secretKey + JSON.stringify(body);
-  const hash = crypto
-    .createHmac('sha256', secretKey)
-    .update(hashStr)
-    .digest('base64');
-  const raw = `apiKey:${apiKey}&randomKey:${rnd}&signature:${hash}`;
+// iyzico uses a custom PKI string format for HMAC, NOT JSON.stringify
+// e.g. [locale=tr,price=49.99,buyer=[id=1,name=John],basketItems=[[id=starter,price=49.99]]]
+function objectToString(obj: Record<string, unknown>): string {
+  let sb = '';
+  for (const key of Object.keys(obj)) {
+    const value = obj[key];
+    if (Array.isArray(value)) {
+      sb += key + '=' + arrayToString(value) + ',';
+    } else if (value !== null && typeof value === 'object') {
+      sb += key + '=[' + objectToString(value as Record<string, unknown>) + '],';
+    } else {
+      sb += key + '=' + String(value) + ',';
+    }
+  }
+  return sb.replace(/,$/, '');
+}
+
+function arrayToString(arr: unknown[]): string {
+  let sb = '[';
+  for (let i = 0; i < arr.length; i++) {
+    const item = arr[i];
+    if (typeof item === 'object' && item !== null) {
+      sb += '[' + objectToString(item as Record<string, unknown>) + ']';
+    } else {
+      sb += String(item);
+    }
+    if (i < arr.length - 1) sb += ', ';
+  }
+  return sb + ']';
+}
+
+function toPKIString(request: Record<string, unknown>): string {
+  return '[' + objectToString(request) + ']';
+}
+
+function buildAuthHeader(apiKey: string, secretKey: string, rnd: string, body: Record<string, unknown>): string {
+  const pki     = toPKIString(body);
+  const hashStr = apiKey + rnd + secretKey + pki;
+  const hash    = crypto.createHmac('sha256', secretKey).update(hashStr, 'utf8').digest('base64');
+  const raw     = `apiKey:${apiKey}&randomKey:${rnd}&signature:${hash}`;
   return 'IYZWS ' + Buffer.from(raw).toString('base64');
 }
 
@@ -41,7 +73,7 @@ export async function POST(request: NextRequest) {
     const conversationId = `wv_${Date.now()}`;
     const basketId       = `bsk_${Date.now()}`;
 
-    const requestBody = {
+    const requestBody: Record<string, unknown> = {
       locale: 'tr',
       conversationId,
       price: pkg.price,
@@ -50,7 +82,6 @@ export async function POST(request: NextRequest) {
       basketId,
       paymentGroup: 'PRODUCT',
       callbackUrl: `${appUrl}/api/payment/callback`,
-      enabledInstallments: [1],
       buyer: {
         id: userEmail,
         name: 'WheelVision',
@@ -96,6 +127,7 @@ export async function POST(request: NextRequest) {
           'Content-Type': 'application/json',
           'Authorization': authorization,
           'x-iyzi-rnd': rnd,
+          'x-iyzi-client-version': 'iyzipay-node-2.0.67',
         },
         body: JSON.stringify(requestBody),
       }
