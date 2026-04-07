@@ -3,41 +3,23 @@ import crypto from 'crypto';
 
 export const dynamic = 'force-dynamic';
 
-function generatePKIString(request: Record<string, unknown>): string {
-  let pki = '[';
-  for (const [key, value] of Object.entries(request)) {
-    if (value !== null && value !== undefined) {
-      if (Array.isArray(value)) {
-        pki += `${key}=[`;
-        for (const item of value) {
-          pki += '[';
-          for (const [k, v] of Object.entries(item as object)) {
-            pki += `${k}=${v},`;
-          }
-          pki = pki.slice(0, -1) + '],';
-        }
-        pki = pki.slice(0, -1) + '],';
-      } else if (typeof value === 'object') {
-        pki += `${key}=[`;
-        for (const [k, v] of Object.entries(value as object)) {
-          pki += `${k}=${v},`;
-        }
-        pki = pki.slice(0, -1) + '],';
-      } else {
-        pki += `${key}=${value},`;
-      }
-    }
-  }
-  pki = pki.slice(0, -1) + ']';
-  return pki;
-}
+function generateCheckoutFormInitializeRequest(
+  apiKey: string,
+  secretKey: string,
+  request: Record<string, unknown>
+): { authorization: string; randomKey: string; body: string } {
+  const randomKey = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+  const jsonRequest = JSON.stringify(request);
 
-function generateAuthorizationHeader(apiKey: string, secretKey: string, randomString: string, request: Record<string, unknown>): string {
-  const pkiString = generatePKIString(request);
-  const shaSum = crypto.createHash('sha1');
-  shaSum.update(randomString + secretKey + pkiString);
-  const hashString = shaSum.digest('base64');
-  return `IYZWS ${apiKey}:${hashString}`;
+  // iyzico hash: SHA256(randomKey + jsonRequest + secretKey)
+  const hashStr = randomKey + jsonRequest + secretKey;
+  const hash = crypto.createHash('sha256').update(hashStr, 'utf8').digest('hex');
+
+  return {
+    authorization: `IYZWSv2 ${apiKey}:${hash}`,
+    randomKey,
+    body: jsonRequest,
+  };
 }
 
 export async function POST(req: NextRequest) {
@@ -55,62 +37,61 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid package' }, { status: 400 });
     }
 
-    const randomString   = Date.now().toString() + Math.random().toString(36).substring(2, 8);
-    const conversationId = 'conv' + Date.now();
-    const basketId       = 'basket' + Date.now();
+    const apiKey    = process.env.IYZICO_API_KEY!;
+    const secretKey = process.env.IYZICO_SECRET_KEY!;
+    const baseUrl   = process.env.IYZICO_BASE_URL!;
 
-    const requestBody: Record<string, unknown> = {
+    const requestBody = {
       locale: 'tr',
-      conversationId,
+      conversationId: Date.now().toString(),
       price: selectedPackage.price,
       paidPrice: selectedPackage.price,
       currency: 'TRY',
-      basketId,
+      basketId: 'B' + Date.now(),
       paymentGroup: 'PRODUCT',
       callbackUrl: process.env.NEXT_PUBLIC_BASE_URL + '/api/payment/callback',
       buyer: {
-        id: userId || 'guest123',
+        id: userId || 'BY' + Date.now(),
         name: 'Test',
         surname: 'User',
         gsmNumber: '+905350000000',
-        email: userEmail || 'test@test.com',
+        email: userEmail || 'test@wheelvision.io',
         identityNumber: '74300864791',
-        registrationAddress: 'Istanbul Turkey',
+        registrationAddress: 'Nidakule Goztepe, Merdivenkoy Mah. Bora Sk. No:1',
         ip: '85.34.78.112',
         city: 'Istanbul',
         country: 'Turkey',
+        zipCode: '34732',
       },
       shippingAddress: {
         contactName: 'Test User',
         city: 'Istanbul',
         country: 'Turkey',
-        address: 'Istanbul Turkey',
+        address: 'Nidakule Goztepe, Merdivenkoy Mah. Bora Sk. No:1',
+        zipCode: '34732',
       },
       billingAddress: {
         contactName: 'Test User',
         city: 'Istanbul',
         country: 'Turkey',
-        address: 'Istanbul Turkey',
+        address: 'Nidakule Goztepe, Merdivenkoy Mah. Bora Sk. No:1',
+        zipCode: '34732',
       },
       basketItems: [
         {
           id: packageType,
           name: selectedPackage.name,
-          category1: 'Kredi',
+          category1: 'Dijital Urun',
+          category2: 'Kredi Paketi',
           itemType: 'VIRTUAL',
           price: selectedPackage.price,
         },
       ],
     };
 
-    const apiKey    = process.env.IYZICO_API_KEY!;
-    const secretKey = process.env.IYZICO_SECRET_KEY!;
-    const baseUrl   = process.env.IYZICO_BASE_URL!;
+    const { authorization, randomKey, body } = generateCheckoutFormInitializeRequest(apiKey, secretKey, requestBody);
 
-    const authorization = generateAuthorizationHeader(apiKey, secretKey, randomString, requestBody);
-
-    console.log('Request:', JSON.stringify(requestBody, null, 2));
-    console.log('Authorization:', authorization);
+    console.log('URL:', baseUrl + '/payment/iyzipos/checkoutform/initialize/auth/ecom');
 
     const response = await fetch(baseUrl + '/payment/iyzipos/checkoutform/initialize/auth/ecom', {
       method: 'POST',
@@ -118,13 +99,13 @@ export async function POST(req: NextRequest) {
         'Accept': 'application/json',
         'Content-Type': 'application/json',
         'Authorization': authorization,
-        'x-iyzi-rnd': randomString,
+        'x-iyzi-rnd': randomKey,
       },
-      body: JSON.stringify(requestBody),
+      body,
     });
 
     const result = await response.json() as Record<string, string>;
-    console.log('iyzico response:', result);
+    console.log('iyzico response:', JSON.stringify(result, null, 2));
 
     if (result.status === 'success') {
       return NextResponse.json({
@@ -136,10 +117,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       error: result.errorMessage || 'Payment failed',
       errorCode: result.errorCode,
+      errorGroup: result.errorGroup,
     }, { status: 500 });
 
   } catch (error) {
     console.error('Payment error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ error: String(error) }, { status: 500 });
   }
 }
