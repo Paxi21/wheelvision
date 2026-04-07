@@ -2,12 +2,38 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
+import crypto from 'crypto';
+
+// Exact replica of iyzipay/lib/utils.js → generateHashV2
+// hash = HMAC-SHA256(key=secretKey, data=randomString+uriPath+JSON.stringify(body)) → HEX
+// auth = IYZWSv2 base64("apiKey:xxx&randomKey:xxx&signature:xxx")
+function buildAuthHeader(
+  apiKey: string,
+  secretKey: string,
+  randomString: string,
+  uriPath: string,
+  body: object
+): string {
+  const signature = crypto
+    .createHmac('sha256', secretKey)
+    .update(randomString + uriPath + JSON.stringify(body))
+    .digest('hex');
+
+  const authorizationParams = [
+    'apiKey:' + apiKey,
+    'randomKey:' + randomString,
+    'signature:' + signature,
+  ].join('&');
+
+  return 'IYZWSv2 ' + Buffer.from(authorizationParams).toString('base64');
+}
+
+function generateRandomString(): string {
+  return process.hrtime()[0] + Math.random().toString(8).slice(2);
+}
 
 export async function POST(req: NextRequest) {
   try {
-    // Dynamic import — avoids module-level crash from iyzipay's fs.readdirSync
-    const Iyzipay = (await import('iyzipay')).default;
-
     const { packageType, userId, userEmail } = await req.json();
 
     const packages: Record<string, { price: string; credits: number; name: string }> = {
@@ -21,91 +47,97 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid package' }, { status: 400 });
     }
 
-    const iyzipay = new Iyzipay({
-      apiKey:    process.env.IYZICO_API_KEY!,
-      secretKey: process.env.IYZICO_SECRET_KEY!,
-      uri:       process.env.IYZICO_BASE_URL!,
-    });
+    const apiKey    = process.env.IYZICO_API_KEY!;
+    const secretKey = process.env.IYZICO_SECRET_KEY!;
+    const baseUrl   = process.env.IYZICO_BASE_URL!;
+    const appUrl    = process.env.NEXT_PUBLIC_BASE_URL!;
 
+    const randomString   = generateRandomString();
     const conversationId = Date.now().toString();
     const basketId       = 'B' + Date.now().toString();
     const buyerId        = userId || 'BYR' + Date.now().toString();
 
-    const request = {
-      locale:               Iyzipay.LOCALE.TR,
+    const uriPath = '/payment/iyzipos/checkoutform/initialize/auth/ecom';
+
+    const requestBody = {
+      locale: 'tr',
       conversationId,
-      price:                selectedPackage.price,
-      paidPrice:            selectedPackage.price,
-      currency:             Iyzipay.CURRENCY.TRY,
+      price: selectedPackage.price,
+      paidPrice: selectedPackage.price,
+      currency: 'TRY',
       basketId,
-      paymentGroup:         Iyzipay.PAYMENT_GROUP.PRODUCT,
-      callbackUrl:          process.env.NEXT_PUBLIC_BASE_URL + '/api/payment/callback',
-      enabledInstallments:  [1, 2, 3, 6, 9],
+      paymentGroup: 'PRODUCT',
+      callbackUrl: appUrl + '/api/payment/callback',
+      enabledInstallments: [1, 2, 3, 6, 9],
       buyer: {
-        id:                  buyerId,
-        name:                'Test',
-        surname:             'User',
-        gsmNumber:           '+905350000000',
-        email:               userEmail || 'test@wheelvision.io',
-        identityNumber:      '74300864791',
-        lastLoginDate:       '2024-01-01 12:00:00',
-        registrationDate:    '2024-01-01 12:00:00',
+        id: buyerId,
+        name: 'Test',
+        surname: 'User',
+        gsmNumber: '+905350000000',
+        email: userEmail || 'test@wheelvision.io',
+        identityNumber: '74300864791',
+        lastLoginDate: '2024-01-01 12:00:00',
+        registrationDate: '2024-01-01 12:00:00',
         registrationAddress: 'Nidakule Goztepe, Merdivenkoy Mah. Bora Sk. No:1',
-        ip:                  '85.34.78.112',
-        city:                'Istanbul',
-        country:             'Turkey',
-        zipCode:             '34732',
+        ip: '85.34.78.112',
+        city: 'Istanbul',
+        country: 'Turkey',
+        zipCode: '34732',
       },
       shippingAddress: {
         contactName: 'Test User',
-        city:        'Istanbul',
-        country:     'Turkey',
-        address:     'Nidakule Goztepe, Merdivenkoy Mah. Bora Sk. No:1',
-        zipCode:     '34732',
+        city: 'Istanbul',
+        country: 'Turkey',
+        address: 'Nidakule Goztepe, Merdivenkoy Mah. Bora Sk. No:1',
+        zipCode: '34732',
       },
       billingAddress: {
         contactName: 'Test User',
-        city:        'Istanbul',
-        country:     'Turkey',
-        address:     'Nidakule Goztepe, Merdivenkoy Mah. Bora Sk. No:1',
-        zipCode:     '34732',
+        city: 'Istanbul',
+        country: 'Turkey',
+        address: 'Nidakule Goztepe, Merdivenkoy Mah. Bora Sk. No:1',
+        zipCode: '34732',
       },
       basketItems: [
         {
-          id:        'BI' + Date.now().toString(),
-          name:      selectedPackage.name,
+          id: 'BI' + Date.now().toString(),
+          name: selectedPackage.name,
           category1: 'Dijital Urun',
           category2: 'Kredi Paketi',
-          itemType:  Iyzipay.BASKET_ITEM_TYPE.VIRTUAL,
-          price:     selectedPackage.price,
+          itemType: 'VIRTUAL',
+          price: selectedPackage.price,
         },
       ],
     };
 
-    return new Promise<NextResponse>((resolve) => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      iyzipay.checkoutFormInitialize.create(request, (err: unknown, result: any) => {
-        console.log('iyzico result:', JSON.stringify(result, null, 2));
+    const authorization = buildAuthHeader(apiKey, secretKey, randomString, uriPath, requestBody);
 
-        if (err) {
-          console.error('iyzico error:', err);
-          resolve(NextResponse.json({ error: String(err) }, { status: 500 }));
-          return;
-        }
-
-        if (result.status === 'success') {
-          resolve(NextResponse.json({
-            checkoutFormContent: result.checkoutFormContent,
-            token: result.token,
-          }));
-        } else {
-          resolve(NextResponse.json({
-            error:     result.errorMessage || 'Odeme baslatilamadi',
-            errorCode: result.errorCode,
-          }, { status: 500 }));
-        }
-      });
+    const response = await fetch(baseUrl + uriPath, {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'Authorization': authorization,
+        'x-iyzi-rnd': randomString,
+        'x-iyzi-client-version': 'iyzipay-node-2.0.67',
+      },
+      body: JSON.stringify(requestBody),
     });
+
+    const result = await response.json() as Record<string, unknown>;
+    console.log('iyzico response:', JSON.stringify(result));
+
+    if (result.status === 'success') {
+      return NextResponse.json({
+        checkoutFormContent: result.checkoutFormContent,
+        token: result.token,
+      });
+    }
+
+    return NextResponse.json({
+      error: result.errorMessage || 'Odeme baslatilamadi',
+      errorCode: result.errorCode,
+    }, { status: 500 });
 
   } catch (error) {
     console.error('Payment error:', error);

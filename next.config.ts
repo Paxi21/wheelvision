@@ -26,7 +26,6 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
-  serverExternalPackages: ['iyzipay'],
   async headers() {
     return [
       {
