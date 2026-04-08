@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import { motion, AnimatePresence } from 'motion/react';
@@ -9,7 +9,7 @@ import { ShimmerButton } from '@/components/ui/shimmer-button';
 import { AnimatedBorder } from '@/components/ui/animated-border';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
-import { createClient } from '@/lib/supabase';
+import { useAuth } from '@/contexts/AuthContext';
 import PaymentModal from '@/components/PaymentModal';
 
 type PaidPackage = 'starter' | 'standard' | 'pro';
@@ -19,18 +19,11 @@ export default function PricingPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
-  const supabase = useMemo(() => createClient(), []);
+  const { user } = useAuth();
 
-  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const userEmail = user?.email ?? null;
   const [payingPackage, setPayingPackage] = useState<PaidPackage | null>(null);
   const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
-
-  // Get logged-in user email
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user?.email) setUserEmail(session.user.email);
-    });
-  }, [supabase]);
 
   // Handle callback status from iyzico redirect — show once then clean URL
   useEffect(() => {

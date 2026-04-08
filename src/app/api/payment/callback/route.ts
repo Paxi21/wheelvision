@@ -88,7 +88,9 @@ export async function POST(req: NextRequest) {
         );
 
         const buyerEmail = result.buyer?.email as string | undefined;
-        console.log('[callback] paidPrice:', paidPrice, '| creditsToAdd:', creditsToAdd, '| buyer:', buyerEmail);
+        console.log('[callback] paidPrice:', paidPrice, '| creditsToAdd:', creditsToAdd);
+        console.log('[callback] result.buyer full:', JSON.stringify(result.buyer));
+        console.log('[callback] iyzico buyer email:', buyerEmail);
 
         // Debug: list sample users to verify table access
         const { data: allUsers, error: listError } = await supabase
