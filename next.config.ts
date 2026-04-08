@@ -7,15 +7,15 @@ const supabaseHost = 'xzokritmcxslkqlahims.supabase.co';
 
 const csp = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.iyzipay.com",
-  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://*.iyzipay.com",
-  "font-src 'self' data: https://fonts.gstatic.com https://*.iyzipay.com",
-  `connect-src 'self' https://${supabaseHost} https://api.cloudinary.com https://res.cloudinary.com https://fal.media https://*.fal.media https://*.iyzipay.com`,
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://sandbox-static.iyzipay.com https://static.iyzipay.com https://*.iyzipay.com",
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://sandbox-static.iyzipay.com https://static.iyzipay.com https://*.iyzipay.com",
+  "font-src 'self' data: https://fonts.gstatic.com",
+  `connect-src 'self' https://${supabaseHost} wss://${supabaseHost} https://api.cloudinary.com https://res.cloudinary.com https://fal.media https://*.fal.media https://sandbox-api.iyzipay.com https://api.iyzipay.com https://sandbox-static.iyzipay.com https://*.iyzipay.com`,
   "img-src 'self' data: blob: https://res.cloudinary.com https://fal.media https://*.fal.media https://*.iyzipay.com",
-  "frame-src 'self' https://*.iyzipay.com",
+  "frame-src 'self' https://sandbox-api.iyzipay.com https://api.iyzipay.com https://*.iyzipay.com",
   "frame-ancestors 'none'",
   "base-uri 'self'",
-  "form-action 'self' https://*.iyzipay.com",
+  "form-action 'self' https://sandbox-api.iyzipay.com https://api.iyzipay.com https://sandbox-static.iyzipay.com https://*.iyzipay.com",
 ].join('; ');
 
 const securityHeaders = [
