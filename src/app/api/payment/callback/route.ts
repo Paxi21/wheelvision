@@ -50,6 +50,7 @@ export async function POST(req: NextRequest) {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const result = await res.json() as Record<string, any>;
+    console.log('[callback] FULL RESULT:', JSON.stringify(result));
     console.log('[callback] status:', result.status, '| paymentStatus:', result.paymentStatus);
 
     if (result.status !== 'success' || result.paymentStatus !== 'SUCCESS') {
