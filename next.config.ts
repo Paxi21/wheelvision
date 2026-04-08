@@ -3,20 +3,8 @@ import createNextIntlPlugin from 'next-intl/plugin';
 
 const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
 
-const supabaseHost = 'xzokritmcxslkqlahims.supabase.co';
-
-const csp = [
-  "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://sandbox-static.iyzipay.com https://static.iyzipay.com https://*.iyzipay.com",
-  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://sandbox-static.iyzipay.com https://static.iyzipay.com https://*.iyzipay.com",
-  "font-src 'self' data: https://fonts.gstatic.com",
-  `connect-src 'self' https://${supabaseHost} wss://${supabaseHost} https://api.cloudinary.com https://res.cloudinary.com https://fal.media https://*.fal.media https://sandbox-api.iyzipay.com https://api.iyzipay.com https://sandbox-static.iyzipay.com https://*.iyzipay.com`,
-  "img-src 'self' data: blob: https://res.cloudinary.com https://fal.media https://*.fal.media https://*.iyzipay.com",
-  "frame-src 'self' https://sandbox-api.iyzipay.com https://api.iyzipay.com https://*.iyzipay.com",
-  "frame-ancestors 'none'",
-  "base-uri 'self'",
-  "form-action 'self' https://sandbox-api.iyzipay.com https://api.iyzipay.com https://sandbox-static.iyzipay.com https://*.iyzipay.com",
-].join('; ');
+// TODO: tighten CSP after iyzico payment flow is confirmed working
+const csp = "default-src * 'unsafe-inline' 'unsafe-eval' data: blob:; script-src * 'unsafe-inline' 'unsafe-eval'; style-src * 'unsafe-inline'; img-src * data: blob:; font-src * data:; connect-src *; frame-src *; form-action *;";
 
 const securityHeaders = [
   { key: 'X-Content-Type-Options', value: 'nosniff' },
