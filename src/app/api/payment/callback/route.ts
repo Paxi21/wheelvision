@@ -1,138 +1,133 @@
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
 
-export const dynamic = 'force-dynamic';
+// Same auth implementation as payment/route.ts
+function buildAuthHeader(
+  apiKey: string,
+  secretKey: string,
+  randomString: string,
+  uriPath: string,
+  body: object
+): string {
+  const signature = crypto
+    .createHmac('sha256', secretKey)
+    .update(randomString + uriPath + JSON.stringify(body))
+    .digest('hex');
 
-const CREDITS_MAP: Record<string, number> = {
-  starter:  5,
-  standard: 15,
-  pro:      40,
-};
+  const authorizationParams = [
+    'apiKey:' + apiKey,
+    'randomKey:' + randomString,
+    'signature:' + signature,
+  ].join('&');
 
-const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? 'http://localhost:3000';
-
-function objectToString(obj: Record<string, unknown>): string {
-  let sb = '';
-  for (const key of Object.keys(obj)) {
-    const value = obj[key];
-    if (Array.isArray(value)) {
-      sb += key + '=' + arrayToString(value) + ',';
-    } else if (value !== null && typeof value === 'object') {
-      sb += key + '=[' + objectToString(value as Record<string, unknown>) + '],';
-    } else {
-      sb += key + '=' + String(value) + ',';
-    }
-  }
-  return sb.replace(/,$/, '');
+  return 'IYZWSv2 ' + Buffer.from(authorizationParams).toString('base64');
 }
 
-function arrayToString(arr: unknown[]): string {
-  let sb = '[';
-  for (let i = 0; i < arr.length; i++) {
-    const item = arr[i];
-    if (typeof item === 'object' && item !== null) {
-      sb += '[' + objectToString(item as Record<string, unknown>) + ']';
-    } else {
-      sb += String(item);
-    }
-    if (i < arr.length - 1) sb += ', ';
-  }
-  return sb + ']';
+function generateRandomString(): string {
+  return process.hrtime()[0] + Math.random().toString(8).slice(2);
 }
 
-function toPKIString(request: Record<string, unknown>): string {
-  return '[' + objectToString(request) + ']';
-}
+export async function POST(req: NextRequest) {
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL!;
 
-function buildAuthHeader(apiKey: string, secretKey: string, rnd: string, body: Record<string, unknown>): string {
-  const pki     = toPKIString(body);
-  const hashStr = apiKey + rnd + secretKey + pki;
-  const hash    = crypto.createHmac('sha256', secretKey).update(hashStr, 'utf8').digest('base64');
-  const raw     = `apiKey:${apiKey}&randomKey:${rnd}&signature:${hash}`;
-  return 'IYZWS ' + Buffer.from(raw).toString('base64');
-}
-
-export async function POST(request: NextRequest) {
   try {
-    const formData = await request.formData();
+    const formData = await req.formData();
     const token = formData.get('token') as string | null;
 
+    console.log('[callback] token received:', token);
+
     if (!token) {
-      console.error('[callback] No token received');
-      return NextResponse.redirect(new URL('/en/pricing?status=failed', BASE_URL));
+      console.log('[callback] no token');
+      return NextResponse.redirect(new URL('/en/pricing?status=failed&reason=no_token', baseUrl));
     }
 
     const apiKey    = process.env.IYZICO_API_KEY!;
     const secretKey = process.env.IYZICO_SECRET_KEY!;
-    const baseUrl   = process.env.IYZICO_BASE_URL ?? 'https://sandbox-api.iyzipay.com';
+    const iyzBase   = process.env.IYZICO_BASE_URL ?? 'https://sandbox-api.iyzipay.com';
 
-    const rnd         = crypto.randomBytes(8).toString('hex');
-    const requestBody: Record<string, unknown> = { locale: 'tr', token };
-    const authorization = buildAuthHeader(apiKey, secretKey, rnd, requestBody);
+    const randomString = generateRandomString();
+    const uriPath      = '/payment/iyzipos/checkoutform/auth/ecom/detail';
+    const requestBody  = { locale: 'tr', token };
 
-    const iyzResponse = await fetch(
-      `${baseUrl}/payment/iyzipos/checkoutform/auth/ecom/detail`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': authorization,
-          'x-iyzi-rnd': rnd,
-          'x-iyzi-client-version': 'iyzipay-node-2.0.67',
-        },
-        body: JSON.stringify(requestBody),
+    const authorization = buildAuthHeader(apiKey, secretKey, randomString, uriPath, requestBody);
+
+    const response = await fetch(iyzBase + uriPath, {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'Authorization': authorization,
+        'x-iyzi-rnd': randomString,
+        'x-iyzi-client-version': 'iyzipay-node-2.0.67',
+      },
+      body: JSON.stringify(requestBody),
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await response.json() as Record<string, any>;
+    console.log('[callback] iyzico retrieve result:', JSON.stringify(result, null, 2));
+
+    if (result.status === 'success' && result.paymentStatus === 'SUCCESS') {
+      console.log('[callback] payment successful!');
+
+      try {
+        const supabase = createClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.SUPABASE_SERVICE_ROLE_KEY!
+        );
+
+        // Determine package type from basketItem id or fall back to price
+        const basketItemId = result.basketItems?.[0]?.id as string | undefined;
+        let packageType = 'starter';
+
+        if (basketItemId === 'starter' || basketItemId === 'standard' || basketItemId === 'pro') {
+          packageType = basketItemId;
+        } else {
+          const price = parseFloat(result.paidPrice);
+          if (price >= 199) packageType = 'pro';
+          else if (price >= 99) packageType = 'standard';
+          else packageType = 'starter';
+        }
+
+        const creditsMap: Record<string, number> = { starter: 5, standard: 15, pro: 40 };
+        const creditsToAdd = creditsMap[packageType] ?? 5;
+        const buyerEmail   = result.buyer?.email as string | undefined;
+
+        console.log('[callback] buyer email:', buyerEmail, '| package:', packageType, '| credits:', creditsToAdd);
+
+        if (buyerEmail) {
+          const { data: user, error: userError } = await supabase
+            .from('users')
+            .select('id, credits')
+            .eq('email', buyerEmail)
+            .single();
+
+          if (user && !userError) {
+            const newCredits = (user.credits || 0) + creditsToAdd;
+            await supabase.from('users').update({ credits: newCredits }).eq('id', user.id);
+            console.log('[callback] credits updated:', user.credits, '->', newCredits);
+          } else {
+            console.log('[callback] user not found:', buyerEmail, userError);
+          }
+        }
+      } catch (dbError) {
+        console.error('[callback] database error:', dbError);
       }
-    );
 
-    const result = await iyzResponse.json() as Record<string, unknown>;
+      return NextResponse.redirect(new URL('/en/pricing?status=success', baseUrl));
 
-    if (result.status !== 'success' || result.paymentStatus !== 'SUCCESS') {
-      console.error('[callback] payment not successful:', result.paymentStatus, result.errorMessage);
-      return NextResponse.redirect(new URL('/en/pricing?status=failed', BASE_URL));
+    } else {
+      const reason = encodeURIComponent((result.errorMessage as string) || 'unknown');
+      console.log('[callback] payment not successful:', result.status, result.errorMessage);
+      return NextResponse.redirect(new URL(`/en/pricing?status=failed&reason=${reason}`, baseUrl));
     }
 
-    const basketItems  = result.basketItems as Array<{ id: string }> | undefined;
-    const buyerEmail   = (result.buyer as { email?: string } | undefined)?.email;
-    const packageType  = basketItems?.[0]?.id;
-    const creditsToAdd = packageType ? (CREDITS_MAP[packageType] ?? 0) : 0;
-
-    if (!creditsToAdd || !buyerEmail) {
-      console.error('[callback] missing package or buyer email', { packageType, buyerEmail });
-      return NextResponse.redirect(new URL('/en/pricing?status=failed', BASE_URL));
-    }
-
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
-
-    const { data: user } = await supabase
-      .from('users')
-      .select('credits')
-      .eq('email', buyerEmail)
-      .maybeSingle();
-
-    const { error: updateError } = await supabase
-      .from('users')
-      .update({
-        credits: (user?.credits ?? 0) + creditsToAdd,
-        plan: packageType,
-      })
-      .eq('email', buyerEmail);
-
-    if (updateError) {
-      console.error('[callback] supabase update error:', updateError.message);
-      return NextResponse.redirect(new URL('/en/pricing?status=failed', BASE_URL));
-    }
-
-    console.log(`[callback] ✅ ${buyerEmail} +${creditsToAdd} credits (${packageType})`);
-    return NextResponse.redirect(
-      new URL(`/en/pricing?status=success&credits=${creditsToAdd}`, BASE_URL)
-    );
-
-  } catch (err) {
-    console.error('[callback] unexpected error:', err);
-    return NextResponse.redirect(new URL('/en/pricing?status=failed', BASE_URL));
+  } catch (error) {
+    console.error('[callback] error:', error);
+    return NextResponse.redirect(new URL('/en/pricing?status=failed&reason=server_error', baseUrl));
   }
 }
