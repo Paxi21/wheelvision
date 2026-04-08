@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
       currency: 'TRY',
       basketId,
       paymentGroup: 'PRODUCT',
-      callbackUrl: appUrl + '/api/payment/callback',
+      callbackUrl: `${appUrl}/api/payment/callback?email=${encodeURIComponent(userEmail)}`,
       enabledInstallments: [1, 2, 3, 6, 9],
       buyer: {
         id: userEmail,

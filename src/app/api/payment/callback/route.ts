@@ -13,22 +13,26 @@ function buildAuthHeader(apiKey: string, secretKey: string, rnd: string, uriPath
   return 'IYZWSv2 ' + Buffer.from(raw).toString('base64');
 }
 
-const CREDITS: Record<string, number> = { starter: 5, standard: 15, pro: 40 };
-
-function creditsFromPrice(paidPrice: number): number {
-  if (paidPrice >= 199) return 40;
-  if (paidPrice >= 99)  return 15;
-  return 5;
-}
-
 export async function POST(req: NextRequest) {
+  console.log('=== CALLBACK STARTED ===');
+
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL!;
 
   try {
+    // Email from callbackUrl query param (most reliable)
+    const { searchParams } = new URL(req.url);
+    const emailFromUrl = searchParams.get('email');
+    console.log('[callback] email from URL:', emailFromUrl);
+
     const formData = await req.formData();
     const token = formData.get('token') as string | null;
-    if (!token) return NextResponse.redirect(new URL('/en/pricing?status=failed', baseUrl));
+    console.log('[callback] token:', token ? token.substring(0, 20) + '...' : 'MISSING');
 
+    if (!token) {
+      return NextResponse.redirect(new URL('/en/pricing?status=failed&reason=no_token', baseUrl));
+    }
+
+    // Retrieve payment from iyzico
     const apiKey    = process.env.IYZICO_API_KEY!;
     const secretKey = process.env.IYZICO_SECRET_KEY!;
     const iyzBase   = process.env.IYZICO_BASE_URL ?? 'https://sandbox-api.iyzipay.com';
@@ -36,7 +40,7 @@ export async function POST(req: NextRequest) {
     const uriPath   = '/payment/iyzipos/checkoutform/auth/ecom/detail';
     const reqBody   = { locale: 'tr', token };
 
-    const res    = await fetch(iyzBase + uriPath, {
+    const res = await fetch(iyzBase + uriPath, {
       method: 'POST',
       headers: {
         'Accept': 'application/json',
@@ -50,64 +54,78 @@ export async function POST(req: NextRequest) {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const result = await res.json() as Record<string, any>;
-    console.log('[callback] status:', result.status, '| paymentStatus:', result.paymentStatus);
-    console.log('[callback] conversationId:', result.conversationId);
+    console.log('[callback] iyzico result status:', result?.status);
+    console.log('[callback] iyzico paymentStatus:', result?.paymentStatus);
+    console.log('[callback] conversationId:', result?.conversationId);
+    console.log('[callback] paidPrice:', result?.paidPrice);
 
     if (result.status !== 'success' || result.paymentStatus !== 'SUCCESS') {
-      console.log('[callback] payment failed:', result.errorMessage);
+      console.log('[callback] PAYMENT FAILED:', result.errorMessage);
       return NextResponse.redirect(new URL('/en/pricing?status=failed', baseUrl));
     }
 
-    // --- Extract email from conversationId: "email___timestamp" ---
-    const conversationId   = (result.conversationId as string) || '';
-    const emailFromConvId  = conversationId.split('___')[0];
-    const buyerEmail       = (emailFromConvId?.includes('@') ? emailFromConvId : null)
-                          ?? result.buyer?.email
-                          ?? result.buyer?.id;
+    console.log('[callback] PAYMENT SUCCESS!');
 
-    console.log('[callback] extracted email:', buyerEmail);
+    // Resolve email: URL param → conversationId → buyer fields
+    const convEmail = ((result.conversationId as string) || '').split('___')[0];
+    const email = emailFromUrl
+      ?? (convEmail?.includes('@') ? convEmail : null)
+      ?? result.buyer?.email
+      ?? result.buyer?.id;
 
-    if (!buyerEmail || !String(buyerEmail).includes('@')) {
+    console.log('[callback] extracted email:', email);
+
+    if (!email || !String(email).includes('@')) {
       console.error('[callback] could not resolve buyer email');
       return NextResponse.redirect(new URL('/en/pricing?status=failed', baseUrl));
     }
 
-    // --- Determine credits ---
-    const paidPrice    = parseFloat(result.paidPrice || '0');
-    const basketItemId = result.basketItems?.[0]?.id as string | undefined;
-    const creditsToAdd = (basketItemId && CREDITS[basketItemId])
-      ? CREDITS[basketItemId]
-      : creditsFromPrice(paidPrice);
-
+    // Determine credits from price
+    const paidPrice = parseFloat(result.paidPrice || '0');
+    let creditsToAdd = 5;
+    if (paidPrice >= 199) creditsToAdd = 40;
+    else if (paidPrice >= 99) creditsToAdd = 15;
+    else if (paidPrice >= 49) creditsToAdd = 5;
     console.log('[callback] paidPrice:', paidPrice, '| creditsToAdd:', creditsToAdd);
 
-    // --- Update Supabase ---
+    // Update Supabase
+    console.log('[callback] SUPABASE_URL:', process.env.NEXT_PUBLIC_SUPABASE_URL);
+    console.log('[callback] SERVICE_KEY exists:', !!process.env.SUPABASE_SERVICE_ROLE_KEY);
+
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
 
-    const { data: user, error: findErr } = await supabase
+    console.log('[callback] finding user with email:', email);
+    const { data: user, error: findError } = await supabase
       .from('users')
-      .select('id, credits')
-      .eq('email', buyerEmail)
+      .select('id, email, credits')
+      .eq('email', email)
       .single();
 
-    console.log('[callback] found user:', user?.id, 'credits:', user?.credits, '| err:', findErr?.message);
+    console.log('[callback] find result - user:', JSON.stringify(user), '| error:', findError?.message);
 
-    if (user) {
+    if (user && !findError) {
       const newCredits = (user.credits || 0) + creditsToAdd;
-      const { error: updErr } = await supabase
+      console.log('[callback] updating credits:', user.credits, '+', creditsToAdd, '=', newCredits);
+
+      const { error: updateError } = await supabase
         .from('users')
         .update({ credits: newCredits })
         .eq('id', user.id);
-      console.log('[callback] credits:', user.credits, '->', newCredits, '| updErr:', updErr?.message);
+
+      console.log('[callback] update error:', updateError?.message ?? 'none');
+
+      if (!updateError) {
+        console.log('[callback] SUCCESS - credits updated!');
+      }
     }
 
     return NextResponse.redirect(new URL(`/en/pricing?status=success&credits=${creditsToAdd}`, baseUrl));
 
   } catch (err) {
-    console.error('[callback] error:', err);
-    return NextResponse.redirect(new URL('/en/pricing?status=failed', baseUrl));
+    console.error('[callback] CATCH ERROR:', err);
+    return NextResponse.redirect(new URL('/en/pricing?status=failed&reason=error', baseUrl));
   }
 }
