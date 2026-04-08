@@ -54,8 +54,8 @@ export async function POST(req: NextRequest) {
 
     const randomString   = generateRandomString();
     const ts             = Date.now().toString();
-    // Encode email in conversationId so callback can reliably retrieve it
-    const conversationId = ts + '__' + Buffer.from(userEmail).toString('base64');
+    // Embed email in conversationId — iyzico returns this in callback
+    const conversationId = `${userEmail}___${ts}`;
     const basketId       = 'B' + ts;
 
     const uriPath = '/payment/iyzipos/checkoutform/initialize/auth/ecom';

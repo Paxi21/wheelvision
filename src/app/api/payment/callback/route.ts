@@ -50,33 +50,24 @@ export async function POST(req: NextRequest) {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const result = await res.json() as Record<string, any>;
-    console.log('[callback] FULL RESULT:', JSON.stringify(result));
     console.log('[callback] status:', result.status, '| paymentStatus:', result.paymentStatus);
+    console.log('[callback] conversationId:', result.conversationId);
 
     if (result.status !== 'success' || result.paymentStatus !== 'SUCCESS') {
       console.log('[callback] payment failed:', result.errorMessage);
       return NextResponse.redirect(new URL('/en/pricing?status=failed', baseUrl));
     }
 
-    // --- Determine buyer email (3 fallback sources) ---
-    let email: string | undefined;
+    // --- Extract email from conversationId: "email___timestamp" ---
+    const conversationId   = (result.conversationId as string) || '';
+    const emailFromConvId  = conversationId.split('___')[0];
+    const buyerEmail       = (emailFromConvId?.includes('@') ? emailFromConvId : null)
+                          ?? result.buyer?.email
+                          ?? result.buyer?.id;
 
-    // 1. buyer.email from iyzico response
-    email = result.buyer?.email;
+    console.log('[callback] extracted email:', buyerEmail);
 
-    // 2. buyer.id (we set it to email in payment route)
-    if (!email) email = result.buyer?.id;
-
-    // 3. Decode from conversationId: "timestamp__base64(email)"
-    if (!email && result.conversationId?.includes('__')) {
-      try {
-        email = Buffer.from(result.conversationId.split('__')[1], 'base64').toString('utf8');
-      } catch { /* ignore */ }
-    }
-
-    console.log('[callback] buyer email resolved:', email);
-
-    if (!email) {
+    if (!buyerEmail || !String(buyerEmail).includes('@')) {
       console.error('[callback] could not resolve buyer email');
       return NextResponse.redirect(new URL('/en/pricing?status=failed', baseUrl));
     }
@@ -99,10 +90,10 @@ export async function POST(req: NextRequest) {
     const { data: user, error: findErr } = await supabase
       .from('users')
       .select('id, credits')
-      .eq('email', email)
+      .eq('email', buyerEmail)
       .single();
 
-    console.log('[callback] db user:', JSON.stringify(user), '| findErr:', findErr?.message);
+    console.log('[callback] found user:', user?.id, 'credits:', user?.credits, '| err:', findErr?.message);
 
     if (user) {
       const newCredits = (user.credits || 0) + creditsToAdd;
