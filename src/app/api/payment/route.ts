@@ -53,9 +53,10 @@ export async function POST(req: NextRequest) {
     const appUrl    = process.env.NEXT_PUBLIC_BASE_URL!;
 
     const randomString   = generateRandomString();
-    const conversationId = Date.now().toString();
-    const basketId       = 'B' + Date.now().toString();
-    const buyerId        = userId || 'BYR' + Date.now().toString();
+    const ts             = Date.now().toString();
+    // Encode email in conversationId so callback can reliably retrieve it
+    const conversationId = ts + '__' + Buffer.from(userEmail).toString('base64');
+    const basketId       = 'B' + ts;
 
     const uriPath = '/payment/iyzipos/checkoutform/initialize/auth/ecom';
 
@@ -70,7 +71,7 @@ export async function POST(req: NextRequest) {
       callbackUrl: appUrl + '/api/payment/callback',
       enabledInstallments: [1, 2, 3, 6, 9],
       buyer: {
-        id: buyerId,
+        id: userEmail,   // set to email so callback has it in buyer.id too
         name: 'Test',
         surname: 'User',
         gsmNumber: '+905350000000',
