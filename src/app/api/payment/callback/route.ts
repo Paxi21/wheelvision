@@ -90,19 +90,28 @@ export async function POST(req: NextRequest) {
         const buyerEmail = result.buyer?.email as string | undefined;
         console.log('[callback] paidPrice:', paidPrice, '| creditsToAdd:', creditsToAdd, '| buyer:', buyerEmail);
 
+        // Debug: list sample users to verify table access
+        const { data: allUsers, error: listError } = await supabase
+          .from('users')
+          .select('id, email, credits')
+          .limit(3);
+        console.log('[callback] Sample users:', JSON.stringify(allUsers), '| listError:', listError?.message);
+
         if (buyerEmail) {
           const { data: user, error: userError } = await supabase
             .from('users')
-            .select('id, credits')
+            .select('id, email, credits')
             .eq('email', buyerEmail)
             .single();
+          console.log('[callback] Found user:', JSON.stringify(user), '| userError:', userError?.message);
 
           if (user && !userError) {
             const newCredits = (user.credits || 0) + creditsToAdd;
-            await supabase.from('users').update({ credits: newCredits }).eq('id', user.id);
-            console.log('[callback] credits updated:', user.credits, '->', newCredits);
-          } else {
-            console.log('[callback] user not found:', buyerEmail, userError);
+            const { error: updateError } = await supabase
+              .from('users')
+              .update({ credits: newCredits })
+              .eq('id', user.id);
+            console.log('[callback] credits updated:', user.credits, '->', newCredits, '| updateError:', updateError?.message);
           }
         }
       } catch (dbError) {
