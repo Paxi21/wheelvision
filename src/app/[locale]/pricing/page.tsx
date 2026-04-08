@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import { motion, AnimatePresence } from 'motion/react';
 import { Check, X, Sparkles, Zap, Crown, Lock, CheckCircle, AlertCircle } from 'lucide-react';
@@ -17,6 +17,8 @@ type PaidPackage = 'starter' | 'standard' | 'pro';
 export default function PricingPage() {
   const t = useTranslations('pricing');
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
   const supabase = useMemo(() => createClient(), []);
 
   const [userEmail, setUserEmail] = useState<string | null>(null);
@@ -30,21 +32,25 @@ export default function PricingPage() {
     });
   }, [supabase]);
 
-  // Handle callback status from iyzico redirect
+  // Handle callback status from iyzico redirect — show once then clean URL
   useEffect(() => {
     const status = searchParams.get('status');
     const credits = searchParams.get('credits');
+    if (!status) return;
+
     if (status === 'success') {
-      setToast({ type: 'success', message: `Ödeme başarılı! ${credits} kredi hesabınıza eklendi.` });
+      setToast({ type: 'success', message: `Ödeme başarılı!${credits ? ` ${credits} kredi hesabınıza eklendi.` : ' Krediniz hesabınıza eklendi.'}` });
     } else if (status === 'failed') {
       setToast({ type: 'error', message: 'Ödeme başarısız. Lütfen tekrar deneyin.' });
     }
-    // Auto-dismiss
-    if (status) {
-      const timer = setTimeout(() => setToast(null), 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [searchParams]);
+
+    // Remove query params so refreshing doesn't re-show the toast
+    router.replace(pathname, { scroll: false });
+
+    const timer = setTimeout(() => setToast(null), 5000);
+    return () => clearTimeout(timer);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleBuy = (packageType: PaidPackage) => {
     if (!userEmail) {

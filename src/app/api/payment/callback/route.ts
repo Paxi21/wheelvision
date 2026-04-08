@@ -74,30 +74,21 @@ export async function POST(req: NextRequest) {
     if (result.status === 'success' && result.paymentStatus === 'SUCCESS') {
       console.log('[callback] payment successful!');
 
+      // Determine credits from price — hoisted so redirect can use it
+      const paidPrice = parseFloat(result.paidPrice || '0');
+      let creditsToAdd = 5;
+      if (paidPrice >= 199) creditsToAdd = 40;
+      else if (paidPrice >= 99) creditsToAdd = 15;
+      else if (paidPrice >= 49) creditsToAdd = 5;
+
       try {
         const supabase = createClient(
           process.env.NEXT_PUBLIC_SUPABASE_URL!,
           process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
         );
 
-        // Determine package type from basketItem id or fall back to price
-        const basketItemId = result.basketItems?.[0]?.id as string | undefined;
-        let packageType = 'starter';
-
-        if (basketItemId === 'starter' || basketItemId === 'standard' || basketItemId === 'pro') {
-          packageType = basketItemId;
-        } else {
-          const price = parseFloat(result.paidPrice);
-          if (price >= 199) packageType = 'pro';
-          else if (price >= 99) packageType = 'standard';
-          else packageType = 'starter';
-        }
-
-        const creditsMap: Record<string, number> = { starter: 5, standard: 15, pro: 40 };
-        const creditsToAdd = creditsMap[packageType] ?? 5;
-        const buyerEmail   = result.buyer?.email as string | undefined;
-
-        console.log('[callback] buyer email:', buyerEmail, '| package:', packageType, '| credits:', creditsToAdd);
+        const buyerEmail = result.buyer?.email as string | undefined;
+        console.log('[callback] paidPrice:', paidPrice, '| creditsToAdd:', creditsToAdd, '| buyer:', buyerEmail);
 
         if (buyerEmail) {
           const { data: user, error: userError } = await supabase
@@ -118,7 +109,7 @@ export async function POST(req: NextRequest) {
         console.error('[callback] database error:', dbError);
       }
 
-      return NextResponse.redirect(new URL('/en/pricing?status=success', baseUrl));
+      return NextResponse.redirect(new URL(`/en/pricing?status=success&credits=${creditsToAdd}`, baseUrl));
 
     } else {
       const reason = encodeURIComponent((result.errorMessage as string) || 'unknown');
