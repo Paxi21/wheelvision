@@ -80,13 +80,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.redirect(new URL('/en/pricing?status=failed', baseUrl));
     }
 
-    // Determine credits from price
+    // Determine credits and plan from price
     const paidPrice = parseFloat(result.paidPrice || '0');
     let creditsToAdd = 5;
-    if (paidPrice >= 199) creditsToAdd = 40;
-    else if (paidPrice >= 99) creditsToAdd = 15;
-    else if (paidPrice >= 49) creditsToAdd = 5;
-    console.log('[callback] paidPrice:', paidPrice, '| creditsToAdd:', creditsToAdd);
+    let planName = 'starter';
+    if (paidPrice >= 199) { creditsToAdd = 40; planName = 'pro'; }
+    else if (paidPrice >= 99) { creditsToAdd = 15; planName = 'standard'; }
+    else if (paidPrice >= 49) { creditsToAdd = 5; planName = 'starter'; }
+    console.log('[callback] paidPrice:', paidPrice, '| creditsToAdd:', creditsToAdd, '| plan:', planName);
 
     // Update Supabase
     console.log('[callback] SUPABASE_URL:', process.env.NEXT_PUBLIC_SUPABASE_URL);
@@ -112,7 +113,7 @@ export async function POST(req: NextRequest) {
 
       const { error: updateError } = await supabase
         .from('users')
-        .update({ credits: newCredits })
+        .update({ credits: newCredits, is_paid: true, plan: planName })
         .eq('id', user.id);
 
       console.log('[callback] update error:', updateError?.message ?? 'none');
