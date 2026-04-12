@@ -50,7 +50,7 @@ async function applyWatermark(imageUrl: string): Promise<string> {
 
 export default function AppPage() {
   const t = useTranslations('app');
-  const { session, user, loading: authLoading } = useAuth();
+  const { session, user, loading: authLoading, refreshUser } = useAuth();
   const [localCredits, setLocalCredits] = useState<number | null>(null);
   const [carImage, setCarImage] = useState<string | null>(null);
   const [wheelImage, setWheelImage] = useState<string | null>(null);
@@ -161,9 +161,12 @@ export default function AppPage() {
       const imageUrl = data.output_url as string | undefined;
 
       if (imageUrl) {
-        const finalImage = await applyWatermark(imageUrl);
-        setResultImage(finalImage);
+        // Show result immediately — don't wait for watermark
+        setResultImage(imageUrl);
         setLocalCredits((prev) => (prev !== null ? prev - 1 : 0));
+        void refreshUser(); // sync Navbar credit count in background
+        // Apply watermark async, update result when done
+        applyWatermark(imageUrl).then((wm) => setResultImage(wm)).catch(() => {});
       } else {
         throw new Error('Görsel URL bulunamadı.');
       }
@@ -174,6 +177,32 @@ export default function AppPage() {
       setLoading(false);
     }
   };
+
+  const handleDownload = useCallback(async () => {
+    if (!resultImage) return;
+
+    // Instagram in-app browser blocks <a download> — open for long-press save
+    if (/Instagram/.test(navigator.userAgent)) {
+      window.open(resultImage, '_blank');
+      return;
+    }
+
+    try {
+      // Blob URL works reliably on iOS/Android where data: URLs fail to download
+      const res = await fetch(resultImage);
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = 'wheelvision.jpg';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 100);
+    } catch {
+      window.open(resultImage, '_blank');
+    }
+  }, [resultImage]);
 
   const handleReset = useCallback(() => {
     setCarImage(prev => { if (prev) URL.revokeObjectURL(prev); return null; });
@@ -329,14 +358,7 @@ export default function AppPage() {
                   <img src={resultImage} alt="Visualization result" className="w-full max-w-3xl mx-auto rounded-xl block" loading="lazy" decoding="async" />
                   <div className="flex justify-center">
                     <button
-                      onClick={() => {
-                        const link = document.createElement('a');
-                        link.href = resultImage;
-                        link.download = 'wheelvision.jpg';
-                        document.body.appendChild(link);
-                        link.click();
-                        document.body.removeChild(link);
-                      }}
+                      onClick={handleDownload}
                       className="btn-secondary flex items-center gap-2"
                     >
                       <Download className="w-4 h-4" />

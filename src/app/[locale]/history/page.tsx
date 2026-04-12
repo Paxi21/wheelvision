@@ -79,10 +79,27 @@ function ImageModal({ url, isPaid, onClose }: { url: string; isPaid: boolean; on
 
   const handleDownload = useCallback(async () => {
     const downloadUrl = isPaid ? url : await applyWatermark(url);
-    const a = document.createElement('a');
-    a.href = downloadUrl;
-    a.download = 'wheelvision-result.jpg';
-    a.click();
+
+    // Instagram in-app browser blocks <a download> — open for long-press save
+    if (/Instagram/.test(navigator.userAgent)) {
+      window.open(downloadUrl, '_blank');
+      return;
+    }
+
+    try {
+      const res = await fetch(downloadUrl);
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = 'wheelvision-result.jpg';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 100);
+    } catch {
+      window.open(downloadUrl, '_blank');
+    }
   }, [url, isPaid]);
 
   return (
