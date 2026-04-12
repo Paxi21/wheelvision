@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import Image from 'next/image';
 import Navbar from '@/components/Navbar';
 import { createClient } from '@/lib/supabase';
@@ -59,6 +59,9 @@ export default function AppPage() {
   const [resultImage, setResultImage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  // Cache in-flight upload promises so generate doesn't re-upload the same file
+  const carUploadRef = useRef<Promise<string> | null>(null);
+  const wheelUploadRef = useRef<Promise<string> | null>(null);
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
 
@@ -108,8 +111,10 @@ export default function AppPage() {
       setCarFile(file);
       setCarImage(prev => { if (prev) URL.revokeObjectURL(prev); return URL.createObjectURL(file); });
       setResultImage(null);
+      // Start Cloudinary upload immediately in background
+      carUploadRef.current = uploadToCloudinary(file);
     }
-  }, []);
+  }, [uploadToCloudinary]);
 
   const handleWheelUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -117,8 +122,10 @@ export default function AppPage() {
       setWheelFile(file);
       setWheelImage(prev => { if (prev) URL.revokeObjectURL(prev); return URL.createObjectURL(file); });
       setResultImage(null);
+      // Start Cloudinary upload immediately in background
+      wheelUploadRef.current = uploadToCloudinary(file);
     }
-  }, []);
+  }, [uploadToCloudinary]);
 
   const handleGenerate = async () => {
     if (!carFile || !wheelFile || !displayUser) return;
@@ -132,10 +139,18 @@ export default function AppPage() {
     setError('');
     setResultImage(null);
 
+    // Helper: reuse in-progress upload if available, otherwise upload fresh
+    const resolveUpload = async (ref: React.MutableRefObject<Promise<string> | null>, file: File) => {
+      if (ref.current) {
+        try { return await ref.current; } catch { /* fall through to fresh upload */ }
+      }
+      return uploadToCloudinary(file);
+    };
+
     try {
       const [carUrl, wheelUrl] = await Promise.all([
-        uploadToCloudinary(carFile),
-        uploadToCloudinary(wheelFile),
+        resolveUpload(carUploadRef, carFile),
+        resolveUpload(wheelUploadRef, wheelFile),
       ]);
 
       const { data: { session } } = await supabase.auth.getSession();
@@ -211,6 +226,8 @@ export default function AppPage() {
     setWheelFile(null);
     setResultImage(null);
     setError('');
+    carUploadRef.current = null;
+    wheelUploadRef.current = null;
   }, []);
 
   if (pageLoading) {
@@ -259,7 +276,7 @@ export default function AppPage() {
                 <div className="relative">
                   <img src={carImage} alt="Car" className="w-full aspect-video object-cover rounded-lg" />
                   <button
-                    onClick={() => { setCarImage(null); setCarFile(null); setResultImage(null); }}
+                    onClick={() => { setCarImage(null); setCarFile(null); setResultImage(null); carUploadRef.current = null; }}
                     className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/60 flex items-center justify-center hover:bg-black/80 transition-colors"
                   >
                     <X className="w-3.5 h-3.5" />
@@ -287,7 +304,7 @@ export default function AppPage() {
                 <div className="relative">
                   <img src={wheelImage} alt="Wheel" className="w-full aspect-video object-contain rounded-lg bg-[var(--bg-dark)]" />
                   <button
-                    onClick={() => { setWheelImage(null); setWheelFile(null); setResultImage(null); }}
+                    onClick={() => { setWheelImage(null); setWheelFile(null); setResultImage(null); wheelUploadRef.current = null; }}
                     className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/60 flex items-center justify-center hover:bg-black/80 transition-colors"
                   >
                     <X className="w-3.5 h-3.5" />
