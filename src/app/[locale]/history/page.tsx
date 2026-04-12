@@ -80,19 +80,28 @@ function ImageModal({ url, isPaid, onClose }: { url: string; isPaid: boolean; on
   const handleDownload = useCallback(async () => {
     const downloadUrl = isPaid ? url : await applyWatermark(url);
 
-    // Instagram in-app browser blocks <a download> — open for long-press save
-    if (/Instagram/.test(navigator.userAgent)) {
-      window.open(downloadUrl, '_blank');
-      return;
-    }
-
     try {
-      const res = await fetch(downloadUrl);
-      const blob = await res.blob();
+      let blob: Blob;
+
+      if (downloadUrl.startsWith('data:')) {
+        // Canvas data URL — convert directly without fetch
+        const [header, base64] = downloadUrl.split(',');
+        const mime = header.match(/:(.*?);/)![1];
+        const binary = atob(base64);
+        const buffer = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) buffer[i] = binary.charCodeAt(i);
+        blob = new Blob([buffer], { type: mime });
+      } else {
+        // Remote URL — route through proxy to avoid CORS
+        const res = await fetch(`/api/proxy-image?url=${encodeURIComponent(downloadUrl)}`);
+        if (!res.ok) throw new Error('proxy error');
+        blob = await res.blob();
+      }
+
       const blobUrl = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = blobUrl;
-      a.download = 'wheelvision-result.jpg';
+      a.download = `wheelvision-result-${Date.now()}.jpg`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);

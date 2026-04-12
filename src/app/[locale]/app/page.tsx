@@ -195,25 +195,34 @@ export default function AppPage() {
   const handleDownload = useCallback(async () => {
     if (!resultImage) return;
 
-    // Instagram in-app browser blocks <a download> — open for long-press save
-    if (/Instagram/.test(navigator.userAgent)) {
-      window.open(resultImage, '_blank');
-      return;
-    }
-
     try {
-      // Blob URL works reliably on iOS/Android where data: URLs fail to download
-      const res = await fetch(resultImage);
-      const blob = await res.blob();
+      let blob: Blob;
+
+      if (resultImage.startsWith('data:')) {
+        // Canvas data URL — convert directly without fetch (works in all browsers)
+        const [header, base64] = resultImage.split(',');
+        const mime = header.match(/:(.*?);/)![1];
+        const binary = atob(base64);
+        const buffer = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) buffer[i] = binary.charCodeAt(i);
+        blob = new Blob([buffer], { type: mime });
+      } else {
+        // Remote URL — route through proxy to avoid CORS
+        const res = await fetch(`/api/proxy-image?url=${encodeURIComponent(resultImage)}`);
+        if (!res.ok) throw new Error('proxy error');
+        blob = await res.blob();
+      }
+
       const blobUrl = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = blobUrl;
-      a.download = 'wheelvision.jpg';
+      a.download = `wheelvision-result-${Date.now()}.jpg`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       setTimeout(() => URL.revokeObjectURL(blobUrl), 100);
     } catch {
+      // Last resort: open in new tab
       window.open(resultImage, '_blank');
     }
   }, [resultImage]);
