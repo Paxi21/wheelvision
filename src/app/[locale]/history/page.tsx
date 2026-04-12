@@ -1,12 +1,13 @@
 'use client';
 
-import { useEffect, useState, useMemo, useCallback } from 'react';
+import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import Navbar from '@/components/Navbar';
 import { createClient } from '@/lib/supabase';
 import { Download, Car, ArrowRight, X, Lock } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Link, useRouter } from '@/i18n/navigation';
 import { useTranslations } from 'next-intl';
+import { applyWatermark } from '@/lib/watermark';
 
 interface Generation {
   id: string;
@@ -30,46 +31,13 @@ function formatDate(dateString: string) {
   });
 }
 
-async function applyWatermark(imageUrl: string): Promise<string> {
-  return new Promise((resolve) => {
-    const img = new window.Image();
-    img.crossOrigin = 'anonymous';
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      canvas.width  = img.naturalWidth;
-      canvas.height = img.naturalHeight;
-      const ctx = canvas.getContext('2d')!;
-      ctx.drawImage(img, 0, 0);
-      const fontSize = Math.max(14, Math.floor(img.naturalWidth * 0.09));
-      ctx.font        = `bold ${fontSize}px Arial, sans-serif`;
-      ctx.lineWidth   = fontSize * 0.06;
-      ctx.strokeStyle = 'rgba(0,0,0,0.12)';
-      ctx.fillStyle   = 'rgba(255,255,255,0.27)';
-      ctx.textBaseline = 'middle';
-      const text = 'WheelVision';
-      const angle = -Math.PI / 6;
-      const positions = [
-        { x: 0.10, y: 0.12 }, { x: 0.58, y: 0.08 }, { x: 0.82, y: 0.28 },
-        { x: 0.22, y: 0.38 }, { x: 0.65, y: 0.42 }, { x: 0.12, y: 0.62 },
-        { x: 0.45, y: 0.68 }, { x: 0.78, y: 0.72 }, { x: 0.32, y: 0.88 }, { x: 0.70, y: 0.90 },
-      ];
-      positions.forEach(({ x, y }) => {
-        ctx.save();
-        ctx.translate(img.naturalWidth * x, img.naturalHeight * y);
-        ctx.rotate(angle);
-        ctx.strokeText(text, 0, 0);
-        ctx.fillText(text, 0, 0);
-        ctx.restore();
-      });
-      resolve(canvas.toDataURL('image/jpeg', 0.92));
-    };
-    img.onerror = () => resolve(imageUrl);
-    img.src = `/api/proxy-image?url=${encodeURIComponent(imageUrl)}`;
-  });
-}
 
 function ImageModal({ url, isPaid, onClose }: { url: string; isPaid: boolean; onClose: () => void }) {
   const t = useTranslations('history');
+  // Watermarked version — computed once when modal opens
+  const [watermarked, setWatermarked] = useState<string | null>(null);
+  // Keep ref so download can use latest value without re-creating the callback
+  const watermarkedRef = useRef<string | null>(null);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
@@ -77,27 +45,36 @@ function ImageModal({ url, isPaid, onClose }: { url: string; isPaid: boolean; on
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
 
+  // Apply watermark once — used for both display (non-paid) and download (everyone)
+  useEffect(() => {
+    let cancelled = false;
+    applyWatermark(url).then((wm) => {
+      if (!cancelled) { watermarkedRef.current = wm; setWatermarked(wm); }
+    });
+    return () => { cancelled = true; };
+  }, [url]);
+
+  // Paid users see the clean image; everyone else sees the watermarked version
+  const displaySrc = isPaid ? url : (watermarked ?? url);
+
   const handleDownload = useCallback(async () => {
-    const downloadUrl = isPaid ? url : await applyWatermark(url);
+    // Everyone downloads watermarked for now (paid clean-download coming later)
+    const toDownload = watermarkedRef.current ?? await applyWatermark(url);
 
     try {
       let blob: Blob;
-
-      if (downloadUrl.startsWith('data:')) {
-        // Canvas data URL — convert directly without fetch
-        const [header, base64] = downloadUrl.split(',');
+      if (toDownload.startsWith('data:')) {
+        const [header, base64] = toDownload.split(',');
         const mime = header.match(/:(.*?);/)![1];
         const binary = atob(base64);
         const buffer = new Uint8Array(binary.length);
         for (let i = 0; i < binary.length; i++) buffer[i] = binary.charCodeAt(i);
         blob = new Blob([buffer], { type: mime });
       } else {
-        // Remote URL — route through proxy to avoid CORS
-        const res = await fetch(`/api/proxy-image?url=${encodeURIComponent(downloadUrl)}`);
+        const res = await fetch(`/api/proxy-image?url=${encodeURIComponent(toDownload)}`);
         if (!res.ok) throw new Error('proxy error');
         blob = await res.blob();
       }
-
       const blobUrl = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = blobUrl;
@@ -107,9 +84,9 @@ function ImageModal({ url, isPaid, onClose }: { url: string; isPaid: boolean; on
       document.body.removeChild(a);
       setTimeout(() => URL.revokeObjectURL(blobUrl), 100);
     } catch {
-      window.open(downloadUrl, '_blank');
+      window.open(toDownload, '_blank');
     }
-  }, [url, isPaid]);
+  }, [url]);
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm p-4">
@@ -125,8 +102,7 @@ function ImageModal({ url, isPaid, onClose }: { url: string; isPaid: boolean; on
             )}
             <button onClick={handleDownload} className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold text-white transition-all hover:scale-105 hover:shadow-[0_0_24px_rgba(247,37,133,0.5)]" style={{ background: 'linear-gradient(135deg, #FF6B35, #F72585)' }}>
               <Download className="w-4 h-4" />
-              {isPaid ? <Download className="w-0 h-0" /> : null}
-              {!isPaid ? t('downloadWatermarked') : t('downloadFree')}
+              {t('downloadWatermarked')}
             </button>
             <button onClick={onClose} className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors">
               <X className="w-4 h-4 text-white" />
@@ -134,12 +110,11 @@ function ImageModal({ url, isPaid, onClose }: { url: string; isPaid: boolean; on
           </div>
         </div>
         <div className="relative">
-          <img src={url} alt={t('aiResult')} className="max-h-[78vh] w-auto mx-auto object-contain rounded-2xl shadow-2xl" />
-          {!isPaid && (
-            <div className="absolute inset-0 flex items-end justify-center pb-4 pointer-events-none">
-              <div className="px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-sm text-xs text-white/70">
-                {t('watermarkNote')}
-              </div>
+          <img src={displaySrc} alt={t('aiResult')} className="max-h-[78vh] w-auto mx-auto object-contain rounded-2xl shadow-2xl" />
+          {/* Faint processing indicator while watermark renders */}
+          {!watermarked && !isPaid && (
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <div className="w-6 h-6 border-2 border-white/30 border-t-white/80 rounded-full animate-spin" />
             </div>
           )}
         </div>

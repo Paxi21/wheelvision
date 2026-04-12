@@ -7,45 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Upload, Car, CircleDot, Sparkles, Download, RefreshCw, X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/navigation';
-
-// ─── Watermark ────────────────────────────────────────────────────────────────
-async function applyWatermark(imageUrl: string): Promise<string> {
-  return new Promise((resolve) => {
-    const img = new window.Image();
-    img.crossOrigin = 'anonymous';
-
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      canvas.width  = img.naturalWidth;
-      canvas.height = img.naturalHeight;
-      const ctx = canvas.getContext('2d')!;
-
-      ctx.drawImage(img, 0, 0);
-
-      const fontSize = Math.max(32, Math.floor(img.naturalWidth * 0.07));
-      ctx.font         = `bold ${fontSize}px Arial, sans-serif`;
-      ctx.textBaseline = 'middle';
-      ctx.textAlign    = 'center';
-
-      ctx.save();
-      ctx.translate(img.naturalWidth * 0.5, img.naturalHeight * 0.5);
-      ctx.rotate(-Math.PI / 5);
-
-      ctx.strokeStyle = 'rgba(0,0,0,0.25)';
-      ctx.lineWidth   = fontSize * 0.08;
-      ctx.strokeText('WheelVision', 0, 0);
-
-      ctx.fillStyle = 'rgba(255,255,255,0.35)';
-      ctx.fillText('WheelVision', 0, 0);
-      ctx.restore();
-
-      resolve(canvas.toDataURL('image/jpeg', 0.92));
-    };
-
-    img.onerror = () => resolve(imageUrl);
-    img.src = `/api/proxy-image?url=${encodeURIComponent(imageUrl)}`;
-  });
-}
+import { applyWatermark } from '@/lib/watermark';
 
 export default function AppPage() {
   const t = useTranslations('app');
