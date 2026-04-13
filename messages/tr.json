@@ -78,7 +78,10 @@
     "faqQ3": "Filigran nasıl görünüyor?",
     "faqA3": "Ücretsiz planda indirilen görselin köşesine küçük, şeffaf bir WheelVision logosu eklenir.",
     "faqQ4": "Geçmiş görsellerimin filigranı kalkar mı?",
-    "faqA4": "Evet! Herhangi bir ücretli paket satın aldığınızda, geçmişteki tüm filigranlar otomatik olarak kalkar."
+    "faqA4": "Evet! Herhangi bir ücretli paket satın aldığınızda, geçmişteki tüm filigranlar otomatik olarak kalkar.",
+    "starterPrice": "₺49.99",
+    "standardPrice": "₺99.99",
+    "proPrice": "₺199.99"
   },
   "privacy": {
     "title": "Gizlilik Politikası",

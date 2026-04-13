@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { useLocale } from 'next-intl';
+import { usePathname } from 'next/navigation';
 import { ChevronDown } from 'lucide-react';
 
 const LANGUAGES = [
@@ -10,10 +10,12 @@ const LANGUAGES = [
 ] as const;
 
 export default function LanguageSwitcher() {
-  const currentLocale = useLocale();
+  const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
+  // Derive locale from URL path — works without next-intl context
+  const currentLocale = pathname.startsWith('/tr') ? 'tr' : 'en';
   const current = LANGUAGES.find((l) => l.code === currentLocale) ?? LANGUAGES[0];
 
   useEffect(() => {
@@ -27,9 +29,7 @@ export default function LanguageSwitcher() {
   const switchLocale = (locale: string) => {
     setOpen(false);
     if (locale === currentLocale) return;
-    // Replace locale prefix directly in URL: /en/pricing → /tr/pricing
-    const path = window.location.pathname;
-    const newPath = path.replace(/^\/(en|tr)/, `/${locale}`);
+    const newPath = pathname.replace(/^\/(en|tr)/, `/${locale}`);
     window.location.href = newPath.startsWith(`/${locale}`) ? newPath : `/${locale}`;
   };
 
@@ -37,11 +37,11 @@ export default function LanguageSwitcher() {
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[var(--bg-card)] border border-[var(--border-color)] hover:border-white/20 transition-colors text-sm"
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--bg-card)] border border-[var(--border-color)] hover:border-white/30 transition-colors text-sm font-medium"
         aria-label="Switch language"
       >
-        <span>{current.flag}</span>
-        <span className="hidden sm:inline text-[var(--text-secondary)]">{current.code.toUpperCase()}</span>
+        <span className="text-base leading-none">{current.flag}</span>
+        <span className="text-white">{current.code.toUpperCase()}</span>
         <ChevronDown className={`w-3.5 h-3.5 text-[var(--text-secondary)] transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
 
@@ -52,7 +52,9 @@ export default function LanguageSwitcher() {
               key={lang.code}
               onClick={() => switchLocale(lang.code)}
               className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm hover:bg-white/5 transition-colors ${
-                currentLocale === lang.code ? 'text-[var(--accent-orange)]' : 'text-[var(--text-secondary)]'
+                currentLocale === lang.code
+                  ? 'text-[var(--accent-orange)] font-medium'
+                  : 'text-[var(--text-secondary)]'
               }`}
             >
               <span>{lang.flag}</span>

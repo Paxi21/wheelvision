@@ -40,8 +40,9 @@ export default function Navbar() {
         <div className="flex items-center justify-between h-16">
 
           {/* Logo */}
-          <Link href="/" className="shrink-0">
-            <Image src="/logo.png" alt="WheelVision" width={220} height={55} priority className="h-12 w-auto" />
+          <Link href="/" className="shrink-0 flex items-center gap-2">
+            <Image src="/logo.png" alt="WheelVision" width={44} height={44} priority className="h-11 w-11 object-contain" />
+            <span className="font-bold text-xl tracking-tight gradient-text hidden sm:block">WheelVision</span>
           </Link>
 
           {/* Desktop Nav Links */}

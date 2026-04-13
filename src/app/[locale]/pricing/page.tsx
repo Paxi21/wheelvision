@@ -78,7 +78,7 @@ export default function PricingPage() {
     {
       id: 'starter',
       name: t('starter'),
-      price: '₺49.99',
+      price: t('starterPrice'),
       period: t('oneTime'),
       icon: Zap,
       credits: 5,
@@ -98,7 +98,7 @@ export default function PricingPage() {
     {
       id: 'standard',
       name: t('standard'),
-      price: '₺99.99',
+      price: t('standardPrice'),
       period: t('oneTime'),
       icon: Crown,
       credits: 15,
@@ -118,7 +118,7 @@ export default function PricingPage() {
     {
       id: 'pro',
       name: t('pro'),
-      price: '₺199.99',
+      price: t('proPrice'),
       period: t('oneTime'),
       icon: Lock,
       credits: 40,

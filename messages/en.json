@@ -78,7 +78,10 @@
     "faqQ3": "What does the watermark look like?",
     "faqA3": "On free plan downloads, a small transparent WheelVision logo is added to the corner of the image.",
     "faqQ4": "Will watermarks be removed from past images?",
-    "faqA4": "Yes! When you purchase any paid plan, all past watermarks are automatically removed."
+    "faqA4": "Yes! When you purchase any paid plan, all past watermarks are automatically removed.",
+    "starterPrice": "$1.49",
+    "standardPrice": "$2.99",
+    "proPrice": "$5.99"
   },
   "privacy": {
     "title": "Privacy Policy",
