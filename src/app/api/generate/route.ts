@@ -2,11 +2,48 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { createHash } from 'crypto';
 import { redis } from '@/lib/redis';
+import tinify from 'tinify';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 const n8nUrl = process.env.N8N_WEBHOOK_URL!;
 const cloudinaryCloud = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME!;
+
+/**
+ * Compress an image URL via TinyPNG, re-upload to Cloudinary, return new URL.
+ * Falls back to the original URL on any failure — never blocks generation.
+ */
+async function compressAndStore(sourceUrl: string): Promise<string> {
+  const tinyKey = process.env.TINYPNG_API_KEY;
+  if (!tinyKey) return sourceUrl;
+
+  try {
+    tinify.key = tinyKey;
+    const compressed = await tinify.fromUrl(sourceUrl).toBuffer();
+
+    // Upload compressed buffer to Cloudinary via unsigned upload
+    const blob = new Blob([Buffer.from(compressed)], { type: 'image/jpeg' });
+    const fd = new FormData();
+    fd.append('file', blob, 'result.jpg');
+    fd.append('upload_preset', 'wheelvision');
+    fd.append('folder', 'wheelvision-results');
+
+    const res = await fetch(
+      `https://api.cloudinary.com/v1_1/${cloudinaryCloud}/image/upload`,
+      { method: 'POST', body: fd }
+    );
+
+    if (!res.ok) throw new Error(`Cloudinary ${res.status}`);
+    const json = await res.json() as { secure_url?: string };
+    if (!json.secure_url) throw new Error('no secure_url');
+
+    console.log('[generate] TinyPNG compressed + uploaded to Cloudinary');
+    return json.secure_url;
+  } catch (err) {
+    console.warn('[generate] compression skipped:', err);
+    return sourceUrl;
+  }
+}
 
 // Trusted domains for AI-generated image output
 const TRUSTED_IMAGE_DOMAINS = [
@@ -213,14 +250,17 @@ export async function POST(request: NextRequest) {
       data.url,
     ];
 
-    const imageUrl = candidates.find(isValidOutputImageUrl);
+    const rawImageUrl = candidates.find(isValidOutputImageUrl);
 
-    if (!imageUrl) {
+    if (!rawImageUrl) {
       console.error('[generate] no valid image URL in response:', data);
       throw new Error('Görsel URL bulunamadı.');
     }
 
-    // 8. Store result in Redis cache — TTL 7 days
+    // 8. Compress with TinyPNG and re-upload to Cloudinary (falls back on error)
+    const imageUrl = await compressAndStore(rawImageUrl);
+
+    // 9. Store final URL in Redis cache — TTL 7 days
     try {
       await redis.set(cacheKey, imageUrl, { ex: 604800 });
       console.log('[generate] cached result for 7 days:', cacheKey);
