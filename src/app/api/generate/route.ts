@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { createHash } from 'crypto';
+import { redis } from '@/lib/redis';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -128,14 +130,30 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 6. Call n8n (URL is server-side only — never exposed to browser)
+    // 6. Check Redis cache — skip n8n if this exact car+wheel pair was processed recently
+    const cacheKey = 'wheel:' + createHash('sha256')
+      .update(car_image as string + ':' + wheel_image as string)
+      .digest('hex');
+
+    try {
+      const cached = await redis.get<string>(cacheKey);
+      if (cached) {
+        console.log('[generate] cache HIT:', cacheKey);
+        return NextResponse.json({ output_url: cached });
+      }
+      console.log('[generate] cache MISS:', cacheKey);
+    } catch (redisErr) {
+      // Redis failure must never block generation
+      console.warn('[generate] Redis read failed, proceeding without cache:', redisErr);
+    }
+
+    // 7. Call n8n (URL is server-side only — never exposed to browser)
     const n8nPayload = {
       user_email: user.email,
       car_image,
       wheel_image,
       prompt: 'Replace the wheel rims on this car with the rim design from the second image. Keep the EXACT same car body, color, background, lighting, and camera angle. Do not change anything else.',
     };
-
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 120_000);
@@ -161,7 +179,6 @@ export async function POST(request: NextRequest) {
       clearTimeout(timeoutId);
     }
 
-
     if (!n8nResponse.ok) {
       const errBody = await n8nResponse.text().catch(() => '');
       console.error('[generate] n8n error response body:', errBody);
@@ -183,7 +200,6 @@ export async function POST(request: NextRequest) {
       throw new Error('Sunucu geçersiz yanıt döndü.');
     }
 
-
     if (data.error) {
       const safeErrors = ['Yetersiz kredi'];
       const errMsg = data.error as string;
@@ -197,12 +213,19 @@ export async function POST(request: NextRequest) {
       data.url,
     ];
 
-
     const imageUrl = candidates.find(isValidOutputImageUrl);
 
     if (!imageUrl) {
       console.error('[generate] no valid image URL in response:', data);
       throw new Error('Görsel URL bulunamadı.');
+    }
+
+    // 8. Store result in Redis cache — TTL 7 days
+    try {
+      await redis.set(cacheKey, imageUrl, { ex: 604800 });
+      console.log('[generate] cached result for 7 days:', cacheKey);
+    } catch (redisErr) {
+      console.warn('[generate] Redis write failed, continuing:', redisErr);
     }
 
     return NextResponse.json({ output_url: imageUrl });
