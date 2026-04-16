@@ -1,13 +1,10 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import {
-  Camera, Check, Loader2, MessageCircle, X,
-  RefreshCw, Download, ImagePlus, ChevronRight,
-} from 'lucide-react';
+import { Camera, Check, Loader2, MessageCircle, X, RefreshCw, Download } from 'lucide-react';
 import type { Dealer, Wheel } from '@/app/d/[slug]/page';
 
-const CLOUD_NAME   = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME!;
+const CLOUD_NAME    = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME!;
 const UPLOAD_PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET!;
 
 async function uploadToCloudinary(file: File): Promise<string> {
@@ -24,13 +21,13 @@ async function uploadToCloudinary(file: File): Promise<string> {
   return data.secure_url;
 }
 
-async function downloadImage(url: string, filename = 'wheelvision.jpg') {
+async function downloadImage(url: string) {
   try {
     const res = await fetch(`/api/proxy-image?url=${encodeURIComponent(url)}`);
     const blob = await res.blob();
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = filename;
+    a.download = 'wheelvision.jpg';
     a.click();
     URL.revokeObjectURL(a.href);
   } catch {
@@ -38,26 +35,6 @@ async function downloadImage(url: string, filename = 'wheelvision.jpg') {
   }
 }
 
-/* ─── Step indicator ────────────────────────────────────────────────────── */
-function StepBadge({ n, active, done }: { n: number; active: boolean; done: boolean }) {
-  return (
-    <span
-      className="w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 transition-all duration-300"
-      style={{
-        background: done
-          ? '#22C55E'
-          : active
-          ? 'linear-gradient(135deg,#8B5CF6,#EC4899)'
-          : '#E5E7EB',
-        color: done || active ? '#fff' : '#9CA3AF',
-      }}
-    >
-      {done ? <Check className="w-4 h-4" /> : n}
-    </span>
-  );
-}
-
-/* ─── Main component ────────────────────────────────────────────────────── */
 export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels: Wheel[] }) {
   const [carPreview,    setCarPreview]    = useState<string | null>(null);
   const [carImageUrl,   setCarImageUrl]   = useState<string | null>(null);
@@ -66,17 +43,15 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
   const [generating,    setGenerating]    = useState(false);
   const [resultUrl,     setResultUrl]     = useState<string | null>(null);
   const [error,         setError]         = useState<string | null>(null);
-  const [dragOver,      setDragOver]      = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const limitReached = dealer.kullanilan >= dealer.aylik_limit;
-  const step1Done    = !!carImageUrl;
-  const step2Done    = !!selectedWheel;
-  const canGenerate  = step1Done && step2Done && !limitReached && !generating;
+  const canGenerate  = !!carImageUrl && !!selectedWheel && !limitReached && !generating;
 
-  /* ── Car photo handlers ─────────────────────────────────────────────── */
-  const processFile = async (file: File) => {
-    if (!file.type.startsWith('image/')) return;
+  /* ── Handlers ──────────────────────────────────────────────────────── */
+  const handleCarSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
     setCarPreview(URL.createObjectURL(file));
     setCarImageUrl(null);
     setResultUrl(null);
@@ -85,23 +60,11 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
     try {
       setCarImageUrl(await uploadToCloudinary(file));
     } catch {
-      setError('Fotoğraf yüklenemedi. Lütfen tekrar deneyin.');
+      setError('Fotoğraf yüklenemedi. Tekrar deneyin.');
       setCarPreview(null);
     } finally {
       setUploading(false);
     }
-  };
-
-  const handleCarSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) processFile(file);
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setDragOver(false);
-    const file = e.dataTransfer.files?.[0];
-    if (file) processFile(file);
   };
 
   const clearCar = () => {
@@ -111,7 +74,6 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  /* ── Generate ───────────────────────────────────────────────────────── */
   const handleGenerate = async () => {
     if (!canGenerate) return;
     setGenerating(true);
@@ -123,9 +85,9 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           dealer_id: dealer.id,
-          slug: dealer.slug,
+          slug:      dealer.slug,
           car_image: carImageUrl,
-          wheel_id: selectedWheel!.id,
+          wheel_id:  selectedWheel!.id,
         }),
       });
       const data = await res.json() as { output_url?: string; error?: string };
@@ -144,7 +106,7 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
     clearCar();
   };
 
-  /* ── WhatsApp ───────────────────────────────────────────────────────── */
+  /* ── WhatsApp ──────────────────────────────────────────────────────── */
   const waPhone = dealer.whatsapp.replace(/\D/g, '');
   const waText  = selectedWheel
     ? encodeURIComponent(
@@ -156,327 +118,242 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
     : '';
   const waUrl = `https://wa.me/${waPhone}?text=${waText}`;
 
-  /* ── Render ─────────────────────────────────────────────────────────── */
+  /* ── Render ────────────────────────────────────────────────────────── */
   return (
-    <div className="min-h-screen" style={{ background: '#F3F4F6' }}>
+    <div className="min-h-screen bg-[var(--bg-dark)] text-white flex flex-col">
 
-      {/* ── Header ── */}
-      <header style={{ background: 'linear-gradient(135deg,#8B5CF6 0%,#EC4899 100%)' }}>
-        <div
-          className="max-w-lg mx-auto px-4 py-5 flex flex-col items-center justify-center text-center gap-1"
-        >
+      {/* ── Sticky header ─────────────────────────────────────────────── */}
+      <header className="sticky top-0 z-40 bg-[var(--bg-dark)]/95 backdrop-blur-md border-b border-[var(--border-color)]">
+        <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
           {dealer.logo_url ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={dealer.logo_url}
               alt={dealer.firma_adi}
-              className="h-12 w-auto object-contain max-w-[180px] mb-1"
+              className="h-8 w-auto object-contain max-w-[140px]"
             />
           ) : (
-            <h1 className="text-2xl font-extrabold text-white tracking-tight">
-              {dealer.firma_adi}
-            </h1>
+            <span className="font-bold text-base">{dealer.firma_adi}</span>
           )}
-          <p className="text-white/70 text-xs font-medium">
-            Powered by{' '}
-            <span className="font-bold text-white">WheelVision</span>
-          </p>
+          <div className="text-right">
+            <p className="text-[10px] text-[var(--text-secondary)]">Powered by</p>
+            <p className="text-xs font-bold gradient-text">WheelVision</p>
+          </div>
         </div>
       </header>
 
-      <main className="max-w-lg mx-auto px-4 py-5 space-y-4 pb-20">
+      {/* ── Main scroll area ──────────────────────────────────────────── */}
+      <main className="flex-1 max-w-2xl mx-auto w-full px-4 py-5 space-y-4 pb-28">
 
-        {/* ── Limit warning ── */}
+        {/* Limit uyarısı */}
         {limitReached && (
-          <div
-            className="p-4 rounded-2xl text-sm text-center font-medium"
-            style={{ background: '#FEE2E2', color: '#DC2626', border: '1px solid #FECACA' }}
-          >
+          <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm text-center">
             Bu ay için görsel hakkı dolmuştur. Daha sonra tekrar deneyiniz.
           </div>
         )}
 
-        {/* ── Result (full screen card) ── */}
+        {/* ── SONUÇ ekranı ── */}
         {resultUrl && (
-          <div
-            className="rounded-2xl overflow-hidden"
-            style={{
-              background: '#fff',
-              boxShadow: '0 8px 32px rgba(139,92,246,0.15)',
-            }}
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={resultUrl} alt="AI Sonucu" className="w-full block" />
+          <div className="space-y-3">
+            <div className="rounded-2xl overflow-hidden border border-[var(--border-color)]">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={resultUrl} alt="AI Sonucu" className="w-full block" />
+            </div>
 
-            <div className="p-4 grid grid-cols-2 gap-3">
+            {/* WhatsApp + İndir */}
+            <div className="grid grid-cols-2 gap-3">
               <a
                 href={waUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-sm text-white transition-all active:scale-95 hover:brightness-110"
-                style={{ background: '#22C55E' }}
+                className="flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-sm text-white transition-all active:scale-95"
+                style={{ background: '#25D366' }}
               >
                 <MessageCircle className="w-4 h-4" />
                 Bu Jantı İstiyorum
               </a>
               <button
                 onClick={() => downloadImage(resultUrl)}
-                className="flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-sm text-white transition-all active:scale-95 hover:brightness-110"
-                style={{ background: '#3B82F6' }}
+                className="btn-secondary flex items-center justify-center gap-2 py-3.5 text-sm font-bold rounded-xl"
               >
                 <Download className="w-4 h-4" />
                 İndir
               </button>
             </div>
 
-            <div className="px-4 pb-4">
-              <button
-                onClick={handleReset}
-                className="flex items-center justify-center gap-2 w-full py-3 rounded-xl text-sm font-medium transition-colors"
-                style={{ background: '#F3F4F6', color: '#6B7280' }}
-              >
-                <RefreshCw className="w-4 h-4" />
-                Yeni Görsel Oluştur
-              </button>
-            </div>
+            <button
+              onClick={handleReset}
+              className="btn-secondary w-full flex items-center justify-center gap-2 py-3.5 text-sm rounded-xl"
+            >
+              <RefreshCw className="w-4 h-4" />
+              Yeni Görsel Oluştur
+            </button>
           </div>
         )}
 
-        {/* ── Steps (hidden after result) ── */}
+        {/* ── Adımlar (sonuç yokken) ── */}
         {!resultUrl && (
           <>
-            {/* ── STEP 1: Car photo ── */}
-            <div
-              className="rounded-2xl overflow-hidden"
-              style={{ background: '#fff', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}
-            >
-              <div className="px-4 pt-4 pb-3 flex items-center gap-3">
-                <StepBadge n={1} active={!step1Done} done={step1Done} />
-                <div>
-                  <p className="font-bold text-gray-900 text-sm">Arabanızın Fotoğrafı</p>
-                  <p className="text-xs text-gray-400">JPG, PNG veya WEBP</p>
-                </div>
-                {step1Done && !uploading && (
+            {/* ── Adım 1: Araba fotoğrafı ── */}
+            <div className="card !p-4">
+              <div className="flex items-center gap-2.5 mb-3">
+                <span
+                  className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
+                  style={{ background: 'var(--gradient-primary)' }}
+                >
+                  1
+                </span>
+                <h2 className="font-semibold text-sm">Arabanızın Fotoğrafını Çekin</h2>
+              </div>
+
+              {carPreview ? (
+                <div className="relative rounded-xl overflow-hidden" style={{ aspectRatio: '16/9' }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={carPreview} alt="Arabanız" className="w-full h-full object-cover" />
+
+                  {uploading && (
+                    <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center gap-2">
+                      <Loader2 className="w-8 h-8 animate-spin text-white" />
+                      <p className="text-white text-xs">Yükleniyor...</p>
+                    </div>
+                  )}
+                  {!uploading && carImageUrl && (
+                    <div className="absolute top-2 right-2 w-7 h-7 rounded-full bg-green-500 flex items-center justify-center shadow-lg">
+                      <Check className="w-4 h-4 text-white" />
+                    </div>
+                  )}
                   <button
                     onClick={clearCar}
-                    className="ml-auto text-xs text-gray-400 hover:text-gray-600 flex items-center gap-1 transition-colors"
+                    className="absolute top-2 left-2 w-7 h-7 rounded-full bg-black/60 flex items-center justify-center"
+                    aria-label="Fotoğrafı kaldır"
                   >
-                    <X className="w-3 h-3" /> Değiştir
+                    <X className="w-4 h-4 text-white" />
                   </button>
-                )}
-              </div>
-
-              <div className="px-4 pb-4">
-                {carPreview ? (
-                  <div
-                    className="relative rounded-xl overflow-hidden bg-gray-100"
-                    style={{ aspectRatio: '16/9' }}
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={carPreview}
-                      alt="Arabanız"
-                      className="w-full h-full object-cover"
-                    />
-                    {uploading && (
-                      <div className="absolute inset-0 flex flex-col items-center justify-center gap-2"
-                        style={{ background: 'rgba(0,0,0,0.55)' }}>
-                        <Loader2 className="w-8 h-8 animate-spin text-white" />
-                        <p className="text-white text-xs font-medium">Yükleniyor...</p>
-                      </div>
-                    )}
-                    {!uploading && carImageUrl && (
-                      <div
-                        className="absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center shadow-lg"
-                        style={{ background: '#22C55E' }}
-                      >
-                        <Check className="w-4 h-4 text-white" />
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => fileInputRef.current?.click()}
-                    onDragOver={e => { e.preventDefault(); setDragOver(true); }}
-                    onDragLeave={() => setDragOver(false)}
-                    onDrop={handleDrop}
-                    className="w-full rounded-xl flex flex-col items-center justify-center gap-3 py-10 transition-all active:scale-95"
-                    style={{
-                      border: `2px dashed ${dragOver ? '#8B5CF6' : '#D1D5DB'}`,
-                      background: dragOver ? '#F5F3FF' : '#F9FAFB',
-                    }}
-                  >
-                    <div
-                      className="w-14 h-14 rounded-full flex items-center justify-center"
-                      style={{ background: 'linear-gradient(135deg,#8B5CF6,#EC4899)' }}
-                    >
-                      <Camera className="w-7 h-7 text-white" />
-                    </div>
-                    <div className="text-center">
-                      <p className="text-sm font-semibold text-gray-800">
-                        Fotoğraf çek veya seç
-                      </p>
-                      <p className="text-xs text-gray-400 mt-0.5">
-                        veya sürükle bırak
-                      </p>
-                    </div>
-                  </button>
-                )}
-              </div>
+                </div>
+              ) : (
+                <label className="upload-zone flex flex-col items-center cursor-pointer py-10">
+                  <Camera className="w-10 h-10 text-[var(--text-secondary)] mb-3" />
+                  <p className="text-sm font-semibold text-white">Fotoğraf çek veya seç</p>
+                  <p className="text-xs text-[var(--text-secondary)] mt-1">JPG, PNG, WEBP</p>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleCarSelect}
+                  />
+                </label>
+              )}
             </div>
 
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={handleCarSelect}
-            />
-
-            {/* ── STEP 2: Wheel selection ── */}
-            <div
-              className="rounded-2xl overflow-hidden"
-              style={{ background: '#fff', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}
-            >
-              <div className="px-4 pt-4 pb-3 flex items-center gap-3">
-                <StepBadge n={2} active={step1Done && !step2Done} done={step2Done} />
-                <div>
-                  <p className="font-bold text-gray-900 text-sm">Jant Seçin</p>
-                  <p className="text-xs text-gray-400">{wheels.length} model mevcut</p>
-                </div>
+            {/* ── Adım 2: Jant seçimi ── */}
+            <div className="card !p-4">
+              <div className="flex items-center gap-2.5 mb-3">
+                <span
+                  className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
+                  style={{ background: 'var(--gradient-primary)' }}
+                >
+                  2
+                </span>
+                <h2 className="font-semibold text-sm">Jant Seçin</h2>
               </div>
 
-              <div className="px-4 pb-4">
-                {wheels.length === 0 ? (
-                  <div className="py-10 text-center text-gray-400 text-sm">
-                    <ImagePlus className="w-10 h-10 mx-auto mb-2 opacity-30" />
-                    Henüz jant eklenmemiş.
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-2 gap-3">
-                    {wheels.map((wheel) => {
-                      const isSelected = selectedWheel?.id === wheel.id;
-                      return (
-                        <button
-                          key={wheel.id}
-                          onClick={() => {
-                            setSelectedWheel(wheel);
-                            setResultUrl(null);
-                            setError(null);
-                          }}
-                          className="rounded-xl overflow-hidden text-left transition-all duration-200 active:scale-95"
+              {wheels.length === 0 ? (
+                <p className="py-8 text-center text-sm text-[var(--text-secondary)]">
+                  Henüz jant eklenmemiş.
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {wheels.map((wheel) => {
+                    const isSelected = selectedWheel?.id === wheel.id;
+                    return (
+                      <button
+                        key={wheel.id}
+                        onClick={() => { setSelectedWheel(wheel); setResultUrl(null); setError(null); }}
+                        className="w-full flex items-center gap-3 p-3 rounded-xl border transition-all active:scale-[0.99] text-left"
+                        style={{
+                          background:   isSelected ? 'rgba(255,107,53,0.08)' : 'var(--bg-card)',
+                          borderColor:  isSelected ? 'var(--accent-orange)'  : 'var(--border-color)',
+                          boxShadow:    isSelected ? '0 0 0 1px var(--accent-orange)' : 'none',
+                        }}
+                      >
+                        {/* Jant fotoğrafı */}
+                        <div className="w-16 h-16 rounded-lg overflow-hidden bg-[var(--bg-dark)] flex-shrink-0">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={wheel.jant_foto_url}
+                            alt={wheel.jant_adi}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+
+                        {/* Bilgiler */}
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-sm leading-tight truncate">{wheel.jant_adi}</p>
+                          {wheel.ebat && (
+                            <p className="text-xs text-[var(--text-secondary)] mt-0.5">{wheel.ebat}</p>
+                          )}
+                          {wheel.fiyat != null && (
+                            <p className="text-sm font-bold text-[var(--accent-orange)] mt-1">
+                              ₺{wheel.fiyat.toLocaleString('tr-TR')}
+                            </p>
+                          )}
+                        </div>
+
+                        {/* Seçim işareti */}
+                        <div
+                          className="w-6 h-6 rounded-full flex-shrink-0 flex items-center justify-center transition-all"
                           style={{
-                            border: isSelected
-                              ? '2.5px solid #8B5CF6'
-                              : '2px solid #E5E7EB',
-                            background: '#fff',
-                            boxShadow: isSelected
-                              ? '0 0 0 4px rgba(139,92,246,0.12)'
-                              : '0 1px 4px rgba(0,0,0,0.05)',
+                            background: isSelected ? 'var(--accent-orange)' : 'var(--border-color)',
                           }}
                         >
-                          <div className="aspect-square relative overflow-hidden bg-gray-50">
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
-                              src={wheel.jant_foto_url}
-                              alt={wheel.jant_adi}
-                              className="w-full h-full object-cover"
-                            />
-                            {isSelected && (
-                              <div
-                                className="absolute top-2 right-2 w-6 h-6 rounded-full flex items-center justify-center shadow"
-                                style={{ background: '#8B5CF6' }}
-                              >
-                                <Check className="w-3.5 h-3.5 text-white" />
-                              </div>
-                            )}
-                          </div>
-                          <div className="p-2.5 space-y-0.5">
-                            <p className="text-xs font-bold text-gray-900 leading-tight line-clamp-2">
-                              {wheel.jant_adi}
-                            </p>
-                            {wheel.ebat && (
-                              <p className="text-[11px] text-gray-400">{wheel.ebat}</p>
-                            )}
-                            {wheel.fiyat != null && (
-                              <p
-                                className="text-xs font-extrabold mt-1"
-                                style={{ color: '#8B5CF6' }}
-                              >
-                                ₺{wheel.fiyat.toLocaleString('tr-TR')}
-                              </p>
-                            )}
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
+                          {isSelected && <Check className="w-3.5 h-3.5 text-white" />}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
-            {/* ── Error ── */}
+            {/* Hata mesajı */}
             {error && (
-              <div
-                className="p-4 rounded-2xl text-sm flex items-start gap-2"
-                style={{ background: '#FEF2F2', color: '#DC2626', border: '1px solid #FECACA' }}
-              >
+              <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm flex items-start gap-2">
                 <X className="w-4 h-4 flex-shrink-0 mt-0.5" />
                 {error}
               </div>
             )}
+          </>
+        )}
 
-            {/* ── Generate button ── */}
+      </main>
+
+      {/* ── Sticky bottom CTA ─────────────────────────────────────────── */}
+      {!resultUrl && (
+        <div className="fixed bottom-0 left-0 right-0 z-50 px-4 pb-6 pt-3"
+          style={{
+            background: 'linear-gradient(to top, var(--bg-dark) 70%, transparent)',
+          }}
+        >
+          <div className="max-w-2xl mx-auto">
             <button
               onClick={handleGenerate}
               disabled={!canGenerate}
-              className="w-full py-4 rounded-2xl font-bold text-base transition-all active:scale-95 flex items-center justify-center gap-2.5"
-              style={
-                canGenerate
-                  ? {
-                      background: 'linear-gradient(135deg,#8B5CF6 0%,#EC4899 100%)',
-                      color: '#fff',
-                      boxShadow: '0 4px 20px rgba(139,92,246,0.4)',
-                    }
-                  : {
-                      background: '#E5E7EB',
-                      color: '#9CA3AF',
-                      cursor: 'not-allowed',
-                    }
-              }
+              className="btn-primary w-full py-4 text-base font-bold rounded-2xl flex items-center justify-center gap-2.5 disabled:opacity-40 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none"
             >
               {generating ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" />
-                  <span>Görsel oluşturuluyor<span className="animate-pulse">...</span></span>
+                  Görsel oluşturuluyor... (15–30 sn)
                 </>
               ) : (
-                <>
-                  Görselleştir
-                  {canGenerate && <ChevronRight className="w-5 h-5" />}
-                </>
+                'Görselleştir'
               )}
             </button>
+          </div>
+        </div>
+      )}
 
-            {generating && (
-              <p className="text-center text-xs text-gray-400 -mt-2 animate-pulse">
-                Bu işlem 15–30 saniye sürebilir
-              </p>
-            )}
-          </>
-        )}
-
-        {/* Footer */}
-        <p className="text-center text-[11px] text-gray-300 pt-2">
-          Powered by{' '}
-          <span
-            className="font-bold"
-            style={{ background: 'linear-gradient(135deg,#8B5CF6,#EC4899)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}
-          >
-            WheelVision
-          </span>
-        </p>
-      </main>
     </div>
   );
 }
