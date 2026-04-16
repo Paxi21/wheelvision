@@ -6,7 +6,6 @@ const serviceKey   = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 const n8nUrl       = process.env.N8N_WEBHOOK_URL!;
 const cloudName    = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME!;
 
-// Validate car image is from our Cloudinary account (user-provided input)
 function isValidCloudinaryUrl(url: unknown): boolean {
   if (typeof url !== 'string') return false;
   try {
@@ -21,23 +20,23 @@ function isValidCloudinaryUrl(url: unknown): boolean {
   }
 }
 
-// Trusted domains for AI output
 const TRUSTED = ['fal.media', 'v3.fal.media', 'res.cloudinary.com', 'storage.googleapis.com'];
-
 function isValidOutputUrl(url: unknown): url is string {
   if (typeof url !== 'string') return false;
   try {
     const p = new URL(url);
     return p.protocol === 'https:' && TRUSTED.some(d => p.hostname === d || p.hostname.endsWith(`.${d}`));
-  } catch {
-    return false;
-  }
+  } catch { return false; }
 }
 
 export async function POST(request: NextRequest) {
+  console.log('[dealer/generate] request received');
+
   if (!n8nUrl) {
+    console.error('[dealer/generate] N8N_WEBHOOK_URL is not set');
     return NextResponse.json({ error: 'Servis yapılandırması eksik.' }, { status: 503 });
   }
+  console.log('[dealer/generate] n8n URL:', n8nUrl);
 
   try {
     let body: Record<string, unknown>;
@@ -48,15 +47,16 @@ export async function POST(request: NextRequest) {
     }
 
     const { dealer_id, slug, car_image, wheel_id } = body;
+    console.log('[dealer/generate] dealer_id:', dealer_id, 'slug:', slug, 'wheel_id:', wheel_id);
 
-    // Validate car image (user input — must be our Cloudinary)
     if (!isValidCloudinaryUrl(car_image)) {
+      console.error('[dealer/generate] invalid car_image URL:', car_image);
       return NextResponse.json({ error: 'Geçersiz araba görseli' }, { status: 400 });
     }
 
     const supabase = createClient(supabaseUrl, serviceKey);
 
-    // 1. Validate dealer — id AND slug must match, dealer must be active
+    // 1. Validate dealer
     const { data: dealer, error: dealerErr } = await supabase
       .from('dealers')
       .select('id, firma_adi, slug, aktif, aylik_limit, kullanilan')
@@ -66,15 +66,17 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (dealerErr || !dealer) {
+      console.error('[dealer/generate] dealer not found:', dealerErr?.message);
       return NextResponse.json({ error: 'Dealer bulunamadı' }, { status: 404 });
     }
+    console.log('[dealer/generate] dealer OK:', dealer.firma_adi, `usage: ${dealer.kullanilan}/${dealer.aylik_limit}`);
 
-    // 2. Check monthly limit
+    // 2. Monthly limit
     if (dealer.kullanilan >= dealer.aylik_limit) {
       return NextResponse.json({ error: 'Aylık görsel limiti doldu' }, { status: 402 });
     }
 
-    // 3. Validate wheel belongs to this dealer (prevents cross-dealer spoofing)
+    // 3. Validate wheel ownership
     const { data: wheel, error: wheelErr } = await supabase
       .from('dealer_wheels')
       .select('id, jant_adi, jant_foto_url')
@@ -83,14 +85,47 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (wheelErr || !wheel) {
+      console.error('[dealer/generate] wheel not found:', wheelErr?.message);
       return NextResponse.json({ error: 'Jant bulunamadı' }, { status: 404 });
     }
+    console.log('[dealer/generate] wheel OK:', wheel.jant_adi);
+    console.log('[dealer/generate] wheel image URL:', wheel.jant_foto_url);
 
-    // 4. Call n8n → Fal AI
-    // NOTE: n8n workflow checks Supabase users table for credits.
-    // You need a dedicated service user in Supabase:
-    //   email: dealer@wheelvision.io, credits: 99999
-    // OR create a separate n8n webhook that skips the credit check.
+    // 4. Ensure dealer service user exists in Supabase so n8n credit check passes.
+    //    If not found, create it on-the-fly with high credits.
+    const { data: serviceUser } = await supabase
+      .from('users')
+      .select('email, credits')
+      .eq('email', 'dealer@wheelvision.io')
+      .single();
+
+    if (!serviceUser) {
+      console.log('[dealer/generate] creating dealer service user in Supabase...');
+      const { error: insertErr } = await supabase.from('users').insert({
+        email: 'dealer@wheelvision.io',
+        full_name: 'Dealer Service',
+        credits: 99999,
+        is_verified: true,
+      });
+      if (insertErr) {
+        console.error('[dealer/generate] failed to create service user:', insertErr.message);
+        // Not fatal — continue; n8n might still work if user was created previously
+      } else {
+        console.log('[dealer/generate] service user created OK');
+      }
+    } else {
+      console.log('[dealer/generate] service user exists, credits:', serviceUser.credits);
+      // Replenish if running low
+      if (serviceUser.credits < 100) {
+        await supabase
+          .from('users')
+          .update({ credits: 99999 })
+          .eq('email', 'dealer@wheelvision.io');
+        console.log('[dealer/generate] replenished service user credits to 99999');
+      }
+    }
+
+    // 5. Call n8n
     const n8nPayload = {
       user_email: 'dealer@wheelvision.io',
       car_image,
@@ -100,6 +135,7 @@ export async function POST(request: NextRequest) {
         'Keep the EXACT same car body, color, background, lighting, and camera angle. ' +
         'Do not change anything else.',
     };
+    console.log('[dealer/generate] calling n8n...');
 
     const controller = new AbortController();
     const timeoutId  = setTimeout(() => controller.abort(), 120_000);
@@ -116,28 +152,51 @@ export async function POST(request: NextRequest) {
         body: JSON.stringify(n8nPayload),
       });
     } catch (err) {
-      if ((err as Error).name === 'AbortError') throw new Error('İstek zaman aşımına uğradı.');
+      if ((err as Error).name === 'AbortError') throw new Error('İstek zaman aşımına uğradı (120s).');
+      console.error('[dealer/generate] n8n fetch error:', err);
       throw new Error('Görsel servisi şu an ulaşılamıyor.');
     } finally {
       clearTimeout(timeoutId);
     }
 
-    if (!n8nRes.ok) throw new Error('Görsel işleme hatası.');
+    console.log('[dealer/generate] n8n status:', n8nRes.status, n8nRes.statusText);
+
+    if (!n8nRes.ok) {
+      const errBody = await n8nRes.text().catch(() => '');
+      console.error('[dealer/generate] n8n error body:', errBody);
+      throw new Error(`n8n hata döndürdü: ${n8nRes.status}`);
+    }
 
     const text = await n8nRes.text();
-    if (!text?.trim()) throw new Error('Servis yanıt vermedi.');
+    console.log('[dealer/generate] n8n raw response:', text);
+
+    if (!text?.trim()) {
+      // Empty body = n8n workflow didn't reach "Respond to Webhook" node.
+      // Most common cause: dealer@wheelvision.io user not found in Supabase at workflow runtime.
+      throw new Error(
+        'n8n boş yanıt döndürdü. ' +
+        'Muhtemelen n8n workflow "dealer@wheelvision.io" kullanıcısını bulamadı. ' +
+        'Supabase → users tablosuna bu email\'i ekleyin.'
+      );
+    }
 
     let data: Record<string, unknown>;
     try { data = JSON.parse(text); }
-    catch { throw new Error('Geçersiz servis yanıtı.'); }
+    catch {
+      console.error('[dealer/generate] invalid JSON from n8n:', text);
+      throw new Error('Geçersiz servis yanıtı.');
+    }
 
     if (data.error) {
       const msg = data.error as string;
-      // Map n8n credit error to a clear message
-      throw new Error(msg === 'Yetersiz kredi' ? 'Servis kredisi yetersiz. Yönetici ile iletişime geçin.' : 'Görsel oluşturulamadı.');
+      console.error('[dealer/generate] n8n returned error:', msg);
+      throw new Error(
+        msg === 'Yetersiz kredi'
+          ? 'Servis kredisi yetersiz. Yönetici ile iletişime geçin.'
+          : 'Görsel oluşturulamadı.'
+      );
     }
 
-    // Extract output URL from various response shapes
     const candidates = [
       data.output_url,
       (data.images as { url?: string }[])?.[0]?.url,
@@ -145,9 +204,13 @@ export async function POST(request: NextRequest) {
       data.url,
     ];
     const outputUrl = candidates.find(isValidOutputUrl);
-    if (!outputUrl) throw new Error('Görsel URL bulunamadı.');
+    if (!outputUrl) {
+      console.error('[dealer/generate] no valid image URL in response:', data);
+      throw new Error('Görsel URL bulunamadı.');
+    }
+    console.log('[dealer/generate] output URL:', outputUrl);
 
-    // 5. Save generation record
+    // 6. Save to DB
     await supabase.from('dealer_generations').insert({
       dealer_id: dealer.id,
       wheel_id:  wheel.id,
@@ -155,15 +218,18 @@ export async function POST(request: NextRequest) {
       sonuc_foto_url: outputUrl,
     });
 
-    // 6. Increment usage counter (ignore errors — non-critical)
+    // 7. Increment usage
     await supabase
       .from('dealers')
       .update({ kullanilan: dealer.kullanilan + 1 })
       .eq('id', dealer.id);
 
+    console.log('[dealer/generate] success');
     return NextResponse.json({ output_url: outputUrl });
+
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Bir hata oluştu';
+    console.error('[dealer/generate] fatal error:', message);
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
