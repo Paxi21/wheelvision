@@ -2,7 +2,7 @@
 
 import Navbar from '@/components/Navbar';
 import { motion } from 'motion/react';
-import { Check, X, Sparkles, Zap, Crown, Building2, Gift } from 'lucide-react';
+import { Check, X, Sparkles, Zap, Crown, Gift } from 'lucide-react';
 import { ShimmerButton } from '@/components/ui/shimmer-button';
 import { AnimatedBorder } from '@/components/ui/animated-border';
 import { useTranslations } from 'next-intl';
@@ -18,7 +18,6 @@ export default function PricingPage() {
       price: t('freePrice'),
       period: '',
       icon: Gift,
-      credits: 1,
       description: t('planFreeDesc'),
       color: 'from-[#6B7280] to-[#4B5563]',
       popular: false,
@@ -27,9 +26,10 @@ export default function PricingPage() {
       features: [
         { text: t('featTrialCredit'), included: true },
         { text: t('featOneTimeBonus'), included: true },
+        { text: t('featStandardQuality'), included: true },
         { text: t('featWatermark'), included: true, isLimit: true },
-        { text: t('featWhatsApp'), included: false },
-        { text: t('featWeeklyReport'), included: false },
+        { text: t('featHistory'), included: false },
+        { text: t('featPriorityProcessing'), included: false },
       ],
     },
     {
@@ -38,18 +38,18 @@ export default function PricingPage() {
       price: t('starterPrice'),
       period: t('month'),
       icon: Zap,
-      credits: 25,
       description: t('planStarterDesc'),
       color: 'from-[#FF6B35] to-[#F72585]',
       popular: false,
       isFree: false,
       buyLabel: t('buy'),
       features: [
-        { text: t('featImagesPerMonth', { count: 25 }), included: true },
+        { text: t('featImagesPerMonth', { count: 10 }), included: true },
         { text: t('featNoWatermark'), included: true },
-        { text: t('featBasicSupport'), included: true },
-        { text: t('featWhatsApp'), included: true },
-        { text: t('featWeeklyReport'), included: false },
+        { text: t('featHighQuality'), included: true },
+        { text: t('featHistory'), included: true },
+        { text: t('featEmailSupport'), included: true },
+        { text: t('featPriorityProcessing'), included: false },
       ],
     },
     {
@@ -58,38 +58,18 @@ export default function PricingPage() {
       price: t('professionalPrice'),
       period: t('month'),
       icon: Crown,
-      credits: 75,
       description: t('planProfessionalDesc'),
       color: 'from-[#F72585] to-[#7209B7]',
       popular: true,
       isFree: false,
       buyLabel: t('buy'),
       features: [
-        { text: t('featImagesPerMonth', { count: 75 }), included: true },
+        { text: t('featImagesPerMonth', { count: 30 }), included: true },
         { text: t('featNoWatermark'), included: true },
+        { text: t('featUltraQuality'), included: true },
+        { text: t('featHistory'), included: true },
+        { text: t('featPriorityProcessing'), included: true },
         { text: t('featPrioritySupport'), included: true },
-        { text: t('featWhatsApp'), included: true },
-        { text: t('featWeeklyReport'), included: true },
-      ],
-    },
-    {
-      id: 'enterprise',
-      name: t('enterprise'),
-      price: t('enterprisePrice'),
-      period: t('month'),
-      icon: Building2,
-      credits: 200,
-      description: t('planEnterpriseDesc'),
-      color: 'from-[#7209B7] to-[#3A0CA3]',
-      popular: false,
-      isFree: false,
-      buyLabel: t('buy'),
-      features: [
-        { text: t('featImagesPerMonth', { count: 200 }), included: true },
-        { text: t('featNoWatermark'), included: true },
-        { text: t('feat247Support'), included: true },
-        { text: t('featWhatsApp'), included: true },
-        { text: t('featWeeklyReport'), included: true },
       ],
     },
   ];
@@ -129,8 +109,8 @@ export default function PricingPage() {
             </motion.div>
           </div>
 
-          {/* Plans Grid — free + 3 paid (4 cols on large, 2 on md, 1 on mobile) */}
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 max-w-6xl mx-auto">
+          {/* Plans Grid — 3 plans */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
             {plans.map((plan, index) => {
               const Icon = plan.icon;
               return (
@@ -187,7 +167,6 @@ type PlanType = {
   price: string;
   period: string;
   icon: React.ElementType;
-  credits: number;
   description: string;
   color: string;
   popular: boolean;

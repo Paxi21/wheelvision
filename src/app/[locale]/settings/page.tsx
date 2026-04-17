@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import Navbar from '@/components/Navbar';
 import { createClient } from '@/lib/supabase';
-import { User, Mail, CreditCard, LogOut, Trash2, Globe, ChevronDown } from 'lucide-react';
+import { User, Mail, CreditCard, LogOut, Globe, ChevronDown, BarChart2, Settings2 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useRouter } from '@/i18n/navigation';
 import { useTranslations, useLocale } from 'next-intl';
@@ -13,6 +13,7 @@ interface UserData {
   full_name: string;
   credits: number;
   plan: string;
+  created_at?: string;
 }
 
 const LANGUAGES = [
@@ -22,6 +23,7 @@ const LANGUAGES = [
 
 export default function SettingsPage() {
   const [user, setUser] = useState<UserData | null>(null);
+  const [vizCount, setVizCount] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [loggingOut, setLoggingOut] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
@@ -37,8 +39,10 @@ export default function SettingsPage() {
     const fetchUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user?.email) { router.push('/login'); return; }
-      const { data } = await supabase.from('users').select('email, full_name, credits, plan').eq('email', session.user.email).maybeSingle();
+      const { data } = await supabase.from('users').select('email, full_name, credits, plan, created_at').eq('email', session.user.email).maybeSingle();
       if (data) setUser(data);
+      const { count } = await supabase.from('generations').select('*', { count: 'exact', head: true }).eq('user_email', session.user.email);
+      setVizCount(count ?? 0);
       setLoading(false);
     };
     fetchUser();
@@ -165,10 +169,39 @@ export default function SettingsPage() {
               </div>
             </motion.div>
 
-            {/* Danger Zone */}
-            <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="card border-red-500/20">
-              <h2 className="font-semibold mb-4 text-red-400 flex items-center gap-2"><Trash2 className="w-4 h-4" /> {t('dangerZone')}</h2>
-              <button onClick={handleLogout} disabled={loggingOut} className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-sm font-medium transition-all">
+            {/* Stats */}
+            <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="card">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-r from-[#FF6B35] to-[#7209B7] flex items-center justify-center">
+                  <BarChart2 className="w-5 h-5 text-white" />
+                </div>
+                <h2 className="font-semibold">{t('statsTitle')}</h2>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-xl bg-[var(--bg-dark)] border border-[var(--border-color)] px-4 py-3 text-center">
+                  <p className="text-2xl font-bold gradient-text">{vizCount}</p>
+                  <p className="text-xs text-[var(--text-secondary)] mt-0.5">{t('totalVisualizations')}</p>
+                </div>
+                <div className="rounded-xl bg-[var(--bg-dark)] border border-[var(--border-color)] px-4 py-3 text-center">
+                  <p className="text-sm font-bold text-white">
+                    {user?.created_at
+                      ? new Date(user.created_at).toLocaleDateString(currentLocale === 'tr' ? 'tr-TR' : 'en-US', { month: 'short', year: 'numeric' })
+                      : '—'}
+                  </p>
+                  <p className="text-xs text-[var(--text-secondary)] mt-0.5">{t('memberSince')}</p>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Account Management */}
+            <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="card">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-r from-[#3A0CA3] to-[#6B7280] flex items-center justify-center">
+                  <Settings2 className="w-5 h-5 text-white" />
+                </div>
+                <h2 className="font-semibold">{t('dangerZone')}</h2>
+              </div>
+              <button onClick={handleLogout} disabled={loggingOut} className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-dark)] hover:bg-white/5 text-sm font-medium transition-all">
                 <LogOut className="w-4 h-4" />
                 {loggingOut ? t('loggingOut') : t('logout')}
               </button>
