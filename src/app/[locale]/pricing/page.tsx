@@ -2,7 +2,7 @@
 
 import Navbar from '@/components/Navbar';
 import { motion } from 'motion/react';
-import { Check, X, Sparkles, Zap, Crown, Building2 } from 'lucide-react';
+import { Check, X, Sparkles, Zap, Crown, Building2, Gift } from 'lucide-react';
 import { ShimmerButton } from '@/components/ui/shimmer-button';
 import { AnimatedBorder } from '@/components/ui/animated-border';
 import { useTranslations } from 'next-intl';
@@ -13,6 +13,26 @@ export default function PricingPage() {
 
   const plans = [
     {
+      id: 'free',
+      name: t('free'),
+      price: t('freePrice'),
+      period: '',
+      icon: Gift,
+      credits: 1,
+      description: t('planFreeDesc'),
+      color: 'from-[#6B7280] to-[#4B5563]',
+      popular: false,
+      isFree: true,
+      buyLabel: t('freeBuy'),
+      features: [
+        { text: t('featTrialCredit'), included: true },
+        { text: t('featOneTimeBonus'), included: true },
+        { text: t('featWatermark'), included: true, isLimit: true },
+        { text: t('featWhatsApp'), included: false },
+        { text: t('featWeeklyReport'), included: false },
+      ],
+    },
+    {
       id: 'starter',
       name: t('starter'),
       price: t('starterPrice'),
@@ -22,12 +42,14 @@ export default function PricingPage() {
       description: t('planStarterDesc'),
       color: 'from-[#FF6B35] to-[#F72585]',
       popular: false,
+      isFree: false,
+      buyLabel: t('buy'),
       features: [
         { text: t('featImagesPerMonth', { count: 25 }), included: true },
+        { text: t('featNoWatermark'), included: true },
         { text: t('featBasicSupport'), included: true },
         { text: t('featWhatsApp'), included: true },
         { text: t('featWeeklyReport'), included: false },
-        { text: t('featCustomIntegration'), included: false },
       ],
     },
     {
@@ -40,12 +62,14 @@ export default function PricingPage() {
       description: t('planProfessionalDesc'),
       color: 'from-[#F72585] to-[#7209B7]',
       popular: true,
+      isFree: false,
+      buyLabel: t('buy'),
       features: [
         { text: t('featImagesPerMonth', { count: 75 }), included: true },
+        { text: t('featNoWatermark'), included: true },
         { text: t('featPrioritySupport'), included: true },
         { text: t('featWhatsApp'), included: true },
         { text: t('featWeeklyReport'), included: true },
-        { text: t('featCustomIntegration'), included: false },
       ],
     },
     {
@@ -58,12 +82,14 @@ export default function PricingPage() {
       description: t('planEnterpriseDesc'),
       color: 'from-[#7209B7] to-[#3A0CA3]',
       popular: false,
+      isFree: false,
+      buyLabel: t('buy'),
       features: [
         { text: t('featImagesPerMonth', { count: 200 }), included: true },
+        { text: t('featNoWatermark'), included: true },
         { text: t('feat247Support'), included: true },
         { text: t('featWhatsApp'), included: true },
         { text: t('featWeeklyReport'), included: true },
-        { text: t('featCustomIntegration'), included: true },
       ],
     },
   ];
@@ -103,8 +129,8 @@ export default function PricingPage() {
             </motion.div>
           </div>
 
-          {/* Plans Grid — 3 columns */}
-          <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+          {/* Plans Grid — free + 3 paid (4 cols on large, 2 on md, 1 on mobile) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 max-w-6xl mx-auto">
             {plans.map((plan, index) => {
               const Icon = plan.icon;
               return (
@@ -125,11 +151,11 @@ export default function PricingPage() {
 
                   {plan.popular ? (
                     <AnimatedBorder containerClassName="h-full" duration={4}>
-                      <PlanCard plan={plan} Icon={Icon} buyLabel={t('buy')} />
+                      <PlanCard plan={plan} Icon={Icon} />
                     </AnimatedBorder>
                   ) : (
-                    <div className="h-full rounded-2xl border border-[var(--border-color)] bg-[var(--bg-card)] overflow-hidden">
-                      <PlanCard plan={plan} Icon={Icon} buyLabel={t('buy')} />
+                    <div className={`h-full rounded-2xl border bg-[var(--bg-card)] overflow-hidden ${plan.isFree ? 'border-[var(--border-color)] opacity-90' : 'border-[var(--border-color)]'}`}>
+                      <PlanCard plan={plan} Icon={Icon} />
                     </div>
                   )}
                 </motion.div>
@@ -165,10 +191,12 @@ type PlanType = {
   description: string;
   color: string;
   popular: boolean;
-  features: { text: string; included: boolean }[];
+  isFree: boolean;
+  buyLabel: string;
+  features: { text: string; included: boolean; isLimit?: boolean }[];
 };
 
-function PlanCard({ plan, Icon, buyLabel }: { plan: PlanType; Icon: React.ElementType; buyLabel: string }) {
+function PlanCard({ plan, Icon }: { plan: PlanType; Icon: React.ElementType }) {
   return (
     <div className="flex flex-col h-full p-6">
 
@@ -187,8 +215,15 @@ function PlanCard({ plan, Icon, buyLabel }: { plan: PlanType; Icon: React.Elemen
       <div className="mb-6">
         <div className="flex items-end gap-0.5">
           <span className="text-4xl font-bold">{plan.price}</span>
-          <span className="text-[var(--text-secondary)] text-sm mb-1">{plan.period}</span>
+          {plan.period && (
+            <span className="text-[var(--text-secondary)] text-sm mb-1">{plan.period}</span>
+          )}
         </div>
+        {plan.isFree && (
+          <p className="text-xs text-[var(--text-secondary)] mt-1 leading-snug">
+            🎁 Kayıt olunca otomatik tanımlanır
+          </p>
+        )}
       </div>
 
       {/* Features */}
@@ -196,15 +231,26 @@ function PlanCard({ plan, Icon, buyLabel }: { plan: PlanType; Icon: React.Elemen
         {plan.features.map((feature, i) => (
           <li key={i} className="flex items-center gap-3">
             {feature.included ? (
-              <div className={`w-5 h-5 rounded-full bg-gradient-to-r ${plan.color} flex items-center justify-center flex-shrink-0`}>
-                <Check className="w-3 h-3 text-white" />
+              <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${
+                feature.isLimit
+                  ? 'bg-yellow-500/20 border border-yellow-500/40'
+                  : `bg-gradient-to-r ${plan.color}`
+              }`}>
+                {feature.isLimit
+                  ? <span className="text-[9px] text-yellow-400 font-bold">!</span>
+                  : <Check className="w-3 h-3 text-white" />
+                }
               </div>
             ) : (
               <div className="w-5 h-5 rounded-full bg-[var(--bg-dark)] border border-[var(--border-color)] flex items-center justify-center flex-shrink-0">
                 <X className="w-3 h-3 text-[var(--text-secondary)]" />
               </div>
             )}
-            <span className={`text-sm ${feature.included ? 'text-white' : 'text-[var(--text-secondary)]'}`}>
+            <span className={`text-sm ${
+              feature.isLimit
+                ? 'text-yellow-400/80'
+                : feature.included ? 'text-white' : 'text-[var(--text-secondary)]'
+            }`}>
               {feature.text}
             </span>
           </li>
@@ -214,14 +260,18 @@ function PlanCard({ plan, Icon, buyLabel }: { plan: PlanType; Icon: React.Elemen
       {/* CTA */}
       {plan.popular ? (
         <Link href="/register" className="block w-full">
-          <ShimmerButton className="w-full justify-center py-3">{buyLabel}</ShimmerButton>
+          <ShimmerButton className="w-full justify-center py-3">{plan.buyLabel}</ShimmerButton>
         </Link>
       ) : (
         <Link
           href="/register"
-          className="block w-full text-center py-3 rounded-full border border-[var(--border-color)] text-sm font-semibold hover:border-[var(--accent-orange)] hover:text-[var(--accent-orange)] transition-colors"
+          className={`block w-full text-center py-3 rounded-full border text-sm font-semibold transition-colors ${
+            plan.isFree
+              ? 'border-[var(--border-color)] text-[var(--text-secondary)] hover:border-white/30 hover:text-white'
+              : 'border-[var(--border-color)] hover:border-[var(--accent-orange)] hover:text-[var(--accent-orange)]'
+          }`}
         >
-          {buyLabel}
+          {plan.buyLabel}
         </Link>
       )}
     </div>
