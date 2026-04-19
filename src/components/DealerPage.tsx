@@ -23,18 +23,16 @@ async function uploadToCloudinary(file: File): Promise<string> {
   return (await res.json() as { secure_url: string }).secure_url;
 }
 
-/* ─── Download with diagonal watermark ───────────────────────────────────── */
+/* ─── Download with watermark ─────────────────────────────────────────────── */
 async function downloadWithWatermark(imageUrl: string, slug: string) {
   const res  = await fetch(`/api/proxy-image?url=${encodeURIComponent(imageUrl)}`);
   const blob = await res.blob();
   const bmp  = await createImageBitmap(blob);
-
   const canvas = document.createElement('canvas');
   canvas.width  = bmp.width;
   canvas.height = bmp.height;
   const ctx = canvas.getContext('2d')!;
   ctx.drawImage(bmp, 0, 0);
-
   const text     = slug.toUpperCase();
   const fontSize = Math.max(48, Math.floor(bmp.width / 8));
   ctx.save();
@@ -48,7 +46,6 @@ async function downloadWithWatermark(imageUrl: string, slug: string) {
   ctx.fillStyle = 'rgba(0,0,0,0.12)';
   ctx.fillText(text, 2, 2);
   ctx.restore();
-
   canvas.toBlob((b) => {
     if (!b) return;
     const a = document.createElement('a');
@@ -59,7 +56,7 @@ async function downloadWithWatermark(imageUrl: string, slug: string) {
   }, 'image/jpeg', 0.92);
 }
 
-/* ─── WhatsApp SVG ────────────────────────────────────────────────────────── */
+/* ─── WhatsApp icon ───────────────────────────────────────────────────────── */
 function WAIcon({ size = 18 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
@@ -68,7 +65,7 @@ function WAIcon({ size = 18 }: { size?: number }) {
   );
 }
 
-/* ─── Interactive Before/After Slider ────────────────────────────────────── */
+/* ─── Before / After Slider ───────────────────────────────────────────────── */
 function BeforeAfterSlider({ before, after }: { before: string; after: string }) {
   const [position, setPosition] = useState(50);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -76,8 +73,7 @@ function BeforeAfterSlider({ before, after }: { before: string; after: string })
   const moveTo = useCallback((clientX: number) => {
     if (!containerRef.current) return;
     const rect = containerRef.current.getBoundingClientRect();
-    const pct  = Math.max(2, Math.min(98, ((clientX - rect.left) / rect.width) * 100));
-    setPosition(pct);
+    setPosition(Math.max(2, Math.min(98, ((clientX - rect.left) / rect.width) * 100)));
   }, []);
 
   const onPointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
@@ -91,14 +87,13 @@ function BeforeAfterSlider({ before, after }: { before: string; after: string })
   }, [moveTo]);
 
   return (
-    <div className="relative w-full">
+    <div className="relative w-full h-full">
       <div className="absolute -inset-3 rounded-3xl bg-gradient-to-r from-[#ec4899]/20 via-[#8b5cf6]/20 to-[#ec4899]/20 blur-2xl pointer-events-none" />
-      <div className="relative p-[2px] rounded-2xl"
-        style={{ background: 'linear-gradient(135deg,#FF6B35,#F72585,#7209B7)' }}>
+      <div className="relative h-full p-[2px] rounded-2xl" style={{ background: 'linear-gradient(135deg,#FF6B35,#F72585,#7209B7)' }}>
         <div
           ref={containerRef}
-          className="relative select-none cursor-col-resize overflow-hidden rounded-[14px] bg-black"
-          style={{ touchAction: 'none', height: 'min(calc(100svh - 310px), 600px)', minHeight: '240px' }}
+          className="relative select-none cursor-col-resize overflow-hidden rounded-[14px] bg-black h-full"
+          style={{ touchAction: 'none' }}
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
         >
@@ -129,17 +124,13 @@ function BeforeAfterSlider({ before, after }: { before: string; after: string })
 }
 
 /* ─── Wheel Detail Modal ──────────────────────────────────────────────────── */
-function WheelModal({ wheel, onClose, onSelect }: {
-  wheel: Wheel;
-  onClose: () => void;
-  onSelect: (w: Wheel) => void;
-}) {
+function WheelModal({ wheel, onClose, onSelect }: { wheel: Wheel; onClose: () => void; onSelect: (w: Wheel) => void }) {
   return (
     <>
       <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm" onClick={onClose} />
-      <div className="fixed inset-x-4 bottom-0 sm:inset-auto sm:left-1/2 sm:-translate-x-1/2 sm:bottom-auto sm:top-1/2 sm:-translate-y-1/2 sm:w-[360px] z-50 rounded-t-3xl sm:rounded-2xl border border-[var(--border-color)] overflow-hidden"
+      <div className="fixed inset-x-4 bottom-0 sm:inset-auto sm:left-1/2 sm:-translate-x-1/2 sm:bottom-auto sm:top-1/2 sm:-translate-y-1/2 sm:w-[380px] z-50 rounded-t-3xl sm:rounded-2xl border border-[var(--border-color)] overflow-hidden"
         style={{ background: 'var(--bg-card)' }}>
-        <div className="sm:hidden w-12 h-1 rounded-full bg-[var(--border-color)] mx-auto mt-3 mb-0" />
+        <div className="sm:hidden w-12 h-1 rounded-full bg-[var(--border-color)] mx-auto mt-3" />
         <div className="relative w-full aspect-square bg-[var(--bg-dark)]">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={wheel.jant_foto_url} alt={wheel.jant_adi} className="w-full h-full object-cover" />
@@ -147,58 +138,41 @@ function WheelModal({ wheel, onClose, onSelect }: {
         <div className="p-5">
           <div className="flex items-start justify-between gap-3 mb-3">
             <h3 className="font-bold text-base leading-tight">{wheel.jant_adi}</h3>
-            {wheel.marka && (
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[var(--border-color)] text-[var(--text-secondary)] flex-shrink-0">
-                {wheel.marka}
-              </span>
-            )}
+            {wheel.marka && <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[var(--border-color)] text-[var(--text-secondary)] flex-shrink-0">{wheel.marka}</span>}
           </div>
           <div className="space-y-2 mb-5">
-            {wheel.ebat && (
-              <div className="flex justify-between text-sm">
-                <span className="text-[var(--text-secondary)]">Ebat</span>
-                <span className="font-medium">{wheel.ebat}</span>
-              </div>
-            )}
+            {wheel.ebat && <div className="flex justify-between text-sm"><span className="text-[var(--text-secondary)]">Ebat</span><span className="font-medium">{wheel.ebat}</span></div>}
             {wheel.fiyat != null && (
               <div className="flex justify-between text-sm">
                 <span className="text-[var(--text-secondary)]">Fiyat</span>
-                <span className="font-extrabold text-[var(--accent-orange)]">
-                  ₺{wheel.fiyat.toLocaleString('tr-TR')}
-                </span>
+                <span className="font-extrabold text-[var(--accent-orange)]">₺{wheel.fiyat.toLocaleString('tr-TR')}</span>
               </div>
             )}
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <button onClick={onClose}
-              className="btn-secondary py-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-2">
-              <X className="w-4 h-4" /> İptal
-            </button>
-            <button onClick={() => onSelect(wheel)}
-              className="btn-primary py-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-2">
-              <Check className="w-4 h-4" /> Seç
-            </button>
+            <button onClick={onClose} className="btn-secondary py-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-2"><X className="w-4 h-4" /> İptal</button>
+            <button onClick={() => onSelect(wheel)} className="btn-primary py-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-2"><Check className="w-4 h-4" /> Seç</button>
           </div>
-          <p className="text-center text-[10px] text-[var(--text-secondary)]/50 mt-4 italic">
-            Bu görseller demo amaçlıdır.
-          </p>
+          <p className="text-center text-[10px] text-[var(--text-secondary)]/50 mt-4 italic">Bu görseller demo amaçlıdır.</p>
         </div>
       </div>
     </>
   );
 }
 
-/* ─── Welcome / Landing Screen ────────────────────────────────────────────── */
-function WelcomeScreen({ dealer, wheels, onStart }: {
-  dealer: Dealer;
-  wheels: Wheel[];
-  onStart: () => void;
-}) {
+/* ─── Shared Header ───────────────────────────────────────────────────────── */
+function DealerHeader({ dealer, onBack }: { dealer: Dealer; onBack?: () => void }) {
   return (
-    <div className="min-h-screen bg-[var(--bg-dark)] text-white flex flex-col">
-      {/* Header */}
-      <header className="sticky top-0 z-40 bg-[var(--bg-dark)]/95 backdrop-blur-md border-b border-[var(--border-color)]">
-        <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
+    <header className="sticky top-0 z-40 bg-[var(--bg-dark)]/95 backdrop-blur-md border-b border-[var(--border-color)]">
+      <div className="max-w-6xl mx-auto px-4 lg:px-8 py-3 flex items-center gap-3">
+        {onBack && (
+          <button onClick={onBack}
+            className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors hover:bg-white/10 active:scale-95"
+            style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
+            <ChevronLeft className="w-4 h-4 text-[var(--text-secondary)]" />
+          </button>
+        )}
+        <div className="flex-1 flex items-center justify-between">
           {dealer.logo_url ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={dealer.logo_url} alt={dealer.firma_adi} className="h-9 w-auto object-contain max-w-[160px]" />
@@ -208,75 +182,112 @@ function WelcomeScreen({ dealer, wheels, onStart }: {
               <p className="text-[10px] text-[var(--text-secondary)]">Jant Showroom</p>
             </div>
           )}
-          <div className="text-right">
-            <p className="text-[10px] text-[var(--text-secondary)]">Powered by</p>
-            <p className="text-xs font-bold gradient-text">WheelVision</p>
-          </div>
-        </div>
-      </header>
-
-      <main className="flex-1 flex flex-col items-center justify-center px-6 py-10 text-center max-w-sm mx-auto w-full">
-
-        {/* Icon */}
-        <div className="relative mb-6">
-          <div className="absolute inset-0 rounded-3xl blur-2xl opacity-40"
-            style={{ background: 'linear-gradient(135deg,#FF6B35,#F72585,#7209B7)', transform: 'scale(1.4)' }} />
-          <div className="relative w-20 h-20 rounded-3xl flex items-center justify-center"
-            style={{ background: 'linear-gradient(135deg,#FF6B35,#F72585,#7209B7)' }}>
-            <Sparkles className="w-9 h-9 text-white" />
-          </div>
-        </div>
-
-        {/* Title */}
-        <h1 className="text-3xl font-extrabold leading-tight mb-3">
-          Arabana Jant<br />
-          <span className="gradient-text">Sanal Giydirme</span>
-        </h1>
-        <p className="text-[var(--text-secondary)] text-sm leading-relaxed mb-8">
-          {dealer.firma_adi} jant kataloğundan seçin,<br />
-          AI 30 saniyede arabanıza yerleştirsin.
-        </p>
-
-        {/* Steps */}
-        <div className="w-full space-y-3 mb-10">
-          {[
-            { icon: Camera, label: 'Araç fotoğrafı yükle', sub: 'Kamera veya galeri', color: 'rgba(255,107,53,0.15)', iconColor: '#FF6B35' },
-            { icon: Zap,    label: 'Katalogdan jant seç',  sub: `${wheels.length} model mevcut`,  color: 'rgba(247,37,133,0.12)', iconColor: '#F72585' },
-            { icon: Sparkles, label: 'AI sonucunu gör',    sub: 'Kaydırarak karşılaştır', color: 'rgba(114,9,183,0.12)', iconColor: '#7209B7' },
-          ].map(({ icon: Icon, label, sub, color, iconColor }, i) => (
-            <div key={i} className="flex items-center gap-4 p-3.5 rounded-2xl border border-[var(--border-color)]"
-              style={{ background: 'var(--bg-card)' }}>
-              <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: color }}>
-                <Icon className="w-5 h-5" style={{ color: iconColor }} />
-              </div>
-              <div className="text-left">
-                <p className="font-semibold text-sm text-white">{label}</p>
-                <p className="text-xs text-[var(--text-secondary)] mt-0.5">{sub}</p>
-              </div>
-              <div className="ml-auto w-6 h-6 rounded-full border border-[var(--border-color)] flex items-center justify-center flex-shrink-0 text-xs font-bold text-[var(--text-secondary)]">
-                {i + 1}
-              </div>
+          <div className="flex items-center gap-4">
+            <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-full border border-[var(--border-color)] bg-[var(--bg-card)]">
+              <div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+              <span className="text-xs text-[var(--text-secondary)]">{/* wheels.length */} Demo aktif</span>
             </div>
-          ))}
+            <div className="text-right">
+              <p className="text-[10px] text-[var(--text-secondary)]">Powered by</p>
+              <p className="text-xs font-bold gradient-text">WheelVision</p>
+            </div>
+          </div>
         </div>
+      </div>
+    </header>
+  );
+}
 
-        {/* CTA */}
-        <button
-          onClick={onStart}
-          className="w-full py-5 rounded-2xl font-extrabold text-lg text-white flex items-center justify-center gap-2.5 active:scale-[0.98] transition-all"
-          style={{
-            background: 'linear-gradient(135deg,#FF6B35,#F72585,#7209B7)',
-            boxShadow: '0 8px 32px rgba(247,37,133,0.35)',
-          }}
-        >
-          <Zap className="w-5 h-5" />
-          Jantları Dene
-          <ChevronRight className="w-5 h-5" />
-        </button>
+/* ─── Welcome Screen ──────────────────────────────────────────────────────── */
+function WelcomeScreen({ dealer, wheels, onStart }: { dealer: Dealer; wheels: Wheel[]; onStart: () => void }) {
+  return (
+    <div className="min-h-screen bg-[var(--bg-dark)] text-white flex flex-col">
+      <DealerHeader dealer={dealer} />
 
-        <p className="text-xs text-[var(--text-secondary)] mt-4">
-          Ücretsiz · Kayıt gerekmez · 30 saniye
-        </p>
+      <main className="flex-1 max-w-6xl mx-auto w-full px-6 lg:px-8 py-10 lg:py-16">
+        <div className="lg:grid lg:grid-cols-2 lg:gap-16 lg:items-center">
+
+          {/* ── Left: Text + CTA ── */}
+          <div className="flex flex-col items-center lg:items-start text-center lg:text-left">
+            {/* Badge */}
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-[var(--border-color)] bg-[var(--bg-card)] text-xs text-[var(--text-secondary)] mb-6">
+              <Sparkles className="w-3.5 h-3.5 text-[var(--accent-orange)]" />
+              AI Destekli Jant Görselleştirme
+            </div>
+
+            {/* Heading */}
+            <h1 className="text-3xl lg:text-5xl font-extrabold leading-tight mb-4">
+              Arabana Jant<br />
+              <span className="gradient-text">Sanal Giydirme</span>
+            </h1>
+            <p className="text-[var(--text-secondary)] text-sm lg:text-base leading-relaxed mb-8 max-w-sm lg:max-w-none">
+              {dealer.firma_adi} jant kataloğundan birini seçin,<br className="hidden lg:block" />
+              yapay zeka 30 saniyede arabanıza yerleştirsin.
+            </p>
+
+            {/* Steps */}
+            <div className="w-full max-w-sm lg:max-w-none space-y-3 mb-10">
+              {[
+                { icon: Camera,   label: 'Araç fotoğrafı yükle', sub: 'Kamera veya galeriden', color: 'rgba(255,107,53,0.15)', ic: '#FF6B35' },
+                { icon: Zap,      label: 'Katalogdan jant seç',  sub: `${wheels.length} model mevcut`,   color: 'rgba(247,37,133,0.12)', ic: '#F72585' },
+                { icon: Sparkles, label: 'AI sonucunu gör',      sub: 'Kaydırarak karşılaştır',  color: 'rgba(114,9,183,0.12)',  ic: '#7209B7' },
+              ].map(({ icon: Icon, label, sub, color, ic }, i) => (
+                <div key={i} className="flex items-center gap-4 p-3.5 rounded-2xl border border-[var(--border-color)]"
+                  style={{ background: 'var(--bg-card)' }}>
+                  <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: color }}>
+                    <Icon className="w-5 h-5" style={{ color: ic }} />
+                  </div>
+                  <div className="flex-1 text-left">
+                    <p className="font-semibold text-sm text-white">{label}</p>
+                    <p className="text-xs text-[var(--text-secondary)] mt-0.5">{sub}</p>
+                  </div>
+                  <div className="w-6 h-6 rounded-full border border-[var(--border-color)] flex items-center justify-center text-xs font-bold text-[var(--text-secondary)] flex-shrink-0">
+                    {i + 1}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* CTA */}
+            <button onClick={onStart}
+              className="w-full max-w-sm lg:max-w-xs py-5 lg:py-4 rounded-2xl font-extrabold text-lg text-white flex items-center justify-center gap-2.5 active:scale-[0.98] transition-all"
+              style={{ background: 'linear-gradient(135deg,#FF6B35,#F72585,#7209B7)', boxShadow: '0 8px 32px rgba(247,37,133,0.35)' }}>
+              <Zap className="w-5 h-5" />
+              Jantları Dene
+              <ChevronRight className="w-5 h-5" />
+            </button>
+            <p className="text-xs text-[var(--text-secondary)] mt-4">Ücretsiz · Kayıt gerekmez · 30 saniye</p>
+          </div>
+
+          {/* ── Right: Wheel showcase (desktop only) ── */}
+          {wheels.length > 0 && (
+            <div className="hidden lg:block">
+              <div className="grid grid-cols-3 gap-3">
+                {wheels.slice(0, 9).map((w, i) => (
+                  <div key={w.id}
+                    className="rounded-2xl overflow-hidden border border-[var(--border-color)] aspect-square relative group cursor-pointer"
+                    style={{ background: 'var(--bg-card)', opacity: i >= 6 ? 0.5 : 1 }}
+                    onClick={onStart}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={w.jant_foto_url} alt={w.jant_adi} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="absolute bottom-2 left-2 right-2">
+                        <p className="text-xs font-bold text-white truncate">{w.jant_adi}</p>
+                        {w.fiyat != null && <p className="text-[10px] text-[var(--accent-orange)] font-bold">₺{w.fiyat.toLocaleString('tr-TR')}</p>}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {wheels.length > 9 && (
+                <p className="text-center text-xs text-[var(--text-secondary)] mt-3">
+                  +{wheels.length - 9} model daha mevcut
+                </p>
+              )}
+            </div>
+          )}
+        </div>
       </main>
     </div>
   );
@@ -284,7 +295,6 @@ function WelcomeScreen({ dealer, wheels, onStart }: {
 
 /* ─── Main component ──────────────────────────────────────────────────────── */
 export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels: Wheel[] }) {
-
   const [showApp,       setShowApp]       = useState(false);
   const [carPreview,    setCarPreview]    = useState<string | null>(null);
   const [carImageUrl,   setCarImageUrl]   = useState<string | null>(null);
@@ -296,11 +306,10 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
   const [error,         setError]         = useState<string | null>(null);
   const [uploadSheet,   setUploadSheet]   = useState(false);
 
-  const galleryRef  = useRef<HTMLInputElement>(null);
-  const cameraRef   = useRef<HTMLInputElement>(null);
-  const catalogRef  = useRef<HTMLDivElement>(null);
+  const galleryRef = useRef<HTMLInputElement>(null);
+  const cameraRef  = useRef<HTMLInputElement>(null);
+  const catalogRef = useRef<HTMLDivElement>(null);
 
-  /* ── Welcome screen ─────────────────────────────────────────────────────── */
   if (!showApp) {
     return <WelcomeScreen dealer={dealer} wheels={wheels} onStart={() => setShowApp(true)} />;
   }
@@ -308,7 +317,6 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
   const limitReached = dealer.kullanilan >= dealer.aylik_limit;
   const canGenerate  = !!carImageUrl && !!selectedWheel && !limitReached && !generating;
 
-  /* ── File ──────────────────────────────────────────────────────────────── */
   const processFile = async (file: File) => {
     setCarPreview(URL.createObjectURL(file));
     setCarImageUrl(null);
@@ -339,7 +347,6 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
     if (cameraRef.current)  cameraRef.current.value  = '';
   };
 
-  /* ── Generate ──────────────────────────────────────────────────────────── */
   const handleGenerate = async () => {
     if (!canGenerate) return;
     setGenerating(true);
@@ -349,12 +356,7 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
       const res  = await fetch('/api/dealer/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          dealer_id: dealer.id,
-          slug:      dealer.slug,
-          car_image: carImageUrl,
-          wheel_id:  selectedWheel!.id,
-        }),
+        body: JSON.stringify({ dealer_id: dealer.id, slug: dealer.slug, car_image: carImageUrl, wheel_id: selectedWheel!.id }),
       });
       const data = await res.json() as { output_url?: string; error?: string };
       if (!res.ok) throw new Error(data.error ?? 'Görsel oluşturulamadı');
@@ -373,7 +375,6 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
     setError(null);
   };
 
-  /* ── Wheel selection ───────────────────────────────────────────────────── */
   const handleWheelSelect = (wheel: Wheel) => {
     setSelectedWheel(wheel);
     setModalWheel(null);
@@ -381,7 +382,6 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
     setError(null);
   };
 
-  /* ── WhatsApp ──────────────────────────────────────────────────────────── */
   const waPhone = dealer.whatsapp.replace(/\D/g, '');
   const waText  = encodeURIComponent(
     `Merhaba ${dealer.firma_adi},\n`
@@ -390,104 +390,100 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
   );
   const waUrl = `https://wa.me/${waPhone}?text=${waText}`;
 
-  /* ── Render ────────────────────────────────────────────────────────────── */
   return (
     <div className="min-h-screen bg-[var(--bg-dark)] text-white flex flex-col">
+      <DealerHeader dealer={dealer} onBack={() => setShowApp(false)} />
 
-      {/* ══ HEADER ══════════════════════════════════════════════════════════ */}
-      <header className="sticky top-0 z-40 bg-[var(--bg-dark)]/95 backdrop-blur-md border-b border-[var(--border-color)]">
-        <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
-          <button
-            onClick={() => setShowApp(false)}
-            className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors hover:bg-white/10 active:scale-95"
-            style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}
-          >
-            <ChevronLeft className="w-4 h-4 text-[var(--text-secondary)]" />
-          </button>
-          <div className="flex-1 flex items-center justify-between">
-            {dealer.logo_url ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={dealer.logo_url} alt={dealer.firma_adi}
-                className="h-9 w-auto object-contain max-w-[140px]" />
-            ) : (
-              <div>
-                <p className="font-extrabold text-base leading-tight">{dealer.firma_adi}</p>
-                <p className="text-[10px] text-[var(--text-secondary)]">Jant Showroom</p>
-              </div>
-            )}
-            <div className="text-right">
-              <p className="text-[10px] text-[var(--text-secondary)]">Powered by</p>
-              <p className="text-xs font-bold gradient-text">WheelVision</p>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* ══ CONTENT ═════════════════════════════════════════════════════════ */}
-      <main className="flex-1 max-w-2xl mx-auto w-full px-4 pt-5 pb-32 space-y-5">
-
-        {limitReached && (
+      {limitReached && (
+        <div className="max-w-6xl mx-auto w-full px-4 lg:px-8 pt-4">
           <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm text-center">
             Bu ay için görsel hakkı dolmuştur.
           </div>
-        )}
+        </div>
+      )}
 
-        {/* ══ SONUÇ EKRANI ════════════════════════════════════════════════ */}
-        {resultUrl && carPreview && (
-          <div className="space-y-4">
-            <p className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-widest">
-              Sonuç — Kaydırarak karşılaştırın
-            </p>
-            <BeforeAfterSlider before={carPreview} after={resultUrl} />
+      {/* ══ RESULT SCREEN ═══════════════════════════════════════════════════ */}
+      {resultUrl && carPreview && (
+        <main className="flex-1 max-w-6xl mx-auto w-full px-4 lg:px-8 pt-5 pb-8">
+          <p className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-widest mb-4">
+            Sonuç — Kaydırarak karşılaştırın
+          </p>
 
-            {selectedWheel && (
-              <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-[var(--bg-card)] border border-[var(--border-color)]">
-                <div className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={selectedWheel.jant_foto_url} alt={selectedWheel.jant_adi} className="w-full h-full object-cover" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-sm truncate">{selectedWheel.jant_adi}</p>
-                  {selectedWheel.ebat && <p className="text-xs text-[var(--text-secondary)]">{selectedWheel.ebat}</p>}
-                </div>
-                {selectedWheel.fiyat != null && (
-                  <p className="font-extrabold text-base text-[var(--accent-orange)] flex-shrink-0">
-                    ₺{selectedWheel.fiyat.toLocaleString('tr-TR')}
-                  </p>
-                )}
-              </div>
-            )}
-
-            <div className="grid grid-cols-2 gap-3">
-              <a href={waUrl} target="_blank" rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 py-4 rounded-xl font-bold text-sm text-white active:scale-95 transition-all hover:brightness-110"
-                style={{ background: '#25D366' }}>
-                <WAIcon size={18} />
-                Sipariş Ver
-              </a>
-              <button
-                onClick={() => downloadWithWatermark(resultUrl, dealer.slug)}
-                className="btn-secondary flex items-center justify-center gap-2 py-4 text-sm font-bold rounded-xl">
-                <Download className="w-4 h-4" />
-                İndir
-              </button>
+          <div className="lg:grid lg:grid-cols-[1fr_340px] lg:gap-6 space-y-4 lg:space-y-0">
+            {/* Slider */}
+            <div style={{ height: 'min(calc(100svh - 220px), 640px)', minHeight: '280px' }}>
+              <BeforeAfterSlider before={carPreview} after={resultUrl} />
             </div>
 
-            <button onClick={handleReset}
-              className="btn-secondary w-full flex items-center justify-center gap-2 py-3.5 text-sm rounded-xl">
-              <RefreshCw className="w-4 h-4" />
-              Yeni Görsel Oluştur
-            </button>
+            {/* Actions panel */}
+            <div className="flex flex-col gap-3 lg:py-1">
+              {/* Wheel info */}
+              {selectedWheel && (
+                <div className="flex items-center gap-3 px-4 py-3 rounded-2xl border border-[var(--border-color)]"
+                  style={{ background: 'var(--bg-card)' }}>
+                  <div className="w-14 h-14 rounded-xl overflow-hidden flex-shrink-0">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={selectedWheel.jant_foto_url} alt={selectedWheel.jant_adi} className="w-full h-full object-cover" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-sm truncate">{selectedWheel.jant_adi}</p>
+                    {selectedWheel.marka && <p className="text-xs text-[var(--text-secondary)]">{selectedWheel.marka}{selectedWheel.ebat ? ` · ${selectedWheel.ebat}` : ''}</p>}
+                  </div>
+                  {selectedWheel.fiyat != null && (
+                    <p className="font-extrabold text-base text-[var(--accent-orange)] flex-shrink-0">
+                      ₺{selectedWheel.fiyat.toLocaleString('tr-TR')}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* Divider (desktop) */}
+              <div className="hidden lg:block h-px bg-[var(--border-color)]" />
+
+              {/* CTA buttons */}
+              <a href={waUrl} target="_blank" rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2.5 py-4 rounded-2xl font-bold text-sm text-white transition-all hover:brightness-110 active:scale-95"
+                style={{ background: '#25D366', boxShadow: '0 4px 16px rgba(37,211,102,0.3)' }}>
+                <WAIcon size={20} />
+                Sipariş Ver / Fiyat Al
+              </a>
+
+              <button onClick={() => downloadWithWatermark(resultUrl, dealer.slug)}
+                className="btn-secondary flex items-center justify-center gap-2 py-4 text-sm font-bold rounded-2xl">
+                <Download className="w-4 h-4" />
+                Görseli İndir
+              </button>
+
+              <div className="hidden lg:block h-px bg-[var(--border-color)]" />
+
+              <button onClick={handleReset}
+                className="flex items-center justify-center gap-2 py-3.5 text-sm rounded-2xl border border-[var(--border-color)] text-[var(--text-secondary)] hover:text-white hover:border-white/20 transition-colors"
+                style={{ background: 'var(--bg-card)' }}>
+                <RefreshCw className="w-4 h-4" />
+                Yeni Görsel Oluştur
+              </button>
+
+              {/* Desktop info card */}
+              <div className="hidden lg:block mt-auto p-4 rounded-2xl border border-[var(--border-color)] text-center"
+                style={{ background: 'var(--bg-card)' }}>
+                <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
+                  Bu görsel yapay zeka ile oluşturulmuştur.<br />Gerçek montaj sonucu farklılık gösterebilir.
+                </p>
+              </div>
+            </div>
           </div>
-        )}
+        </main>
+      )}
 
-        {/* ══ ADIMLAR (sonuç yokken) ══════════════════════════════════════ */}
-        {!resultUrl && (
-          <>
-            {/* ── Araç + Jant Seçimi yan yana ── */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      {/* ══ APP SCREEN (no result) ══════════════════════════════════════════ */}
+      {!resultUrl && (
+        <main className="flex-1 max-w-6xl mx-auto w-full px-4 lg:px-8 pt-5 pb-32 lg:pb-8">
+          <div className="lg:grid lg:grid-cols-[360px_1fr] lg:gap-8">
 
-              {/* Sol: Araç yükleme */}
+            {/* ── LEFT PANEL (mobile: full width / desktop: fixed sidebar) ── */}
+            <div className="lg:sticky lg:top-[65px] lg:h-[calc(100vh-65px)] lg:overflow-y-auto lg:pb-6 space-y-4">
+
+              {/* Car upload */}
               <div className="card !p-4">
                 <p className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wide mb-3">
                   1 · Araç Fotoğrafı
@@ -523,18 +519,18 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
                   </div>
                 ) : (
                   <button onClick={() => setUploadSheet(true)}
-                    className="upload-zone w-full flex flex-col items-center py-8 rounded-xl">
-                    <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-2"
+                    className="upload-zone w-full flex flex-col items-center py-10 rounded-xl">
+                    <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-3"
                       style={{ background: 'rgba(255,107,53,0.12)' }}>
-                      <Camera className="w-6 h-6 text-[var(--accent-orange)]" />
+                      <Camera className="w-7 h-7 text-[var(--accent-orange)]" />
                     </div>
                     <p className="font-semibold text-sm text-white">Fotoğraf Ekle</p>
-                    <p className="text-xs text-[var(--text-secondary)] mt-0.5">Kamera veya galeri</p>
+                    <p className="text-xs text-[var(--text-secondary)] mt-1">Kamera veya galeriden yükleyin</p>
                   </button>
                 )}
               </div>
 
-              {/* Sağ: Seçilen jant */}
+              {/* Selected wheel */}
               <div className="card !p-4">
                 <p className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wide mb-3">
                   2 · Seçilen Jant
@@ -543,77 +539,91 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
                   <div className="relative rounded-xl overflow-hidden" style={{ aspectRatio: '4/3' }}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={selectedWheel.jant_foto_url} alt={selectedWheel.jant_adi} className="w-full h-full object-cover" />
-                    <div className="absolute inset-x-0 bottom-0 p-2 bg-gradient-to-t from-black/80 to-transparent">
-                      <p className="text-xs font-bold text-white truncate">{selectedWheel.jant_adi}</p>
+                    <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/80 to-transparent">
+                      <p className="text-sm font-bold text-white truncate">{selectedWheel.jant_adi}</p>
                       {selectedWheel.fiyat != null && (
-                        <p className="text-xs text-[var(--accent-orange)] font-bold">
-                          ₺{selectedWheel.fiyat.toLocaleString('tr-TR')}
-                        </p>
+                        <p className="text-xs text-[var(--accent-orange)] font-bold mt-0.5">₺{selectedWheel.fiyat.toLocaleString('tr-TR')}</p>
                       )}
                     </div>
-                    <button
-                      onClick={() => {
-                        setSelectedWheel(null);
-                        catalogRef.current?.scrollIntoView({ behavior: 'smooth' });
-                      }}
+                    <button onClick={() => { setSelectedWheel(null); catalogRef.current?.scrollIntoView({ behavior: 'smooth' }); }}
                       className="absolute top-2 left-2 w-6 h-6 rounded-full bg-black/60 flex items-center justify-center">
                       <X className="w-3.5 h-3.5 text-white" />
                     </button>
                   </div>
                 ) : (
-                  <button
-                    onClick={() => catalogRef.current?.scrollIntoView({ behavior: 'smooth' })}
-                    className="upload-zone w-full flex flex-col items-center py-8 rounded-xl border-dashed">
-                    <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-2"
+                  <button onClick={() => catalogRef.current?.scrollIntoView({ behavior: 'smooth' })}
+                    className="upload-zone w-full flex flex-col items-center py-10 rounded-xl border-dashed">
+                    <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-3"
                       style={{ background: 'rgba(247,37,133,0.1)' }}>
-                      <ChevronDown className="w-6 h-6 text-[var(--accent-pink)]" />
+                      <ChevronDown className="w-7 h-7 text-[var(--accent-pink)]" />
                     </div>
                     <p className="font-semibold text-sm text-white">Jant Seçin</p>
-                    <p className="text-xs text-[var(--text-secondary)] mt-0.5">Aşağıdan katalogdan seçin</p>
+                    <p className="text-xs text-[var(--text-secondary)] mt-1">Katalogdan bir jant seçin</p>
                   </button>
                 )}
               </div>
+
+              {/* Error */}
+              {error && (
+                <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm flex items-start gap-2">
+                  <X className="w-4 h-4 flex-shrink-0 mt-0.5" />{error}
+                </div>
+              )}
+
+              {/* Generate button — desktop inline */}
+              <button onClick={handleGenerate} disabled={!canGenerate}
+                className="hidden lg:flex btn-primary w-full py-4 text-base font-extrabold rounded-2xl items-center justify-center gap-2.5 disabled:opacity-35 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none">
+                {generating ? (
+                  <><Loader2 className="w-5 h-5 animate-spin" />Görsel oluşturuluyor...</>
+                ) : (
+                  <><span>Görsel Oluştur</span>{canGenerate && <ChevronRight className="w-5 h-5" />}</>
+                )}
+              </button>
+              {!canGenerate && !generating && (
+                <p className="hidden lg:block text-center text-xs text-[var(--text-secondary)]">
+                  {!carImageUrl && !selectedWheel ? 'Araç fotoğrafı ve jant seçin' : !carImageUrl ? 'Araç fotoğrafı ekleyin' : 'Katalogdan jant seçin'}
+                </p>
+              )}
             </div>
 
-            {/* ── Jant Kataloğu ── */}
-            <div ref={catalogRef}>
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="font-bold text-sm">Jant Kataloğu</h2>
+            {/* ── RIGHT PANEL: Catalog ── */}
+            <div ref={catalogRef} className="mt-4 lg:mt-0">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h2 className="font-bold text-base lg:text-lg">Jant Kataloğu</h2>
+                  <p className="text-xs text-[var(--text-secondary)] mt-0.5">Janta tıklayarak detay ve seçim yapın</p>
+                </div>
                 {wheels.length > 0 && (
-                  <span className="text-xs px-2 py-0.5 rounded-full bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-secondary)]">
+                  <span className="text-xs px-2.5 py-1 rounded-full bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-secondary)]">
                     {wheels.length} model
                   </span>
                 )}
               </div>
 
               {wheels.length === 0 ? (
-                <p className="py-8 text-center text-sm text-[var(--text-secondary)]">Henüz jant eklenmemiş.</p>
+                <p className="py-12 text-center text-sm text-[var(--text-secondary)]">Henüz jant eklenmemiş.</p>
               ) : (
-                <div className="grid grid-cols-3 gap-3 overflow-y-auto" style={{ maxHeight: '520px' }}>
+                <div className="grid grid-cols-3 lg:grid-cols-4 gap-3">
                   {wheels.map((wheel) => {
                     const isSelected = selectedWheel?.id === wheel.id;
                     return (
-                      <button
-                        key={wheel.id}
-                        onClick={() => setModalWheel(wheel)}
-                        className="rounded-xl overflow-hidden border-2 transition-all active:scale-95 relative text-left"
+                      <button key={wheel.id} onClick={() => setModalWheel(wheel)}
+                        className="rounded-xl overflow-hidden border-2 transition-all active:scale-95 hover:border-white/20 relative text-left"
                         style={{
                           borderColor: isSelected ? 'var(--accent-orange)' : 'var(--border-color)',
                           boxShadow: isSelected ? '0 0 14px rgba(255,107,53,0.4)' : 'none',
                           background: 'var(--bg-card)',
-                        }}
-                      >
-                        <div className="aspect-square w-full">
+                        }}>
+                        <div className="aspect-square w-full overflow-hidden">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img src={wheel.jant_foto_url} alt={wheel.jant_adi}
-                            className="w-full h-full object-cover" />
+                            className="w-full h-full object-cover hover:scale-105 transition-transform duration-300" />
                         </div>
-                        <div className="px-2 py-2">
-                          <p className="text-[11px] font-semibold leading-tight line-clamp-2">
-                            {wheel.jant_adi}
-                          </p>
+                        <div className="px-2.5 py-2">
+                          <p className="text-[11px] lg:text-xs font-semibold leading-tight line-clamp-2">{wheel.jant_adi}</p>
+                          {wheel.marka && <p className="text-[10px] text-[var(--text-secondary)] mt-0.5">{wheel.marka}</p>}
                           {wheel.fiyat != null && (
-                            <p className="text-[10px] font-bold text-[var(--accent-orange)] mt-1">
+                            <p className="text-[10px] lg:text-xs font-bold text-[var(--accent-orange)] mt-1">
                               ₺{wheel.fiyat.toLocaleString('tr-TR')}
                             </p>
                           )}
@@ -628,43 +638,29 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
                   })}
                 </div>
               )}
-              <p className="text-[10px] text-[var(--text-secondary)]/40 italic text-center mt-2">
+              <p className="text-[10px] text-[var(--text-secondary)]/40 italic text-center mt-3">
                 Bu görseller demo amaçlıdır.
               </p>
             </div>
-
-            {error && (
-              <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm flex items-start gap-2">
-                <X className="w-4 h-4 flex-shrink-0 mt-0.5" />
-                {error}
-              </div>
-            )}
-          </>
-        )}
-      </main>
-
-      {/* ══ STICKY GENERATE BUTTON ══════════════════════════════════════════ */}
-      {!resultUrl && (
-        <div className="fixed bottom-0 left-0 right-0 z-50 px-4 pb-6 pt-4"
-          style={{ background: 'var(--bg-dark)', borderTop: '1px solid var(--border-color)' }}>
-          <div className="max-w-2xl mx-auto">
-            <button
-              onClick={handleGenerate}
-              disabled={!canGenerate}
-              className="btn-primary w-full py-4 text-base font-extrabold rounded-2xl flex items-center justify-center gap-2.5 disabled:opacity-35 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none"
-            >
-              {generating ? (
-                <><Loader2 className="w-5 h-5 animate-spin" />Görsel oluşturuluyor... (15–30 sn)</>
-              ) : (
-                <><span>Görsel Oluştur</span>{canGenerate && <ChevronRight className="w-5 h-5" />}</>
-              )}
-            </button>
-            {!carImageUrl && !selectedWheel && (
-              <p className="text-center text-xs text-[var(--text-secondary)] mt-2">
-                Araç fotoğrafı ve jant seçin
-              </p>
-            )}
           </div>
+        </main>
+      )}
+
+      {/* ══ STICKY GENERATE BUTTON (mobile only) ═══════════════════════════ */}
+      {!resultUrl && (
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 px-4 pb-6 pt-3"
+          style={{ background: 'var(--bg-dark)', borderTop: '1px solid var(--border-color)' }}>
+          <button onClick={handleGenerate} disabled={!canGenerate}
+            className="btn-primary w-full py-4 text-base font-extrabold rounded-2xl flex items-center justify-center gap-2.5 disabled:opacity-35 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none">
+            {generating ? (
+              <><Loader2 className="w-5 h-5 animate-spin" />Görsel oluşturuluyor... (15–30 sn)</>
+            ) : (
+              <><span>Görsel Oluştur</span>{canGenerate && <ChevronRight className="w-5 h-5" />}</>
+            )}
+          </button>
+          {!carImageUrl && !selectedWheel && (
+            <p className="text-center text-xs text-[var(--text-secondary)] mt-2">Araç fotoğrafı ve jant seçin</p>
+          )}
         </div>
       )}
 
@@ -674,15 +670,14 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
           <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm" onClick={() => setUploadSheet(false)} />
           <div className="fixed bottom-0 left-0 right-0 z-50 rounded-t-3xl border-t border-[var(--border-color)]"
             style={{ background: 'var(--bg-card)' }}>
-            <div className="max-w-2xl mx-auto px-4 pt-4 pb-10">
+            <div className="max-w-lg mx-auto px-4 pt-4 pb-10">
               <div className="w-12 h-1 rounded-full bg-[var(--border-color)] mx-auto mb-5" />
               <h3 className="font-bold text-base text-center mb-5">Fotoğraf Ekle</h3>
               <div className="space-y-3">
                 <button onClick={() => cameraRef.current?.click()}
-                  className="w-full flex items-center gap-4 p-4 rounded-2xl border border-[var(--border-color)] hover:border-[var(--accent-orange)] transition-colors active:scale-[0.98]"
+                  className="w-full flex items-center gap-4 p-4 rounded-2xl border border-[var(--border-color)] hover:border-[var(--accent-orange)] transition-colors"
                   style={{ background: 'var(--bg-dark)' }}>
-                  <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
-                    style={{ background: 'rgba(255,107,53,0.12)' }}>
+                  <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(255,107,53,0.12)' }}>
                     <Camera className="w-6 h-6 text-[var(--accent-orange)]" />
                   </div>
                   <div className="text-left">
@@ -692,10 +687,9 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
                   <ChevronRight className="w-4 h-4 text-[var(--text-secondary)] ml-auto" />
                 </button>
                 <button onClick={() => galleryRef.current?.click()}
-                  className="w-full flex items-center gap-4 p-4 rounded-2xl border border-[var(--border-color)] hover:border-[var(--accent-orange)] transition-colors active:scale-[0.98]"
+                  className="w-full flex items-center gap-4 p-4 rounded-2xl border border-[var(--border-color)] hover:border-[var(--accent-orange)] transition-colors"
                   style={{ background: 'var(--bg-dark)' }}>
-                  <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
-                    style={{ background: 'rgba(247,37,133,0.1)' }}>
+                  <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(247,37,133,0.1)' }}>
                     <ImageIcon className="w-6 h-6 text-[var(--accent-pink)]" />
                   </div>
                   <div className="text-left">
@@ -716,14 +710,9 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
 
       {/* ══ WHEEL DETAIL MODAL ══════════════════════════════════════════════ */}
       {modalWheel && (
-        <WheelModal
-          wheel={modalWheel}
-          onClose={() => setModalWheel(null)}
-          onSelect={handleWheelSelect}
-        />
+        <WheelModal wheel={modalWheel} onClose={() => setModalWheel(null)} onSelect={handleWheelSelect} />
       )}
 
-      {/* Hidden file inputs */}
       <input ref={galleryRef} type="file" accept="image/*"                       className="hidden" onChange={handleFileChange} />
       <input ref={cameraRef}  type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFileChange} />
     </div>
