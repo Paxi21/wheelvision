@@ -98,7 +98,7 @@ function BeforeAfterSlider({ before, after }: { before: string; after: string })
         <div
           ref={containerRef}
           className="relative select-none cursor-col-resize overflow-hidden rounded-[14px] bg-black"
-          style={{ touchAction: 'none', aspectRatio: '4/3' }}
+          style={{ touchAction: 'none', height: 'min(calc(100svh - 310px), 600px)', minHeight: '240px' }}
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
         >
