@@ -2,8 +2,8 @@
 
 import { useState, useRef, useCallback } from 'react';
 import {
-  Camera, ImageIcon, Check, Loader2, MessageCircle,
-  X, RefreshCw, Download, ChevronRight, ChevronDown, Sparkles, Zap,
+  Camera, ImageIcon, Check, Loader2,
+  X, RefreshCw, Download, ChevronRight, ChevronDown, ChevronLeft, Sparkles, Zap,
 } from 'lucide-react';
 import type { Dealer, Wheel } from '@/app/d/[slug]/page';
 
@@ -396,20 +396,29 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
 
       {/* ══ HEADER ══════════════════════════════════════════════════════════ */}
       <header className="sticky top-0 z-40 bg-[var(--bg-dark)]/95 backdrop-blur-md border-b border-[var(--border-color)]">
-        <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
-          {dealer.logo_url ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={dealer.logo_url} alt={dealer.firma_adi}
-              className="h-9 w-auto object-contain max-w-[160px]" />
-          ) : (
-            <div>
-              <p className="font-extrabold text-base leading-tight">{dealer.firma_adi}</p>
-              <p className="text-[10px] text-[var(--text-secondary)]">Jant Showroom</p>
+        <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
+          <button
+            onClick={() => setShowApp(false)}
+            className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors hover:bg-white/10 active:scale-95"
+            style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}
+          >
+            <ChevronLeft className="w-4 h-4 text-[var(--text-secondary)]" />
+          </button>
+          <div className="flex-1 flex items-center justify-between">
+            {dealer.logo_url ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={dealer.logo_url} alt={dealer.firma_adi}
+                className="h-9 w-auto object-contain max-w-[140px]" />
+            ) : (
+              <div>
+                <p className="font-extrabold text-base leading-tight">{dealer.firma_adi}</p>
+                <p className="text-[10px] text-[var(--text-secondary)]">Jant Showroom</p>
+              </div>
+            )}
+            <div className="text-right">
+              <p className="text-[10px] text-[var(--text-secondary)]">Powered by</p>
+              <p className="text-xs font-bold gradient-text">WheelVision</p>
             </div>
-          )}
-          <div className="text-right">
-            <p className="text-[10px] text-[var(--text-secondary)]">Powered by</p>
-            <p className="text-xs font-bold gradient-text">WheelVision</p>
           </div>
         </div>
       </header>
@@ -637,7 +646,7 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
       {/* ══ STICKY GENERATE BUTTON ══════════════════════════════════════════ */}
       {!resultUrl && (
         <div className="fixed bottom-0 left-0 right-0 z-50 px-4 pb-6 pt-4"
-          style={{ background: 'linear-gradient(to top,var(--bg-dark) 65%,transparent)' }}>
+          style={{ background: 'var(--bg-dark)', borderTop: '1px solid var(--border-color)' }}>
           <div className="max-w-2xl mx-auto">
             <button
               onClick={handleGenerate}
