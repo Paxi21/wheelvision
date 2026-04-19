@@ -3,7 +3,7 @@
 import { useState, useRef, useCallback } from 'react';
 import {
   Camera, ImageIcon, Check, Loader2, MessageCircle,
-  X, RefreshCw, Download, ChevronRight, ChevronDown,
+  X, RefreshCw, Download, ChevronRight, ChevronDown, Sparkles, Zap,
 } from 'lucide-react';
 import type { Dealer, Wheel } from '@/app/d/[slug]/page';
 
@@ -35,7 +35,6 @@ async function downloadWithWatermark(imageUrl: string, slug: string) {
   const ctx = canvas.getContext('2d')!;
   ctx.drawImage(bmp, 0, 0);
 
-  // Diagonal slug watermark
   const text     = slug.toUpperCase();
   const fontSize = Math.max(48, Math.floor(bmp.width / 8));
   ctx.save();
@@ -46,7 +45,6 @@ async function downloadWithWatermark(imageUrl: string, slug: string) {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText(text, 0, 0);
-  // Second pass slightly offset for visibility
   ctx.fillStyle = 'rgba(0,0,0,0.12)';
   ctx.fillText(text, 2, 2);
   ctx.restore();
@@ -104,32 +102,18 @@ function BeforeAfterSlider({ before, after }: { before: string; after: string })
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
         >
-          {/* After (background) */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={after} alt="Sonra" className="absolute inset-0 w-full h-full object-cover pointer-events-none" draggable={false} />
-
-          {/* Before (clipped) */}
           <div className="absolute inset-0" style={{ clipPath: `inset(0 ${100 - position}% 0 0)` }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={before} alt="Önce" className="w-full h-full object-cover pointer-events-none" draggable={false} />
           </div>
-
-          {/* Labels */}
-          <div className="absolute top-3 left-3 px-3 py-1.5 rounded-full backdrop-blur-md bg-black/50 border border-white/15 text-xs font-semibold text-white/80 pointer-events-none">
-            ÖNCE
-          </div>
+          <div className="absolute top-3 left-3 px-3 py-1.5 rounded-full backdrop-blur-md bg-black/50 border border-white/15 text-xs font-semibold text-white/80 pointer-events-none">ÖNCE</div>
           <div className="absolute top-3 right-3 px-3 py-1.5 rounded-full backdrop-blur-md border border-white/20 text-xs font-bold text-white pointer-events-none"
-            style={{ background: 'linear-gradient(135deg,rgba(255,107,53,0.85),rgba(247,37,133,0.85))' }}>
-            SONRA ✨
-          </div>
-
-          {/* Divider line */}
+            style={{ background: 'linear-gradient(135deg,rgba(255,107,53,0.85),rgba(247,37,133,0.85))' }}>SONRA ✨</div>
           <div className="absolute top-0 bottom-0 w-[2px] pointer-events-none"
             style={{ left: `${position}%`, background: 'linear-gradient(to bottom,transparent,rgba(255,255,255,0.95) 15%,rgba(255,255,255,0.95) 85%,transparent)' }} />
-
-          {/* Handle */}
-          <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 pointer-events-none z-10"
-            style={{ left: `${position}%` }}>
+          <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 pointer-events-none z-10" style={{ left: `${position}%` }}>
             <div className="w-11 h-11 rounded-full bg-white flex items-center justify-center border-2 border-white/90"
               style={{ boxShadow: '0 0 0 4px rgba(247,37,133,0.3),0 4px 20px rgba(0,0,0,0.4)' }}>
               <div className="flex items-center gap-0.5">
@@ -155,17 +139,11 @@ function WheelModal({ wheel, onClose, onSelect }: {
       <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm" onClick={onClose} />
       <div className="fixed inset-x-4 bottom-0 sm:inset-auto sm:left-1/2 sm:-translate-x-1/2 sm:bottom-auto sm:top-1/2 sm:-translate-y-1/2 sm:w-[360px] z-50 rounded-t-3xl sm:rounded-2xl border border-[var(--border-color)] overflow-hidden"
         style={{ background: 'var(--bg-card)' }}>
-
-        {/* Handle (mobile only) */}
         <div className="sm:hidden w-12 h-1 rounded-full bg-[var(--border-color)] mx-auto mt-3 mb-0" />
-
-        {/* Jant görseli */}
         <div className="relative w-full aspect-square bg-[var(--bg-dark)]">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={wheel.jant_foto_url} alt={wheel.jant_adi} className="w-full h-full object-cover" />
         </div>
-
-        {/* Bilgiler */}
         <div className="p-5">
           <div className="flex items-start justify-between gap-3 mb-3">
             <h3 className="font-bold text-base leading-tight">{wheel.jant_adi}</h3>
@@ -175,7 +153,6 @@ function WheelModal({ wheel, onClose, onSelect }: {
               </span>
             )}
           </div>
-
           <div className="space-y-2 mb-5">
             {wheel.ebat && (
               <div className="flex justify-between text-sm">
@@ -192,7 +169,6 @@ function WheelModal({ wheel, onClose, onSelect }: {
               </div>
             )}
           </div>
-
           <div className="grid grid-cols-2 gap-3">
             <button onClick={onClose}
               className="btn-secondary py-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-2">
@@ -203,7 +179,6 @@ function WheelModal({ wheel, onClose, onSelect }: {
               <Check className="w-4 h-4" /> Seç
             </button>
           </div>
-
           <p className="text-center text-[10px] text-[var(--text-secondary)]/50 mt-4 italic">
             Bu görseller demo amaçlıdır.
           </p>
@@ -213,9 +188,104 @@ function WheelModal({ wheel, onClose, onSelect }: {
   );
 }
 
+/* ─── Welcome / Landing Screen ────────────────────────────────────────────── */
+function WelcomeScreen({ dealer, wheels, onStart }: {
+  dealer: Dealer;
+  wheels: Wheel[];
+  onStart: () => void;
+}) {
+  return (
+    <div className="min-h-screen bg-[var(--bg-dark)] text-white flex flex-col">
+      {/* Header */}
+      <header className="sticky top-0 z-40 bg-[var(--bg-dark)]/95 backdrop-blur-md border-b border-[var(--border-color)]">
+        <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
+          {dealer.logo_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={dealer.logo_url} alt={dealer.firma_adi} className="h-9 w-auto object-contain max-w-[160px]" />
+          ) : (
+            <div>
+              <p className="font-extrabold text-base leading-tight">{dealer.firma_adi}</p>
+              <p className="text-[10px] text-[var(--text-secondary)]">Jant Showroom</p>
+            </div>
+          )}
+          <div className="text-right">
+            <p className="text-[10px] text-[var(--text-secondary)]">Powered by</p>
+            <p className="text-xs font-bold gradient-text">WheelVision</p>
+          </div>
+        </div>
+      </header>
+
+      <main className="flex-1 flex flex-col items-center justify-center px-6 py-10 text-center max-w-sm mx-auto w-full">
+
+        {/* Icon */}
+        <div className="relative mb-6">
+          <div className="absolute inset-0 rounded-3xl blur-2xl opacity-40"
+            style={{ background: 'linear-gradient(135deg,#FF6B35,#F72585,#7209B7)', transform: 'scale(1.4)' }} />
+          <div className="relative w-20 h-20 rounded-3xl flex items-center justify-center"
+            style={{ background: 'linear-gradient(135deg,#FF6B35,#F72585,#7209B7)' }}>
+            <Sparkles className="w-9 h-9 text-white" />
+          </div>
+        </div>
+
+        {/* Title */}
+        <h1 className="text-3xl font-extrabold leading-tight mb-3">
+          Arabana Jant<br />
+          <span className="gradient-text">Sanal Giydirme</span>
+        </h1>
+        <p className="text-[var(--text-secondary)] text-sm leading-relaxed mb-8">
+          {dealer.firma_adi} jant kataloğundan seçin,<br />
+          AI 30 saniyede arabanıza yerleştirsin.
+        </p>
+
+        {/* Steps */}
+        <div className="w-full space-y-3 mb-10">
+          {[
+            { icon: Camera, label: 'Araç fotoğrafı yükle', sub: 'Kamera veya galeri', color: 'rgba(255,107,53,0.15)', iconColor: '#FF6B35' },
+            { icon: Zap,    label: 'Katalogdan jant seç',  sub: `${wheels.length} model mevcut`,  color: 'rgba(247,37,133,0.12)', iconColor: '#F72585' },
+            { icon: Sparkles, label: 'AI sonucunu gör',    sub: 'Kaydırarak karşılaştır', color: 'rgba(114,9,183,0.12)', iconColor: '#7209B7' },
+          ].map(({ icon: Icon, label, sub, color, iconColor }, i) => (
+            <div key={i} className="flex items-center gap-4 p-3.5 rounded-2xl border border-[var(--border-color)]"
+              style={{ background: 'var(--bg-card)' }}>
+              <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: color }}>
+                <Icon className="w-5 h-5" style={{ color: iconColor }} />
+              </div>
+              <div className="text-left">
+                <p className="font-semibold text-sm text-white">{label}</p>
+                <p className="text-xs text-[var(--text-secondary)] mt-0.5">{sub}</p>
+              </div>
+              <div className="ml-auto w-6 h-6 rounded-full border border-[var(--border-color)] flex items-center justify-center flex-shrink-0 text-xs font-bold text-[var(--text-secondary)]">
+                {i + 1}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* CTA */}
+        <button
+          onClick={onStart}
+          className="w-full py-5 rounded-2xl font-extrabold text-lg text-white flex items-center justify-center gap-2.5 active:scale-[0.98] transition-all"
+          style={{
+            background: 'linear-gradient(135deg,#FF6B35,#F72585,#7209B7)',
+            boxShadow: '0 8px 32px rgba(247,37,133,0.35)',
+          }}
+        >
+          <Zap className="w-5 h-5" />
+          Jantları Dene
+          <ChevronRight className="w-5 h-5" />
+        </button>
+
+        <p className="text-xs text-[var(--text-secondary)] mt-4">
+          Ücretsiz · Kayıt gerekmez · 30 saniye
+        </p>
+      </main>
+    </div>
+  );
+}
+
 /* ─── Main component ──────────────────────────────────────────────────────── */
 export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels: Wheel[] }) {
 
+  const [showApp,       setShowApp]       = useState(false);
   const [carPreview,    setCarPreview]    = useState<string | null>(null);
   const [carImageUrl,   setCarImageUrl]   = useState<string | null>(null);
   const [uploading,     setUploading]     = useState(false);
@@ -229,6 +299,11 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
   const galleryRef  = useRef<HTMLInputElement>(null);
   const cameraRef   = useRef<HTMLInputElement>(null);
   const catalogRef  = useRef<HTMLDivElement>(null);
+
+  /* ── Welcome screen ─────────────────────────────────────────────────────── */
+  if (!showApp) {
+    return <WelcomeScreen dealer={dealer} wheels={wheels} onStart={() => setShowApp(true)} />;
+  }
 
   const limitReached = dealer.kullanilan >= dealer.aylik_limit;
   const canGenerate  = !!carImageUrl && !!selectedWheel && !limitReached && !generating;
@@ -342,7 +417,6 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
       {/* ══ CONTENT ═════════════════════════════════════════════════════════ */}
       <main className="flex-1 max-w-2xl mx-auto w-full px-4 pt-5 pb-32 space-y-5">
 
-        {/* Limit uyarısı */}
         {limitReached && (
           <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm text-center">
             Bu ay için görsel hakkı dolmuştur.
@@ -357,19 +431,15 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
             </p>
             <BeforeAfterSlider before={carPreview} after={resultUrl} />
 
-            {/* Seçilen jant özeti */}
             {selectedWheel && (
               <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-[var(--bg-card)] border border-[var(--border-color)]">
                 <div className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={selectedWheel.jant_foto_url} alt={selectedWheel.jant_adi}
-                    className="w-full h-full object-cover" />
+                  <img src={selectedWheel.jant_foto_url} alt={selectedWheel.jant_adi} className="w-full h-full object-cover" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-sm truncate">{selectedWheel.jant_adi}</p>
-                  {selectedWheel.ebat && (
-                    <p className="text-xs text-[var(--text-secondary)]">{selectedWheel.ebat}</p>
-                  )}
+                  {selectedWheel.ebat && <p className="text-xs text-[var(--text-secondary)]">{selectedWheel.ebat}</p>}
                 </div>
                 {selectedWheel.fiyat != null && (
                   <p className="font-extrabold text-base text-[var(--accent-orange)] flex-shrink-0">
@@ -379,7 +449,6 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
               </div>
             )}
 
-            {/* CTA butonları */}
             <div className="grid grid-cols-2 gap-3">
               <a href={waUrl} target="_blank" rel="noopener noreferrer"
                 className="flex items-center justify-center gap-2 py-4 rounded-xl font-bold text-sm text-white active:scale-95 transition-all hover:brightness-110"
@@ -414,7 +483,6 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
                 <p className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wide mb-3">
                   1 · Araç Fotoğrafı
                 </p>
-
                 {carPreview ? (
                   <div className="relative rounded-xl overflow-hidden" style={{ aspectRatio: '4/3' }}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -462,12 +530,10 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
                 <p className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wide mb-3">
                   2 · Seçilen Jant
                 </p>
-
                 {selectedWheel ? (
                   <div className="relative rounded-xl overflow-hidden" style={{ aspectRatio: '4/3' }}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={selectedWheel.jant_foto_url} alt={selectedWheel.jant_adi}
-                      className="w-full h-full object-cover" />
+                    <img src={selectedWheel.jant_foto_url} alt={selectedWheel.jant_adi} className="w-full h-full object-cover" />
                     <div className="absolute inset-x-0 bottom-0 p-2 bg-gradient-to-t from-black/80 to-transparent">
                       <p className="text-xs font-bold text-white truncate">{selectedWheel.jant_adi}</p>
                       {selectedWheel.fiyat != null && (
@@ -514,20 +580,17 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
               {wheels.length === 0 ? (
                 <p className="py-8 text-center text-sm text-[var(--text-secondary)]">Henüz jant eklenmemiş.</p>
               ) : (
-                <div
-                  className="grid grid-cols-3 sm:grid-cols-4 gap-3 overflow-y-auto pr-1"
-                  style={{ maxHeight: '580px' }}
-                >
+                <div className="grid grid-cols-3 gap-3 overflow-y-auto" style={{ maxHeight: '520px' }}>
                   {wheels.map((wheel) => {
                     const isSelected = selectedWheel?.id === wheel.id;
                     return (
                       <button
                         key={wheel.id}
                         onClick={() => setModalWheel(wheel)}
-                        className="rounded-2xl overflow-hidden border-2 transition-all active:scale-95 relative"
+                        className="rounded-xl overflow-hidden border-2 transition-all active:scale-95 relative text-left"
                         style={{
                           borderColor: isSelected ? 'var(--accent-orange)' : 'var(--border-color)',
-                          boxShadow: isSelected ? '0 0 16px rgba(255,107,53,0.35)' : 'none',
+                          boxShadow: isSelected ? '0 0 14px rgba(255,107,53,0.4)' : 'none',
                           background: 'var(--bg-card)',
                         }}
                       >
@@ -537,18 +600,18 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
                             className="w-full h-full object-cover" />
                         </div>
                         <div className="px-2 py-2">
-                          <p className="text-xs font-semibold leading-tight line-clamp-2 text-left">
+                          <p className="text-[11px] font-semibold leading-tight line-clamp-2">
                             {wheel.jant_adi}
                           </p>
                           {wheel.fiyat != null && (
-                            <p className="text-xs font-bold text-[var(--accent-orange)] mt-1 text-left">
+                            <p className="text-[10px] font-bold text-[var(--accent-orange)] mt-1">
                               ₺{wheel.fiyat.toLocaleString('tr-TR')}
                             </p>
                           )}
                         </div>
                         {isSelected && (
-                          <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-[var(--accent-orange)] flex items-center justify-center shadow">
-                            <Check className="w-3.5 h-3.5 text-white" />
+                          <div className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-[var(--accent-orange)] flex items-center justify-center shadow">
+                            <Check className="w-3 h-3 text-white" />
                           </div>
                         )}
                       </button>
@@ -561,7 +624,6 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
               </p>
             </div>
 
-            {/* Hata */}
             {error && (
               <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm flex items-start gap-2">
                 <X className="w-4 h-4 flex-shrink-0 mt-0.5" />
