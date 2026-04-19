@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import {
   Camera, ImageIcon, Check, Loader2,
   X, RefreshCw, Download, ChevronRight, ChevronDown, ChevronLeft, Sparkles, Zap,
@@ -9,6 +9,50 @@ import type { Dealer, Wheel } from '@/app/d/[slug]/page';
 
 const CLOUD_NAME    = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME!;
 const UPLOAD_PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET!;
+
+/* Cloudinary URL optimizer — injects f_auto,q_auto,w_{size} transforms */
+function cdnUrl(url: string, w: number): string {
+  if (!url.includes('cloudinary.com/')) return url;
+  return url.replace('/upload/', `/upload/f_auto,q_auto:good,w_${w}/`);
+}
+
+/* Skeleton shimmer */
+function Skeleton({ className = '' }: { className?: string }) {
+  return (
+    <div className={`animate-pulse rounded bg-white/8 ${className}`}
+      style={{ background: 'linear-gradient(90deg,rgba(255,255,255,0.04) 25%,rgba(255,255,255,0.09) 50%,rgba(255,255,255,0.04) 75%)', backgroundSize: '200% 100%', animation: 'shimmer 1.4s infinite' }} />
+  );
+}
+
+/* Wheel image with skeleton + fade-in */
+function WheelImg({ src, alt, priority = false, className = '' }: { src: string; alt: string; priority?: boolean; className?: string }) {
+  const [loaded, setLoaded] = useState(false);
+  const opt = cdnUrl(src, priority ? 600 : 400);
+  return (
+    <div className={`relative w-full h-full ${className}`}>
+      {!loaded && <Skeleton className="absolute inset-0 rounded-none" />}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={opt}
+        alt={alt}
+        loading={priority ? 'eager' : 'lazy'}
+        decoding={priority ? 'sync' : 'async'}
+        onLoad={() => setLoaded(true)}
+        className={`w-full h-full object-cover transition-opacity duration-500 ${loaded ? 'opacity-100' : 'opacity-0'}`}
+        draggable={false}
+      />
+    </div>
+  );
+}
+
+const GENERATION_STEPS = [
+  'Araç analiz ediliyor...',
+  'Jant yerleştiriliyor...',
+  'Işık ve gölge uyumu...',
+  'Renk eşleştirme yapılıyor...',
+  'Son rötuşlar uygulanıyor...',
+  'Görsel hazırlanıyor...',
+];
 
 /* ─── Cloudinary upload ───────────────────────────────────────────────────── */
 async function uploadToCloudinary(file: File): Promise<string> {
@@ -66,7 +110,7 @@ function WAIcon({ size = 18 }: { size?: number }) {
 }
 
 /* ─── Before / After Slider ───────────────────────────────────────────────── */
-function BeforeAfterSlider({ before, after }: { before: string; after: string }) {
+function BeforeAfterSlider({ before, after, onAfterLoad }: { before: string; after: string; onAfterLoad?: () => void }) {
   const [position, setPosition] = useState(50);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -98,7 +142,7 @@ function BeforeAfterSlider({ before, after }: { before: string; after: string })
           onPointerMove={onPointerMove}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={after} alt="Sonra" className="absolute inset-0 w-full h-full object-cover pointer-events-none" draggable={false} />
+          <img src={cdnUrl(after, 1200)} alt="Sonra" onLoad={onAfterLoad} className="absolute inset-0 w-full h-full object-cover pointer-events-none" draggable={false} />
           <div className="absolute inset-0" style={{ clipPath: `inset(0 ${100 - position}% 0 0)` }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={before} alt="Önce" className="w-full h-full object-cover pointer-events-none" draggable={false} />
@@ -132,8 +176,7 @@ function WheelModal({ wheel, onClose, onSelect }: { wheel: Wheel; onClose: () =>
         style={{ background: 'var(--bg-card)' }}>
         <div className="sm:hidden w-12 h-1 rounded-full bg-[var(--border-color)] mx-auto mt-3" />
         <div className="relative w-full aspect-square bg-[var(--bg-dark)]">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={wheel.jant_foto_url} alt={wheel.jant_adi} className="w-full h-full object-cover" />
+          <WheelImg src={wheel.jant_foto_url} alt={wheel.jant_adi} priority />
         </div>
         <div className="p-5">
           <div className="flex items-start justify-between gap-3 mb-3">
@@ -269,8 +312,7 @@ function WelcomeScreen({ dealer, wheels, onStart }: { dealer: Dealer; wheels: Wh
                     style={{ background: 'var(--bg-card)', opacity: i >= 6 ? 0.5 : 1 }}
                     onClick={onStart}
                   >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={w.jant_foto_url} alt={w.jant_adi} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                    <WheelImg src={w.jant_foto_url} alt={w.jant_adi} priority={i < 3} />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
                       <div className="absolute bottom-2 left-2 right-2">
                         <p className="text-xs font-bold text-white truncate">{w.jant_adi}</p>
@@ -302,13 +344,22 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
   const [selectedWheel, setSelectedWheel] = useState<Wheel | null>(null);
   const [modalWheel,    setModalWheel]    = useState<Wheel | null>(null);
   const [generating,    setGenerating]    = useState(false);
+  const [genStep,       setGenStep]       = useState(0);
   const [resultUrl,     setResultUrl]     = useState<string | null>(null);
+  const [resultLoaded,  setResultLoaded]  = useState(false);
   const [error,         setError]         = useState<string | null>(null);
   const [uploadSheet,   setUploadSheet]   = useState(false);
 
   const galleryRef = useRef<HTMLInputElement>(null);
   const cameraRef  = useRef<HTMLInputElement>(null);
   const catalogRef = useRef<HTMLDivElement>(null);
+
+  /* Cycle generation step text every 4 s while generating */
+  useEffect(() => {
+    if (!generating) { setGenStep(0); return; }
+    const id = setInterval(() => setGenStep(s => (s + 1) % GENERATION_STEPS.length), 4000);
+    return () => clearInterval(id);
+  }, [generating]);
 
   if (!showApp) {
     return <WelcomeScreen dealer={dealer} wheels={wheels} onStart={() => setShowApp(true)} />;
@@ -360,6 +411,7 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
       });
       const data = await res.json() as { output_url?: string; error?: string };
       if (!res.ok) throw new Error(data.error ?? 'Görsel oluşturulamadı');
+      setResultLoaded(false);
       setResultUrl(data.output_url!);
     } catch (err) {
       setError((err as Error).message);
@@ -410,9 +462,24 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
           </p>
 
           <div className="lg:grid lg:grid-cols-[1fr_340px] lg:gap-6 space-y-4 lg:space-y-0">
-            {/* Slider */}
-            <div style={{ height: 'min(calc(100svh - 220px), 640px)', minHeight: '280px' }}>
-              <BeforeAfterSlider before={carPreview} after={resultUrl} />
+            {/* Slider — skeleton until result image loads */}
+            <div className="relative" style={{ height: 'min(calc(100svh - 220px), 640px)', minHeight: '280px' }}>
+              {!resultLoaded && (
+                <div className="absolute inset-0 z-10 rounded-2xl overflow-hidden">
+                  <Skeleton className="w-full h-full rounded-2xl" />
+                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
+                    <Loader2 className="w-8 h-8 animate-spin text-[var(--accent-orange)]" />
+                    <p className="text-sm text-[var(--text-secondary)]">Görsel yükleniyor...</p>
+                  </div>
+                </div>
+              )}
+              <div className={`w-full h-full transition-opacity duration-700 ${resultLoaded ? 'opacity-100' : 'opacity-0'}`}>
+                <BeforeAfterSlider
+                  before={carPreview}
+                  after={resultUrl}
+                  onAfterLoad={() => setResultLoaded(true)}
+                />
+              </div>
             </div>
 
             {/* Actions panel */}
@@ -422,8 +489,7 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
                 <div className="flex items-center gap-3 px-4 py-3 rounded-2xl border border-[var(--border-color)]"
                   style={{ background: 'var(--bg-card)' }}>
                   <div className="w-14 h-14 rounded-xl overflow-hidden flex-shrink-0">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={selectedWheel.jant_foto_url} alt={selectedWheel.jant_adi} className="w-full h-full object-cover" />
+                    <WheelImg src={selectedWheel.jant_foto_url} alt={selectedWheel.jant_adi} priority />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-sm truncate">{selectedWheel.jant_adi}</p>
@@ -537,8 +603,7 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
                 </p>
                 {selectedWheel ? (
                   <div className="relative rounded-xl overflow-hidden" style={{ aspectRatio: '4/3' }}>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={selectedWheel.jant_foto_url} alt={selectedWheel.jant_adi} className="w-full h-full object-cover" />
+                    <WheelImg src={selectedWheel.jant_foto_url} alt={selectedWheel.jant_adi} priority />
                     <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/80 to-transparent">
                       <p className="text-sm font-bold text-white truncate">{selectedWheel.jant_adi}</p>
                       {selectedWheel.fiyat != null && (
@@ -574,7 +639,7 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
               <button onClick={handleGenerate} disabled={!canGenerate}
                 className="hidden lg:flex btn-primary w-full py-4 text-base font-extrabold rounded-2xl items-center justify-center gap-2.5 disabled:opacity-35 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none">
                 {generating ? (
-                  <><Loader2 className="w-5 h-5 animate-spin" />Görsel oluşturuluyor...</>
+                  <><Loader2 className="w-5 h-5 animate-spin flex-shrink-0" /><span className="truncate text-sm">{GENERATION_STEPS[genStep]}</span></>
                 ) : (
                   <><span>Görsel Oluştur</span>{canGenerate && <ChevronRight className="w-5 h-5" />}</>
                 )}
@@ -615,9 +680,7 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
                           background: 'var(--bg-card)',
                         }}>
                         <div className="aspect-square w-full overflow-hidden">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={wheel.jant_foto_url} alt={wheel.jant_adi}
-                            className="w-full h-full object-cover hover:scale-105 transition-transform duration-300" />
+                          <WheelImg src={wheel.jant_foto_url} alt={wheel.jant_adi} priority={wheels.indexOf(wheel) < 6} />
                         </div>
                         <div className="px-2.5 py-2">
                           <p className="text-[11px] lg:text-xs font-semibold leading-tight line-clamp-2">{wheel.jant_adi}</p>
@@ -653,7 +716,7 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
           <button onClick={handleGenerate} disabled={!canGenerate}
             className="btn-primary w-full py-4 text-base font-extrabold rounded-2xl flex items-center justify-center gap-2.5 disabled:opacity-35 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none">
             {generating ? (
-              <><Loader2 className="w-5 h-5 animate-spin" />Görsel oluşturuluyor... (15–30 sn)</>
+              <><Loader2 className="w-5 h-5 animate-spin flex-shrink-0" /><span className="truncate text-sm">{GENERATION_STEPS[genStep]}</span></>
             ) : (
               <><span>Görsel Oluştur</span>{canGenerate && <ChevronRight className="w-5 h-5" />}</>
             )}
