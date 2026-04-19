@@ -515,8 +515,8 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
                 <p className="py-8 text-center text-sm text-[var(--text-secondary)]">Henüz jant eklenmemiş.</p>
               ) : (
                 <div
-                  className="flex gap-3 overflow-x-auto pb-3"
-                  style={{ scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch' }}
+                  className="grid grid-cols-3 sm:grid-cols-4 gap-3 overflow-y-auto pr-1"
+                  style={{ maxHeight: '580px' }}
                 >
                   {wheels.map((wheel) => {
                     const isSelected = selectedWheel?.id === wheel.id;
@@ -524,16 +524,14 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
                       <button
                         key={wheel.id}
                         onClick={() => setModalWheel(wheel)}
-                        className="flex-shrink-0 rounded-2xl overflow-hidden border-2 transition-all active:scale-95 relative"
+                        className="rounded-2xl overflow-hidden border-2 transition-all active:scale-95 relative"
                         style={{
-                          width: '140px',
-                          scrollSnapAlign: 'start',
                           borderColor: isSelected ? 'var(--accent-orange)' : 'var(--border-color)',
                           boxShadow: isSelected ? '0 0 16px rgba(255,107,53,0.35)' : 'none',
                           background: 'var(--bg-card)',
                         }}
                       >
-                        <div style={{ width: '140px', height: '140px' }}>
+                        <div className="aspect-square w-full">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img src={wheel.jant_foto_url} alt={wheel.jant_adi}
                             className="w-full h-full object-cover" />

@@ -65,7 +65,7 @@ export default async function DealerSlugPage({
     .from('dealer_wheels')
     .select('id, dealer_id, jant_adi, jant_foto_url, marka, ebat, fiyat')
     .eq('dealer_id', dealer.id)
-    .order('jant_adi');
+    .order('sira', { ascending: true });
 
   return <DealerPage dealer={dealer as Dealer} wheels={(wheels ?? []) as Wheel[]} />;
 }
