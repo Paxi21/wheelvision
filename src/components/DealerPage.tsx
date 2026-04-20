@@ -205,8 +205,21 @@ function WheelModal({ wheel, onClose, onSelect }: { wheel: Wheel; onClose: () =>
 
 /* ─── Shared Header ───────────────────────────────────────────────────────── */
 function DealerHeader({ dealer, onBack }: { dealer: Dealer; onBack?: () => void }) {
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const handler = () => setScrolled(window.scrollY > 20);
+    window.addEventListener('scroll', handler, { passive: true });
+    return () => window.removeEventListener('scroll', handler);
+  }, []);
+
   return (
-    <header className="sticky top-0 z-40 bg-[var(--bg-dark)]/95 backdrop-blur-md border-b border-[var(--border-color)]">
+    <header
+      className="sticky top-0 z-40 backdrop-blur-md border-b transition-all"
+      style={{
+        background: scrolled ? 'rgba(10,10,15,0.98)' : 'rgba(10,10,15,0.85)',
+        borderColor: scrolled ? 'rgba(42,42,53,0.9)' : 'rgba(42,42,53,0.4)',
+      }}
+    >
       <div className="max-w-6xl mx-auto px-4 lg:px-8 py-3 flex items-center gap-3">
         {onBack && (
           <button onClick={onBack}
@@ -228,7 +241,7 @@ function DealerHeader({ dealer, onBack }: { dealer: Dealer; onBack?: () => void 
           <div className="flex items-center gap-4">
             <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-full border border-[var(--border-color)] bg-[var(--bg-card)]">
               <div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-              <span className="text-xs text-[var(--text-secondary)]">{/* wheels.length */} Demo aktif</span>
+              <span className="text-xs text-[var(--text-secondary)]">Demo aktif</span>
             </div>
             <div className="text-right">
               <p className="text-[10px] text-[var(--text-secondary)]">Powered by</p>
@@ -243,77 +256,200 @@ function DealerHeader({ dealer, onBack }: { dealer: Dealer; onBack?: () => void 
 
 /* ─── Welcome Screen ──────────────────────────────────────────────────────── */
 function WelcomeScreen({ dealer, wheels, onStart }: { dealer: Dealer; wheels: Wheel[]; onStart: () => void }) {
-  return (
-    <div className="min-h-screen bg-[var(--bg-dark)] text-white flex flex-col">
-      <DealerHeader dealer={dealer} />
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const mouseRef  = useRef({ x: -1000, y: -1000 });
+  const [glowPos, setGlowPos] = useState({ x: -1000, y: -1000 });
 
-      <main className="flex-1 max-w-6xl mx-auto w-full px-6 lg:px-8 py-10 lg:py-16">
+  /* Particle system */
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    const resize = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; };
+    resize();
+    window.addEventListener('resize', resize, { passive: true });
+    const count = window.innerWidth < 768 ? 30 : 60;
+    const COLORS = ['#FF6B35', '#F72585', '#7209B7'];
+    type P = { x: number; y: number; vx: number; vy: number; r: number; c: string };
+    const pts: P[] = Array.from({ length: count }, () => ({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      vx: (Math.random() - 0.5) * 0.6,
+      vy: (Math.random() - 0.5) * 0.6,
+      r: 0.5 + Math.random() * 2,
+      c: COLORS[Math.floor(Math.random() * 3)],
+    }));
+    let raf = 0;
+    const tick = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const mx = mouseRef.current.x, my = mouseRef.current.y;
+      for (const p of pts) {
+        const dx = p.x - mx, dy = p.y - my, d2 = dx * dx + dy * dy;
+        if (d2 < 150 * 150 && d2 > 0) {
+          const d = Math.sqrt(d2), f = (150 - d) / 150 * 0.5;
+          p.vx += dx / d * f; p.vy += dy / d * f;
+        }
+        p.vx *= 0.99; p.vy *= 0.99;
+        const spd = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
+        if (spd > 2) { p.vx = p.vx / spd * 2; p.vy = p.vy / spd * 2; }
+        p.x = (p.x + p.vx + canvas.width)  % canvas.width;
+        p.y = (p.y + p.vy + canvas.height) % canvas.height;
+        ctx.globalAlpha = 0.6;
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fillStyle = p.c; ctx.fill();
+      }
+      for (let i = 0; i < pts.length - 1; i++) {
+        for (let j = i + 1; j < pts.length; j++) {
+          const dx = pts[i].x - pts[j].x, dy = pts[i].y - pts[j].y;
+          const d = Math.sqrt(dx * dx + dy * dy);
+          if (d < 120) {
+            ctx.globalAlpha = (1 - d / 120) * 0.15;
+            ctx.strokeStyle = pts[i].c; ctx.lineWidth = 0.5;
+            ctx.beginPath(); ctx.moveTo(pts[i].x, pts[i].y); ctx.lineTo(pts[j].x, pts[j].y); ctx.stroke();
+          }
+        }
+      }
+      ctx.globalAlpha = 1;
+      raf = requestAnimationFrame(tick);
+    };
+    tick();
+    return () => { cancelAnimationFrame(raf); window.removeEventListener('resize', resize); };
+  }, []);
+
+  /* Mouse glow (desktop) */
+  useEffect(() => {
+    const onMove = (e: MouseEvent) => {
+      mouseRef.current = { x: e.clientX, y: e.clientY };
+      setGlowPos({ x: e.clientX, y: e.clientY });
+    };
+    window.addEventListener('mousemove', onMove, { passive: true });
+    return () => window.removeEventListener('mousemove', onMove);
+  }, []);
+
+  return (
+    <div className="min-h-screen bg-[var(--bg-dark)] text-white flex flex-col relative overflow-hidden">
+      {/* Canvas particles */}
+      <canvas ref={canvasRef} className="fixed inset-0 pointer-events-none" style={{ zIndex: 0 }} />
+
+      {/* Grid */}
+      <div className="fixed inset-0 pointer-events-none" style={{ zIndex: 0, backgroundImage: 'linear-gradient(rgba(255,255,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.03) 1px,transparent 1px)', backgroundSize: '60px 60px' }} />
+
+      {/* Orbs */}
+      <div className="fixed pointer-events-none" style={{ zIndex: 0, right: '-100px', top: '-100px', width: '600px', height: '600px', borderRadius: '50%', background: 'radial-gradient(circle,rgba(255,107,53,0.07) 0%,transparent 70%)', filter: 'blur(40px)', animation: 'orbFloat1 8s ease-in-out infinite' }} />
+      <div className="fixed pointer-events-none" style={{ zIndex: 0, left: '-150px', bottom: '-100px', width: '500px', height: '500px', borderRadius: '50%', background: 'radial-gradient(circle,rgba(247,37,133,0.06) 0%,transparent 70%)', filter: 'blur(40px)', animation: 'orbFloat2 10s ease-in-out infinite' }} />
+      <div className="fixed pointer-events-none" style={{ zIndex: 0, left: '50%', top: '50%', width: '800px', height: '800px', borderRadius: '50%', background: 'radial-gradient(circle,rgba(114,9,183,0.04) 0%,transparent 70%)', filter: 'blur(60px)', transform: 'translate(-50%,-50%)', animation: 'orbFloat3 12s ease-in-out infinite' }} />
+
+      {/* Mouse glow */}
+      <div className="fixed pointer-events-none hidden lg:block" style={{ zIndex: 1, left: glowPos.x - 200, top: glowPos.y - 200, width: '400px', height: '400px', borderRadius: '50%', background: 'radial-gradient(circle,rgba(247,37,133,0.08) 0%,rgba(114,9,183,0.04) 50%,transparent 70%)', filter: 'blur(20px)', transition: 'left 0.15s ease-out,top 0.15s ease-out' }} />
+
+      {/* Noise overlay */}
+      <svg className="fixed inset-0 pointer-events-none w-full h-full" style={{ zIndex: 0, opacity: 0.015 }} aria-hidden>
+        <filter id="wv-noise">
+          <feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch" />
+          <feColorMatrix type="saturate" values="0" />
+        </filter>
+        <rect width="100%" height="100%" filter="url(#wv-noise)" />
+      </svg>
+
+      {/* Header */}
+      <div style={{ position: 'relative', zIndex: 10 }}>
+        <DealerHeader dealer={dealer} />
+      </div>
+
+      <main className="flex-1 max-w-6xl mx-auto w-full px-6 lg:px-8 py-10 lg:py-16" style={{ position: 'relative', zIndex: 10 }}>
         <div className="lg:grid lg:grid-cols-2 lg:gap-16 lg:items-center">
 
-          {/* ── Left: Text + CTA ── */}
+          {/* ── Left: Hero ── */}
           <div className="flex flex-col items-center lg:items-start text-center lg:text-left">
+
             {/* Badge */}
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-[var(--border-color)] bg-[var(--bg-card)] text-xs text-[var(--text-secondary)] mb-6">
-              <Sparkles className="w-3.5 h-3.5 text-[var(--accent-orange)]" />
-              AI Destekli Jant Görselleştirme
+            <div
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-[var(--border-color)] mb-6"
+              style={{ background: 'rgba(18,18,26,0.8)', backdropFilter: 'blur(12px)', animation: 'fadeSlideDown 0.5s ease-out forwards' }}
+            >
+              <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: 'var(--accent-orange)', boxShadow: '0 0 6px rgba(255,107,53,0.8)' }} />
+              <span className="text-xs text-[var(--text-secondary)]">✦ AI Destekli Jant Görselleştirme</span>
             </div>
 
             {/* Heading */}
-            <h1 className="text-3xl lg:text-5xl font-extrabold leading-tight mb-4">
-              Arabana Jant<br />
-              <span className="gradient-text">Sanal Giydirme</span>
+            <h1 className="font-black leading-tight mb-4"
+              style={{ fontSize: 'clamp(36px,5vw,52px)', letterSpacing: '-0.02em', animation: 'fadeSlideUp 0.5s ease-out 0.1s both' }}>
+              Hayal Et, Gör, Sahip Ol<br />
+              <span className="gradient-text">Jantını Şimdi Dene</span>
             </h1>
-            <p className="text-[var(--text-secondary)] text-sm lg:text-base leading-relaxed mb-8 max-w-sm lg:max-w-none">
-              {dealer.firma_adi} jant kataloğundan birini seçin,<br className="hidden lg:block" />
-              yapay zeka 30 saniyede arabanıza yerleştirsin.
+
+            {/* Subtitle */}
+            <p className="text-[var(--text-secondary)] leading-relaxed mb-8 max-w-sm lg:max-w-none"
+              style={{ fontSize: '15px', animation: 'fadeSlideUp 0.5s ease-out 0.2s both' }}>
+              Fotoğrafını yükle, kataloğdan jantı seç —{' '}
+              <span className="font-bold" style={{ color: 'var(--accent-orange)' }}>yapay zeka 30 saniyede</span>{' '}
+              aracına montajlasın. Satın almadan önce gör.
             </p>
 
-            {/* Steps */}
-            <div className="w-full max-w-sm lg:max-w-none space-y-3 mb-10">
+            {/* 3 step cards */}
+            <div className="w-full max-w-sm lg:max-w-none space-y-3 mb-8">
               {[
-                { icon: Camera,   label: 'Araç fotoğrafı yükle', sub: 'Kamera veya galeriden', color: 'rgba(255,107,53,0.15)', ic: '#FF6B35' },
-                { icon: Zap,      label: 'Katalogdan jant seç',  sub: `${wheels.length} model mevcut`,   color: 'rgba(247,37,133,0.12)', ic: '#F72585' },
-                { icon: Sparkles, label: 'AI sonucunu gör',      sub: 'Kaydırarak karşılaştır',  color: 'rgba(114,9,183,0.12)',  ic: '#7209B7' },
-              ].map(({ icon: Icon, label, sub, color, ic }, i) => (
-                <div key={i} className="flex items-center gap-4 p-3.5 rounded-2xl border border-[var(--border-color)]"
-                  style={{ background: 'var(--bg-card)' }}>
-                  <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: color }}>
-                    <Icon className="w-5 h-5" style={{ color: ic }} />
-                  </div>
+                { icon: '📸', label: 'Araç fotoğrafı yükle', sub: 'Kamera veya galeriden',    delay: '0.3s', accent: '#FF6B35', bg: 'rgba(255,107,53,0.15)' },
+                { icon: '⚡', label: 'Katalogdan jant seç',  sub: `${wheels.length} model mevcut`, delay: '0.4s', accent: '#F72585', bg: 'rgba(247,37,133,0.12)' },
+                { icon: '✨', label: 'AI sonucunu gör',      sub: 'Kaydırarak karşılaştır',   delay: '0.5s', accent: '#7209B7', bg: 'rgba(114,9,183,0.12)' },
+              ].map(({ icon, label, sub, delay, accent, bg }, i) => (
+                <div key={i}
+                  className="flex items-center gap-4 p-3.5 rounded-2xl border border-[var(--border-color)]"
+                  style={{ background: 'var(--bg-card)', animation: `fadeSlideUp 0.5s ease-out ${delay} both`, transition: 'transform 0.2s ease,border-color 0.2s ease' }}
+                  onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.transform = 'translateX(-8px)'; el.style.borderColor = accent; }}
+                  onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.transform = ''; el.style.borderColor = ''; }}
+                >
+                  <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-xl flex items-center justify-center flex-shrink-0 text-lg" style={{ background: bg }}>{icon}</div>
                   <div className="flex-1 text-left">
                     <p className="font-semibold text-sm text-white">{label}</p>
                     <p className="text-xs text-[var(--text-secondary)] mt-0.5">{sub}</p>
                   </div>
-                  <div className="w-6 h-6 rounded-full border border-[var(--border-color)] flex items-center justify-center text-xs font-bold text-[var(--text-secondary)] flex-shrink-0">
-                    {i + 1}
-                  </div>
+                  <div className="w-6 h-6 rounded-full border border-[var(--border-color)] flex items-center justify-center text-xs font-bold text-[var(--text-secondary)] flex-shrink-0">{i + 1}</div>
                 </div>
               ))}
             </div>
 
             {/* CTA */}
             <button onClick={onStart}
-              className="w-full max-w-sm lg:max-w-xs py-5 lg:py-4 rounded-2xl font-extrabold text-lg text-white flex items-center justify-center gap-2.5 active:scale-[0.98] transition-all"
-              style={{ background: 'linear-gradient(135deg,#FF6B35,#F72585,#7209B7)', boxShadow: '0 8px 32px rgba(247,37,133,0.35)' }}>
-              <Zap className="w-5 h-5" />
-              Jantları Dene
-              <ChevronRight className="w-5 h-5" />
+              className="relative overflow-hidden w-full max-w-sm lg:max-w-xs py-5 lg:py-4 rounded-2xl font-extrabold text-lg text-white flex items-center justify-center gap-2.5 active:scale-[0.98]"
+              style={{ background: 'linear-gradient(135deg,#FF6B35,#F72585,#7209B7)', boxShadow: '0 8px 32px rgba(247,37,133,0.35)', transition: 'transform 0.2s ease,box-shadow 0.2s ease', animation: 'fadeSlideUp 0.5s ease-out 0.55s both' }}
+              onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.transform = 'translateY(-3px) scale(1.02)'; el.style.boxShadow = '0 16px 48px rgba(247,37,133,0.5)'; }}
+              onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.transform = ''; el.style.boxShadow = '0 8px 32px rgba(247,37,133,0.35)'; }}
+            >
+              <span aria-hidden style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: '40%', background: 'linear-gradient(90deg,transparent,rgba(255,255,255,0.15),transparent)', animation: 'shimmerBtn 3s linear infinite' }} />
+              ⚡ Jantları Dene →
             </button>
-            <p className="text-xs text-[var(--text-secondary)] mt-4">Ücretsiz · Kayıt gerekmez · 30 saniye</p>
+
+            <p className="text-xs text-[var(--text-secondary)] mt-4" style={{ animation: 'fadeSlideUp 0.5s ease-out 0.6s both' }}>
+              Ücretsiz · Kayıt gerekmez · 30 saniye
+            </p>
+
+            {/* Stats bar */}
+            <div className="flex items-center gap-6 mt-8 pt-8 border-t border-[var(--border-color)] w-full max-w-sm lg:max-w-none"
+              style={{ animation: 'fadeSlideUp 0.5s ease-out 0.65s both' }}>
+              {[{ v: '30sn', l: 'Üretim Süresi' }, { v: 'AI', l: 'Yapay Zeka' }, { v: 'HD', l: 'Yüksek Kalite' }].map(({ v, l }) => (
+                <div key={l} className="text-center flex-1">
+                  <p className="font-extrabold text-xl gradient-text">{v}</p>
+                  <p className="text-[11px] text-[var(--text-secondary)] mt-0.5">{l}</p>
+                </div>
+              ))}
+            </div>
           </div>
 
           {/* ── Right: Wheel showcase (desktop only) ── */}
           {wheels.length > 0 && (
             <div className="hidden lg:block">
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-3 gap-[14px]">
                 {wheels.slice(0, 9).map((w, i) => (
-                  <div key={w.id}
-                    className="rounded-2xl overflow-hidden border border-[var(--border-color)] aspect-square relative group cursor-pointer"
-                    style={{ background: 'var(--bg-card)', opacity: i >= 6 ? 0.5 : 1 }}
-                    onClick={onStart}
+                  <div key={w.id} onClick={onStart}
+                    className="relative cursor-pointer group"
+                    style={{ aspectRatio: '1', borderRadius: '18px', overflow: 'hidden', border: '1px solid var(--border-color)', background: 'var(--bg-card)', transition: 'transform 0.2s ease,border-color 0.2s ease,box-shadow 0.2s ease', animation: `fadeScale 0.4s ease-out ${i * 0.1}s both` }}
+                    onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.transform = 'translateY(-4px) scale(1.02)'; el.style.borderColor = '#F72585'; el.style.boxShadow = '0 8px 24px rgba(247,37,133,0.25)'; }}
+                    onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.transform = ''; el.style.borderColor = ''; el.style.boxShadow = ''; }}
                   >
                     <WheelImg src={w.jant_foto_url} alt={w.jant_adi} priority={i < 3} />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                       <div className="absolute bottom-2 left-2 right-2">
                         <p className="text-xs font-bold text-white truncate">{w.jant_adi}</p>
                         {w.fiyat != null && <p className="text-[10px] text-[var(--accent-orange)] font-bold">₺{w.fiyat.toLocaleString('tr-TR')}</p>}
@@ -323,9 +459,7 @@ function WelcomeScreen({ dealer, wheels, onStart }: { dealer: Dealer; wheels: Wh
                 ))}
               </div>
               {wheels.length > 9 && (
-                <p className="text-center text-xs text-[var(--text-secondary)] mt-3">
-                  +{wheels.length - 9} model daha mevcut
-                </p>
+                <p className="text-center text-xs text-[var(--text-secondary)] mt-3">+{wheels.length - 9} model daha</p>
               )}
             </div>
           )}
