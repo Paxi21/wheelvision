@@ -170,17 +170,21 @@ function BeforeAfterSlider({ before, after, onAfterLoad }: { before: string; aft
 /* ─── Background Effects (shared across screens) ─────────────────────────── */
 function BgEffects() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const mouseRef  = useRef({ x: -1000, y: -1000 });
-  const [glowPos, setGlowPos] = useState({ x: -1000, y: -1000 });
+  const glowRef   = useRef<HTMLDivElement>(null);
+  const mouseRef  = useRef({ x: window.innerWidth / 2, y: window.innerHeight / 2 });
+  const lerpRef   = useRef({ x: window.innerWidth / 2, y: window.innerHeight / 2 });
 
   useEffect(() => {
     const canvas = canvasRef.current;
+    const glow   = glowRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
+
     const resize = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; };
     resize();
     window.addEventListener('resize', resize, { passive: true });
+
     const count = window.innerWidth < 768 ? 30 : 60;
     const COLORS = ['#FF6B35', '#F72585', '#7209B7'];
     type P = { x: number; y: number; vx: number; vy: number; r: number; c: string };
@@ -189,8 +193,17 @@ function BgEffects() {
       vx: (Math.random() - 0.5) * 0.6, vy: (Math.random() - 0.5) * 0.6,
       r: 0.5 + Math.random() * 2, c: COLORS[Math.floor(Math.random() * 3)],
     }));
+
     let raf = 0;
+    const LERP = 0.07;
+
     const tick = () => {
+      /* Smooth lerp glow — GPU transform, zero React re-renders */
+      lerpRef.current.x += (mouseRef.current.x - lerpRef.current.x) * LERP;
+      lerpRef.current.y += (mouseRef.current.y - lerpRef.current.y) * LERP;
+      if (glow) glow.style.transform = `translate(${lerpRef.current.x - 250}px,${lerpRef.current.y - 250}px)`;
+
+      /* Particles */
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       const mx = mouseRef.current.x, my = mouseRef.current.y;
       for (const p of pts) {
@@ -215,7 +228,7 @@ function BgEffects() {
   }, []);
 
   useEffect(() => {
-    const onMove = (e: MouseEvent) => { mouseRef.current = { x: e.clientX, y: e.clientY }; setGlowPos({ x: e.clientX, y: e.clientY }); };
+    const onMove = (e: MouseEvent) => { mouseRef.current = { x: e.clientX, y: e.clientY }; };
     window.addEventListener('mousemove', onMove, { passive: true });
     return () => window.removeEventListener('mousemove', onMove);
   }, []);
@@ -227,7 +240,9 @@ function BgEffects() {
       <div className="fixed pointer-events-none" style={{ zIndex: 0, right: '-100px', top: '-100px', width: '600px', height: '600px', borderRadius: '50%', background: 'radial-gradient(circle,rgba(255,107,53,0.07) 0%,transparent 70%)', filter: 'blur(40px)', animation: 'orbFloat1 8s ease-in-out infinite' }} />
       <div className="fixed pointer-events-none" style={{ zIndex: 0, left: '-150px', bottom: '-100px', width: '500px', height: '500px', borderRadius: '50%', background: 'radial-gradient(circle,rgba(247,37,133,0.06) 0%,transparent 70%)', filter: 'blur(40px)', animation: 'orbFloat2 10s ease-in-out infinite' }} />
       <div className="fixed pointer-events-none" style={{ zIndex: 0, left: '50%', top: '50%', width: '800px', height: '800px', borderRadius: '50%', background: 'radial-gradient(circle,rgba(114,9,183,0.04) 0%,transparent 70%)', filter: 'blur(60px)', transform: 'translate(-50%,-50%)', animation: 'orbFloat3 12s ease-in-out infinite' }} />
-      <div className="fixed pointer-events-none hidden lg:block" style={{ zIndex: 1, left: glowPos.x - 200, top: glowPos.y - 200, width: '400px', height: '400px', borderRadius: '50%', background: 'radial-gradient(circle,rgba(247,37,133,0.08) 0%,rgba(114,9,183,0.04) 50%,transparent 70%)', filter: 'blur(20px)', transition: 'left 0.15s ease-out,top 0.15s ease-out' }} />
+      {/* Lerped glow — transform-only, GPU composited, no React re-render */}
+      <div ref={glowRef} className="fixed top-0 left-0 pointer-events-none hidden lg:block"
+        style={{ zIndex: 1, width: '500px', height: '500px', borderRadius: '50%', background: 'radial-gradient(circle,rgba(247,37,133,0.09) 0%,rgba(114,9,183,0.05) 45%,transparent 70%)', filter: 'blur(50px)', willChange: 'transform' }} />
       <svg className="fixed inset-0 pointer-events-none w-full h-full" style={{ zIndex: 0, opacity: 0.015 }} aria-hidden>
         <filter id="wv-noise"><feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch" /><feColorMatrix type="saturate" values="0" /></filter>
         <rect width="100%" height="100%" filter="url(#wv-noise)" />
