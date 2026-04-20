@@ -167,34 +167,115 @@ function BeforeAfterSlider({ before, after, onAfterLoad }: { before: string; aft
   );
 }
 
+/* ─── Background Effects (shared across screens) ─────────────────────────── */
+function BgEffects() {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const mouseRef  = useRef({ x: -1000, y: -1000 });
+  const [glowPos, setGlowPos] = useState({ x: -1000, y: -1000 });
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    const resize = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; };
+    resize();
+    window.addEventListener('resize', resize, { passive: true });
+    const count = window.innerWidth < 768 ? 30 : 60;
+    const COLORS = ['#FF6B35', '#F72585', '#7209B7'];
+    type P = { x: number; y: number; vx: number; vy: number; r: number; c: string };
+    const pts: P[] = Array.from({ length: count }, () => ({
+      x: Math.random() * canvas.width, y: Math.random() * canvas.height,
+      vx: (Math.random() - 0.5) * 0.6, vy: (Math.random() - 0.5) * 0.6,
+      r: 0.5 + Math.random() * 2, c: COLORS[Math.floor(Math.random() * 3)],
+    }));
+    let raf = 0;
+    const tick = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const mx = mouseRef.current.x, my = mouseRef.current.y;
+      for (const p of pts) {
+        const dx = p.x - mx, dy = p.y - my, d2 = dx * dx + dy * dy;
+        if (d2 < 22500 && d2 > 0) { const d = Math.sqrt(d2), f = (150 - d) / 150 * 0.5; p.vx += dx / d * f; p.vy += dy / d * f; }
+        p.vx *= 0.99; p.vy *= 0.99;
+        const spd = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
+        if (spd > 2) { p.vx = p.vx / spd * 2; p.vy = p.vy / spd * 2; }
+        p.x = (p.x + p.vx + canvas.width) % canvas.width;
+        p.y = (p.y + p.vy + canvas.height) % canvas.height;
+        ctx.globalAlpha = 0.6; ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fillStyle = p.c; ctx.fill();
+      }
+      for (let i = 0; i < pts.length - 1; i++) for (let j = i + 1; j < pts.length; j++) {
+        const dx = pts[i].x - pts[j].x, dy = pts[i].y - pts[j].y, d = Math.sqrt(dx * dx + dy * dy);
+        if (d < 120) { ctx.globalAlpha = (1 - d / 120) * 0.15; ctx.strokeStyle = pts[i].c; ctx.lineWidth = 0.5; ctx.beginPath(); ctx.moveTo(pts[i].x, pts[i].y); ctx.lineTo(pts[j].x, pts[j].y); ctx.stroke(); }
+      }
+      ctx.globalAlpha = 1;
+      raf = requestAnimationFrame(tick);
+    };
+    tick();
+    return () => { cancelAnimationFrame(raf); window.removeEventListener('resize', resize); };
+  }, []);
+
+  useEffect(() => {
+    const onMove = (e: MouseEvent) => { mouseRef.current = { x: e.clientX, y: e.clientY }; setGlowPos({ x: e.clientX, y: e.clientY }); };
+    window.addEventListener('mousemove', onMove, { passive: true });
+    return () => window.removeEventListener('mousemove', onMove);
+  }, []);
+
+  return (
+    <>
+      <canvas ref={canvasRef} className="fixed inset-0 pointer-events-none" style={{ zIndex: 0 }} />
+      <div className="fixed inset-0 pointer-events-none" style={{ zIndex: 0, backgroundImage: 'linear-gradient(rgba(255,255,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.03) 1px,transparent 1px)', backgroundSize: '60px 60px' }} />
+      <div className="fixed pointer-events-none" style={{ zIndex: 0, right: '-100px', top: '-100px', width: '600px', height: '600px', borderRadius: '50%', background: 'radial-gradient(circle,rgba(255,107,53,0.07) 0%,transparent 70%)', filter: 'blur(40px)', animation: 'orbFloat1 8s ease-in-out infinite' }} />
+      <div className="fixed pointer-events-none" style={{ zIndex: 0, left: '-150px', bottom: '-100px', width: '500px', height: '500px', borderRadius: '50%', background: 'radial-gradient(circle,rgba(247,37,133,0.06) 0%,transparent 70%)', filter: 'blur(40px)', animation: 'orbFloat2 10s ease-in-out infinite' }} />
+      <div className="fixed pointer-events-none" style={{ zIndex: 0, left: '50%', top: '50%', width: '800px', height: '800px', borderRadius: '50%', background: 'radial-gradient(circle,rgba(114,9,183,0.04) 0%,transparent 70%)', filter: 'blur(60px)', transform: 'translate(-50%,-50%)', animation: 'orbFloat3 12s ease-in-out infinite' }} />
+      <div className="fixed pointer-events-none hidden lg:block" style={{ zIndex: 1, left: glowPos.x - 200, top: glowPos.y - 200, width: '400px', height: '400px', borderRadius: '50%', background: 'radial-gradient(circle,rgba(247,37,133,0.08) 0%,rgba(114,9,183,0.04) 50%,transparent 70%)', filter: 'blur(20px)', transition: 'left 0.15s ease-out,top 0.15s ease-out' }} />
+      <svg className="fixed inset-0 pointer-events-none w-full h-full" style={{ zIndex: 0, opacity: 0.015 }} aria-hidden>
+        <filter id="wv-noise"><feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch" /><feColorMatrix type="saturate" values="0" /></filter>
+        <rect width="100%" height="100%" filter="url(#wv-noise)" />
+      </svg>
+    </>
+  );
+}
+
 /* ─── Wheel Detail Modal ──────────────────────────────────────────────────── */
 function WheelModal({ wheel, onClose, onSelect }: { wheel: Wheel; onClose: () => void; onSelect: (w: Wheel) => void }) {
   return (
     <>
       <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm" onClick={onClose} />
-      <div className="fixed inset-x-4 bottom-0 sm:inset-auto sm:left-1/2 sm:-translate-x-1/2 sm:bottom-auto sm:top-1/2 sm:-translate-y-1/2 sm:w-[380px] z-50 rounded-t-3xl sm:rounded-2xl border border-[var(--border-color)] overflow-hidden"
-        style={{ background: 'var(--bg-card)' }}>
+      <div
+        className="fixed inset-x-4 bottom-0 sm:inset-auto sm:left-1/2 sm:-translate-x-1/2 sm:bottom-auto sm:top-1/2 sm:-translate-y-1/2 sm:w-[380px] z-50 rounded-t-3xl sm:rounded-2xl border border-[var(--border-color)] overflow-hidden"
+        style={{ background: 'rgba(18,18,26,0.95)', backdropFilter: 'blur(24px)', animation: 'fadeScale 0.2s ease-out' }}
+      >
         <div className="sm:hidden w-12 h-1 rounded-full bg-[var(--border-color)] mx-auto mt-3" />
-        <div className="relative w-full aspect-square bg-[var(--bg-dark)]">
+        <div className="relative w-full aspect-square">
           <WheelImg src={wheel.jant_foto_url} alt={wheel.jant_adi} priority />
+          <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-[rgba(18,18,26,0.95)] to-transparent" />
         </div>
-        <div className="p-5">
+        <div className="p-5 -mt-2">
           <div className="flex items-start justify-between gap-3 mb-3">
             <h3 className="font-bold text-base leading-tight">{wheel.jant_adi}</h3>
-            {wheel.marka && <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[var(--border-color)] text-[var(--text-secondary)] flex-shrink-0">{wheel.marka}</span>}
+            {wheel.marka && <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold flex-shrink-0" style={{ background: 'var(--border-color)', color: 'var(--text-secondary)' }}>{wheel.marka}</span>}
           </div>
           <div className="space-y-2 mb-5">
             {wheel.ebat && <div className="flex justify-between text-sm"><span className="text-[var(--text-secondary)]">Ebat</span><span className="font-medium">{wheel.ebat}</span></div>}
             {wheel.fiyat != null && (
               <div className="flex justify-between text-sm">
                 <span className="text-[var(--text-secondary)]">Fiyat</span>
-                <span className="font-extrabold text-[var(--accent-orange)]">₺{wheel.fiyat.toLocaleString('tr-TR')}</span>
+                <span className="font-extrabold" style={{ background: 'linear-gradient(90deg,#FF6B35,#F72585)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>₺{wheel.fiyat.toLocaleString('tr-TR')}</span>
               </div>
             )}
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <button onClick={onClose} className="btn-secondary py-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-2"><X className="w-4 h-4" /> İptal</button>
-            <button onClick={() => onSelect(wheel)} className="btn-primary py-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-2"><Check className="w-4 h-4" /> Seç</button>
+            <button onClick={onClose}
+              className="py-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-colors"
+              style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-color)', color: 'var(--text-secondary)' }}>
+              <X className="w-4 h-4" /> İptal
+            </button>
+            <button onClick={() => onSelect(wheel)}
+              className="relative overflow-hidden py-3 rounded-xl text-sm font-bold text-white flex items-center justify-center gap-2"
+              style={{ background: 'linear-gradient(135deg,#FF6B35,#F72585,#7209B7)', boxShadow: '0 4px 16px rgba(247,37,133,0.3)' }}>
+              <span aria-hidden style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: '40%', background: 'linear-gradient(90deg,transparent,rgba(255,255,255,0.15),transparent)', animation: 'shimmerBtn 3s linear infinite' }} />
+              <Check className="w-4 h-4" /> Seç
+            </button>
           </div>
           <p className="text-center text-[10px] text-[var(--text-secondary)]/50 mt-4 italic">Bu görseller demo amaçlıdır.</p>
         </div>
@@ -256,101 +337,9 @@ function DealerHeader({ dealer, onBack }: { dealer: Dealer; onBack?: () => void 
 
 /* ─── Welcome Screen ──────────────────────────────────────────────────────── */
 function WelcomeScreen({ dealer, wheels, onStart }: { dealer: Dealer; wheels: Wheel[]; onStart: () => void }) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const mouseRef  = useRef({ x: -1000, y: -1000 });
-  const [glowPos, setGlowPos] = useState({ x: -1000, y: -1000 });
-
-  /* Particle system */
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    const resize = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; };
-    resize();
-    window.addEventListener('resize', resize, { passive: true });
-    const count = window.innerWidth < 768 ? 30 : 60;
-    const COLORS = ['#FF6B35', '#F72585', '#7209B7'];
-    type P = { x: number; y: number; vx: number; vy: number; r: number; c: string };
-    const pts: P[] = Array.from({ length: count }, () => ({
-      x: Math.random() * canvas.width,
-      y: Math.random() * canvas.height,
-      vx: (Math.random() - 0.5) * 0.6,
-      vy: (Math.random() - 0.5) * 0.6,
-      r: 0.5 + Math.random() * 2,
-      c: COLORS[Math.floor(Math.random() * 3)],
-    }));
-    let raf = 0;
-    const tick = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      const mx = mouseRef.current.x, my = mouseRef.current.y;
-      for (const p of pts) {
-        const dx = p.x - mx, dy = p.y - my, d2 = dx * dx + dy * dy;
-        if (d2 < 150 * 150 && d2 > 0) {
-          const d = Math.sqrt(d2), f = (150 - d) / 150 * 0.5;
-          p.vx += dx / d * f; p.vy += dy / d * f;
-        }
-        p.vx *= 0.99; p.vy *= 0.99;
-        const spd = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
-        if (spd > 2) { p.vx = p.vx / spd * 2; p.vy = p.vy / spd * 2; }
-        p.x = (p.x + p.vx + canvas.width)  % canvas.width;
-        p.y = (p.y + p.vy + canvas.height) % canvas.height;
-        ctx.globalAlpha = 0.6;
-        ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fillStyle = p.c; ctx.fill();
-      }
-      for (let i = 0; i < pts.length - 1; i++) {
-        for (let j = i + 1; j < pts.length; j++) {
-          const dx = pts[i].x - pts[j].x, dy = pts[i].y - pts[j].y;
-          const d = Math.sqrt(dx * dx + dy * dy);
-          if (d < 120) {
-            ctx.globalAlpha = (1 - d / 120) * 0.15;
-            ctx.strokeStyle = pts[i].c; ctx.lineWidth = 0.5;
-            ctx.beginPath(); ctx.moveTo(pts[i].x, pts[i].y); ctx.lineTo(pts[j].x, pts[j].y); ctx.stroke();
-          }
-        }
-      }
-      ctx.globalAlpha = 1;
-      raf = requestAnimationFrame(tick);
-    };
-    tick();
-    return () => { cancelAnimationFrame(raf); window.removeEventListener('resize', resize); };
-  }, []);
-
-  /* Mouse glow (desktop) */
-  useEffect(() => {
-    const onMove = (e: MouseEvent) => {
-      mouseRef.current = { x: e.clientX, y: e.clientY };
-      setGlowPos({ x: e.clientX, y: e.clientY });
-    };
-    window.addEventListener('mousemove', onMove, { passive: true });
-    return () => window.removeEventListener('mousemove', onMove);
-  }, []);
-
   return (
     <div className="min-h-screen bg-[var(--bg-dark)] text-white flex flex-col relative overflow-hidden">
-      {/* Canvas particles */}
-      <canvas ref={canvasRef} className="fixed inset-0 pointer-events-none" style={{ zIndex: 0 }} />
-
-      {/* Grid */}
-      <div className="fixed inset-0 pointer-events-none" style={{ zIndex: 0, backgroundImage: 'linear-gradient(rgba(255,255,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.03) 1px,transparent 1px)', backgroundSize: '60px 60px' }} />
-
-      {/* Orbs */}
-      <div className="fixed pointer-events-none" style={{ zIndex: 0, right: '-100px', top: '-100px', width: '600px', height: '600px', borderRadius: '50%', background: 'radial-gradient(circle,rgba(255,107,53,0.07) 0%,transparent 70%)', filter: 'blur(40px)', animation: 'orbFloat1 8s ease-in-out infinite' }} />
-      <div className="fixed pointer-events-none" style={{ zIndex: 0, left: '-150px', bottom: '-100px', width: '500px', height: '500px', borderRadius: '50%', background: 'radial-gradient(circle,rgba(247,37,133,0.06) 0%,transparent 70%)', filter: 'blur(40px)', animation: 'orbFloat2 10s ease-in-out infinite' }} />
-      <div className="fixed pointer-events-none" style={{ zIndex: 0, left: '50%', top: '50%', width: '800px', height: '800px', borderRadius: '50%', background: 'radial-gradient(circle,rgba(114,9,183,0.04) 0%,transparent 70%)', filter: 'blur(60px)', transform: 'translate(-50%,-50%)', animation: 'orbFloat3 12s ease-in-out infinite' }} />
-
-      {/* Mouse glow */}
-      <div className="fixed pointer-events-none hidden lg:block" style={{ zIndex: 1, left: glowPos.x - 200, top: glowPos.y - 200, width: '400px', height: '400px', borderRadius: '50%', background: 'radial-gradient(circle,rgba(247,37,133,0.08) 0%,rgba(114,9,183,0.04) 50%,transparent 70%)', filter: 'blur(20px)', transition: 'left 0.15s ease-out,top 0.15s ease-out' }} />
-
-      {/* Noise overlay */}
-      <svg className="fixed inset-0 pointer-events-none w-full h-full" style={{ zIndex: 0, opacity: 0.015 }} aria-hidden>
-        <filter id="wv-noise">
-          <feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch" />
-          <feColorMatrix type="saturate" values="0" />
-        </filter>
-        <rect width="100%" height="100%" filter="url(#wv-noise)" />
-      </svg>
+      <BgEffects />
 
       {/* Header */}
       <div style={{ position: 'relative', zIndex: 10 }}>
@@ -577,11 +566,14 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
   const waUrl = `https://wa.me/${waPhone}?text=${waText}`;
 
   return (
-    <div className="min-h-screen bg-[var(--bg-dark)] text-white flex flex-col">
-      <DealerHeader dealer={dealer} onBack={() => setShowApp(false)} />
+    <div className="min-h-screen bg-[var(--bg-dark)] text-white flex flex-col relative overflow-hidden">
+      <BgEffects />
+      <div style={{ position: 'relative', zIndex: 10 }}>
+        <DealerHeader dealer={dealer} onBack={() => setShowApp(false)} />
+      </div>
 
       {limitReached && (
-        <div className="max-w-6xl mx-auto w-full px-4 lg:px-8 pt-4">
+        <div className="max-w-6xl mx-auto w-full px-4 lg:px-8 pt-4" style={{ position: 'relative', zIndex: 10 }}>
           <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm text-center">
             Bu ay için görsel hakkı dolmuştur.
           </div>
@@ -590,7 +582,7 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
 
       {/* ══ RESULT SCREEN ═══════════════════════════════════════════════════ */}
       {resultUrl && carPreview && (
-        <main className="flex-1 max-w-6xl mx-auto w-full px-4 lg:px-8 pt-5 pb-8">
+        <main className="flex-1 max-w-6xl mx-auto w-full px-4 lg:px-8 pt-5 pb-8" style={{ position: 'relative', zIndex: 10 }}>
           <p className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-widest mb-4">
             Sonuç — Kaydırarak karşılaştırın
           </p>
@@ -677,17 +669,20 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
 
       {/* ══ APP SCREEN (no result) ══════════════════════════════════════════ */}
       {!resultUrl && (
-        <main className="flex-1 max-w-6xl mx-auto w-full px-4 lg:px-8 pt-5 pb-32 lg:pb-8">
-          <div className="lg:grid lg:grid-cols-[360px_1fr] lg:gap-8">
+        <main className="flex-1 max-w-6xl mx-auto w-full px-4 lg:px-8 pt-5 pb-32 lg:pb-8" style={{ position: 'relative', zIndex: 10 }}>
+          <div className="lg:grid lg:grid-cols-[380px_1fr] lg:gap-8">
 
-            {/* ── LEFT PANEL (mobile: full width / desktop: fixed sidebar) ── */}
-            <div className="lg:sticky lg:top-[65px] lg:h-[calc(100vh-65px)] lg:overflow-y-auto lg:pb-6 space-y-4">
+            {/* ── LEFT PANEL ── */}
+            <div className="lg:sticky lg:top-[65px] lg:h-[calc(100vh-65px)] lg:overflow-y-auto lg:pb-6 space-y-3"
+              style={{ animation: 'fadeSlideUp 0.3s ease-out both' }}>
 
-              {/* Car upload */}
-              <div className="card !p-4">
-                <p className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wide mb-3">
-                  1 · Araç Fotoğrafı
-                </p>
+              {/* Car upload card */}
+              <div className="rounded-2xl border border-[var(--border-color)] p-4"
+                style={{ background: 'rgba(18,18,26,0.7)', backdropFilter: 'blur(12px)' }}>
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-1.5 h-1.5 rounded-full" style={{ background: 'var(--accent-orange)' }} />
+                  <p className="text-xs font-semibold text-[var(--text-secondary)]">Araç Fotoğrafı</p>
+                </div>
                 {carPreview ? (
                   <div className="relative rounded-xl overflow-hidden" style={{ aspectRatio: '4/3' }}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -706,12 +701,13 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
                     {!uploading && (
                       <>
                         <button onClick={() => setUploadSheet(true)}
-                          className="absolute bottom-2 right-2 px-2.5 py-1 rounded-lg text-xs font-semibold"
-                          style={{ background: 'rgba(0,0,0,0.7)', color: '#fff' }}>
+                          className="absolute bottom-2 right-2 px-3 py-1.5 rounded-lg text-xs font-semibold backdrop-blur-sm"
+                          style={{ background: 'rgba(0,0,0,0.7)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)' }}>
                           Değiştir
                         </button>
                         <button onClick={clearCar}
-                          className="absolute top-2 left-2 w-6 h-6 rounded-full bg-black/60 flex items-center justify-center">
+                          className="absolute top-2 left-2 w-7 h-7 rounded-full flex items-center justify-center backdrop-blur-sm"
+                          style={{ background: 'rgba(0,0,0,0.6)', border: '1px solid rgba(255,255,255,0.1)' }}>
                           <X className="w-3.5 h-3.5 text-white" />
                         </button>
                       </>
@@ -719,10 +715,14 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
                   </div>
                 ) : (
                   <button onClick={() => setUploadSheet(true)}
-                    className="upload-zone w-full flex flex-col items-center py-10 rounded-xl">
-                    <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-3"
+                    className="w-full flex flex-col items-center py-9 rounded-xl group transition-all"
+                    style={{ border: '1.5px dashed var(--border-color)', background: 'rgba(255,107,53,0.02)' }}
+                    onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = 'rgba(255,107,53,0.4)'; el.style.background = 'rgba(255,107,53,0.04)'; }}
+                    onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = 'var(--border-color)'; el.style.background = 'rgba(255,107,53,0.02)'; }}
+                  >
+                    <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-3 transition-transform group-hover:scale-110"
                       style={{ background: 'rgba(255,107,53,0.12)' }}>
-                      <Camera className="w-7 h-7 text-[var(--accent-orange)]" />
+                      <Camera className="w-6 h-6 text-[var(--accent-orange)]" />
                     </div>
                     <p className="font-semibold text-sm text-white">Fotoğraf Ekle</p>
                     <p className="text-xs text-[var(--text-secondary)] mt-1">Kamera veya galeriden yükleyin</p>
@@ -730,31 +730,38 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
                 )}
               </div>
 
-              {/* Selected wheel */}
-              <div className="card !p-4">
-                <p className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wide mb-3">
-                  2 · Seçilen Jant
-                </p>
+              {/* Selected wheel card */}
+              <div className="rounded-2xl border border-[var(--border-color)] p-4"
+                style={{ background: 'rgba(18,18,26,0.7)', backdropFilter: 'blur(12px)' }}>
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-1.5 h-1.5 rounded-full" style={{ background: 'var(--accent-pink)' }} />
+                  <p className="text-xs font-semibold text-[var(--text-secondary)]">Seçilen Jant</p>
+                </div>
                 {selectedWheel ? (
                   <div className="relative rounded-xl overflow-hidden" style={{ aspectRatio: '4/3' }}>
                     <WheelImg src={selectedWheel.jant_foto_url} alt={selectedWheel.jant_adi} priority />
                     <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/80 to-transparent">
                       <p className="text-sm font-bold text-white truncate">{selectedWheel.jant_adi}</p>
                       {selectedWheel.fiyat != null && (
-                        <p className="text-xs text-[var(--accent-orange)] font-bold mt-0.5">₺{selectedWheel.fiyat.toLocaleString('tr-TR')}</p>
+                        <p className="text-xs font-bold mt-0.5" style={{ color: 'var(--accent-orange)' }}>₺{selectedWheel.fiyat.toLocaleString('tr-TR')}</p>
                       )}
                     </div>
                     <button onClick={() => { setSelectedWheel(null); catalogRef.current?.scrollIntoView({ behavior: 'smooth' }); }}
-                      className="absolute top-2 left-2 w-6 h-6 rounded-full bg-black/60 flex items-center justify-center">
+                      className="absolute top-2 left-2 w-7 h-7 rounded-full flex items-center justify-center backdrop-blur-sm"
+                      style={{ background: 'rgba(0,0,0,0.6)', border: '1px solid rgba(255,255,255,0.1)' }}>
                       <X className="w-3.5 h-3.5 text-white" />
                     </button>
                   </div>
                 ) : (
                   <button onClick={() => catalogRef.current?.scrollIntoView({ behavior: 'smooth' })}
-                    className="upload-zone w-full flex flex-col items-center py-10 rounded-xl border-dashed">
-                    <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-3"
+                    className="w-full flex flex-col items-center py-9 rounded-xl group transition-all"
+                    style={{ border: '1.5px dashed var(--border-color)', background: 'rgba(247,37,133,0.02)' }}
+                    onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = 'rgba(247,37,133,0.4)'; el.style.background = 'rgba(247,37,133,0.04)'; }}
+                    onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = 'var(--border-color)'; el.style.background = 'rgba(247,37,133,0.02)'; }}
+                  >
+                    <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-3 transition-transform group-hover:scale-110"
                       style={{ background: 'rgba(247,37,133,0.1)' }}>
-                      <ChevronDown className="w-7 h-7 text-[var(--accent-pink)]" />
+                      <ChevronDown className="w-6 h-6 text-[var(--accent-pink)]" />
                     </div>
                     <p className="font-semibold text-sm text-white">Jant Seçin</p>
                     <p className="text-xs text-[var(--text-secondary)] mt-1">Katalogdan bir jant seçin</p>
@@ -769,9 +776,21 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
                 </div>
               )}
 
-              {/* Generate button — desktop inline */}
+              {/* Generate button — desktop */}
               <button onClick={handleGenerate} disabled={!canGenerate}
-                className="hidden lg:flex btn-primary w-full py-4 text-base font-extrabold rounded-2xl items-center justify-center gap-2.5 disabled:opacity-35 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none">
+                className="relative overflow-hidden hidden lg:flex w-full py-4 text-base font-extrabold rounded-2xl items-center justify-center gap-2.5"
+                style={{
+                  background: canGenerate ? 'linear-gradient(135deg,#FF6B35,#F72585,#7209B7)' : 'rgba(18,18,26,0.7)',
+                  color: 'white', border: canGenerate ? 'none' : '1px solid var(--border-color)',
+                  opacity: !canGenerate && !generating ? 0.5 : 1,
+                  cursor: !canGenerate ? 'not-allowed' : 'pointer',
+                  boxShadow: canGenerate ? '0 8px 32px rgba(247,37,133,0.35)' : 'none',
+                  transition: 'all 0.2s ease',
+                }}
+                onMouseEnter={e => { if (canGenerate) { const el = e.currentTarget as HTMLElement; el.style.transform = 'translateY(-2px)'; el.style.boxShadow = '0 14px 40px rgba(247,37,133,0.45)'; } }}
+                onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.transform = ''; el.style.boxShadow = canGenerate ? '0 8px 32px rgba(247,37,133,0.35)' : 'none'; }}
+              >
+                {canGenerate && <span aria-hidden style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: '40%', background: 'linear-gradient(90deg,transparent,rgba(255,255,255,0.15),transparent)', animation: 'shimmerBtn 3s linear infinite' }} />}
                 {generating ? (
                   <><Loader2 className="w-5 h-5 animate-spin flex-shrink-0" /><span className="truncate text-sm">{GENERATION_STEPS[genStep]}</span></>
                 ) : (
@@ -787,13 +806,14 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
 
             {/* ── RIGHT PANEL: Catalog ── */}
             <div ref={catalogRef} className="mt-4 lg:mt-0">
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center justify-between mb-5">
                 <div>
-                  <h2 className="font-bold text-base lg:text-lg">Jant Kataloğu</h2>
+                  <h2 className="font-bold text-lg">Jant Kataloğu</h2>
                   <p className="text-xs text-[var(--text-secondary)] mt-0.5">Janta tıklayarak detay ve seçim yapın</p>
                 </div>
                 {wheels.length > 0 && (
-                  <span className="text-xs px-2.5 py-1 rounded-full bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-secondary)]">
+                  <span className="text-xs px-3 py-1.5 rounded-full font-semibold"
+                    style={{ background: 'rgba(18,18,26,0.8)', border: '1px solid var(--border-color)', backdropFilter: 'blur(8px)', color: 'var(--text-secondary)' }}>
                     {wheels.length} model
                   </span>
                 )}
@@ -802,32 +822,39 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
               {wheels.length === 0 ? (
                 <p className="py-12 text-center text-sm text-[var(--text-secondary)]">Henüz jant eklenmemiş.</p>
               ) : (
-                <div className="grid grid-cols-3 lg:grid-cols-4 gap-3">
-                  {wheels.map((wheel) => {
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {wheels.map((wheel, idx) => {
                     const isSelected = selectedWheel?.id === wheel.id;
                     return (
                       <button key={wheel.id} onClick={() => setModalWheel(wheel)}
-                        className="rounded-xl overflow-hidden border-2 transition-all active:scale-95 hover:border-white/20 relative text-left"
+                        className="relative text-left rounded-2xl overflow-hidden active:scale-95"
                         style={{
-                          borderColor: isSelected ? 'var(--accent-orange)' : 'var(--border-color)',
-                          boxShadow: isSelected ? '0 0 14px rgba(255,107,53,0.4)' : 'none',
-                          background: 'var(--bg-card)',
-                        }}>
+                          border: isSelected ? '2px solid var(--accent-orange)' : '1px solid var(--border-color)',
+                          boxShadow: isSelected ? '0 0 20px rgba(255,107,53,0.25)' : 'none',
+                          background: 'rgba(18,18,26,0.7)', backdropFilter: 'blur(8px)',
+                          animation: `fadeScale 0.4s ease-out ${idx * 0.04}s both`,
+                          transition: 'transform 0.3s cubic-bezier(0.4,0,0.2,1),border-color 0.3s ease,box-shadow 0.3s ease',
+                        }}
+                        onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.transform = 'translateY(-4px)'; if (!isSelected) { el.style.borderColor = 'rgba(255,107,53,0.3)'; el.style.boxShadow = '0 12px 32px rgba(0,0,0,0.3),0 0 16px rgba(255,107,53,0.08)'; } }}
+                        onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.transform = ''; if (!isSelected) { el.style.borderColor = 'var(--border-color)'; el.style.boxShadow = 'none'; } }}
+                      >
                         <div className="aspect-square w-full overflow-hidden">
-                          <WheelImg src={wheel.jant_foto_url} alt={wheel.jant_adi} priority={wheels.indexOf(wheel) < 6} />
+                          <WheelImg src={wheel.jant_foto_url} alt={wheel.jant_adi} priority={idx < 8} />
                         </div>
-                        <div className="px-2.5 py-2">
-                          <p className="text-[11px] lg:text-xs font-semibold leading-tight line-clamp-2">{wheel.jant_adi}</p>
-                          {wheel.marka && <p className="text-[10px] text-[var(--text-secondary)] mt-0.5">{wheel.marka}</p>}
+                        <div className="px-3 py-2.5">
+                          <p className="text-[13px] font-semibold leading-tight line-clamp-2 text-white">{wheel.jant_adi}</p>
+                          {wheel.marka && <p className="text-[11px] text-[var(--text-secondary)] mt-0.5">{wheel.marka}</p>}
                           {wheel.fiyat != null && (
-                            <p className="text-[10px] lg:text-xs font-bold text-[var(--accent-orange)] mt-1">
+                            <p className="text-[14px] font-extrabold mt-1.5"
+                              style={{ background: 'linear-gradient(90deg,#FF6B35,#F72585)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
                               ₺{wheel.fiyat.toLocaleString('tr-TR')}
                             </p>
                           )}
                         </div>
                         {isSelected && (
-                          <div className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-[var(--accent-orange)] flex items-center justify-center shadow">
-                            <Check className="w-3 h-3 text-white" />
+                          <div className="absolute top-2 right-2 w-6 h-6 rounded-full flex items-center justify-center shadow-lg"
+                            style={{ background: 'linear-gradient(135deg,#FF6B35,#F72585)' }}>
+                            <Check className="w-3.5 h-3.5 text-white" />
                           </div>
                         )}
                       </button>
@@ -835,7 +862,7 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
                   })}
                 </div>
               )}
-              <p className="text-[10px] text-[var(--text-secondary)]/40 italic text-center mt-3">
+              <p className="text-[10px] text-[var(--text-secondary)]/40 italic text-center mt-4">
                 Bu görseller demo amaçlıdır.
               </p>
             </div>
@@ -846,9 +873,17 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
       {/* ══ STICKY GENERATE BUTTON (mobile only) ═══════════════════════════ */}
       {!resultUrl && (
         <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 px-4 pb-6 pt-3"
-          style={{ background: 'var(--bg-dark)', borderTop: '1px solid var(--border-color)' }}>
+          style={{ background: 'rgba(10,10,15,0.9)', backdropFilter: 'blur(20px)', borderTop: '1px solid var(--border-color)' }}>
           <button onClick={handleGenerate} disabled={!canGenerate}
-            className="btn-primary w-full py-4 text-base font-extrabold rounded-2xl flex items-center justify-center gap-2.5 disabled:opacity-35 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none">
+            className="relative overflow-hidden w-full py-4 text-base font-extrabold rounded-2xl flex items-center justify-center gap-2.5"
+            style={{
+              background: canGenerate ? 'linear-gradient(135deg,#FF6B35,#F72585,#7209B7)' : 'rgba(18,18,26,0.7)',
+              color: 'white', border: canGenerate ? 'none' : '1px solid var(--border-color)',
+              opacity: !canGenerate && !generating ? 0.5 : 1,
+              cursor: !canGenerate ? 'not-allowed' : 'pointer',
+              boxShadow: canGenerate ? '0 8px 24px rgba(247,37,133,0.3)' : 'none',
+            }}>
+            {canGenerate && <span aria-hidden style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: '40%', background: 'linear-gradient(90deg,transparent,rgba(255,255,255,0.15),transparent)', animation: 'shimmerBtn 3s linear infinite' }} />}
             {generating ? (
               <><Loader2 className="w-5 h-5 animate-spin flex-shrink-0" /><span className="truncate text-sm">{GENERATION_STEPS[genStep]}</span></>
             ) : (
@@ -866,14 +901,17 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
         <>
           <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm" onClick={() => setUploadSheet(false)} />
           <div className="fixed bottom-0 left-0 right-0 z-50 rounded-t-3xl border-t border-[var(--border-color)]"
-            style={{ background: 'var(--bg-card)' }}>
+            style={{ background: 'rgba(18,18,26,0.95)', backdropFilter: 'blur(24px)', animation: 'slideUpSheet 0.3s ease-out' }}>
             <div className="max-w-lg mx-auto px-4 pt-4 pb-10">
               <div className="w-12 h-1 rounded-full bg-[var(--border-color)] mx-auto mb-5" />
               <h3 className="font-bold text-base text-center mb-5">Fotoğraf Ekle</h3>
               <div className="space-y-3">
                 <button onClick={() => cameraRef.current?.click()}
-                  className="w-full flex items-center gap-4 p-4 rounded-2xl border border-[var(--border-color)] hover:border-[var(--accent-orange)] transition-colors"
-                  style={{ background: 'var(--bg-dark)' }}>
+                  className="w-full flex items-center gap-4 p-4 rounded-2xl border transition-all"
+                  style={{ background: 'rgba(10,10,15,0.6)', borderColor: 'var(--border-color)' }}
+                  onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = 'rgba(255,107,53,0.5)'; el.style.background = 'rgba(255,107,53,0.05)'; }}
+                  onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = 'var(--border-color)'; el.style.background = 'rgba(10,10,15,0.6)'; }}
+                >
                   <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(255,107,53,0.12)' }}>
                     <Camera className="w-6 h-6 text-[var(--accent-orange)]" />
                   </div>
@@ -884,8 +922,11 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
                   <ChevronRight className="w-4 h-4 text-[var(--text-secondary)] ml-auto" />
                 </button>
                 <button onClick={() => galleryRef.current?.click()}
-                  className="w-full flex items-center gap-4 p-4 rounded-2xl border border-[var(--border-color)] hover:border-[var(--accent-orange)] transition-colors"
-                  style={{ background: 'var(--bg-dark)' }}>
+                  className="w-full flex items-center gap-4 p-4 rounded-2xl border transition-all"
+                  style={{ background: 'rgba(10,10,15,0.6)', borderColor: 'var(--border-color)' }}
+                  onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = 'rgba(247,37,133,0.5)'; el.style.background = 'rgba(247,37,133,0.05)'; }}
+                  onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = 'var(--border-color)'; el.style.background = 'rgba(10,10,15,0.6)'; }}
+                >
                   <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(247,37,133,0.1)' }}>
                     <ImageIcon className="w-6 h-6 text-[var(--accent-pink)]" />
                   </div>
@@ -897,7 +938,8 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
                 </button>
               </div>
               <button onClick={() => setUploadSheet(false)}
-                className="w-full mt-4 py-3 rounded-xl text-sm text-[var(--text-secondary)] font-medium">
+                className="w-full mt-4 py-3 rounded-xl text-sm text-[var(--text-secondary)] font-medium transition-colors hover:text-white"
+                style={{ border: '1px solid var(--border-color)', background: 'transparent' }}>
                 İptal
               </button>
             </div>
