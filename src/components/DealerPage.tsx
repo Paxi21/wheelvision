@@ -258,7 +258,7 @@ function WheelModal({ wheel, onClose, onSelect }: { wheel: Wheel; onClose: () =>
       <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm" onClick={onClose} />
       <div
         className="fixed inset-x-4 bottom-0 sm:inset-auto sm:left-1/2 sm:-translate-x-1/2 sm:bottom-auto sm:top-1/2 sm:-translate-y-1/2 sm:w-[380px] z-50 rounded-t-3xl sm:rounded-2xl border border-[var(--border-color)] overflow-hidden"
-        style={{ background: 'rgba(18,18,26,0.95)', backdropFilter: 'blur(24px)', animation: 'fadeScale 0.2s ease-out' }}
+        style={{ background: 'rgba(18,18,26,0.95)', backdropFilter: 'blur(24px)', animation: 'modalIn 0.25s ease-out' }}
       >
         <div className="sm:hidden w-12 h-1 rounded-full bg-[var(--border-color)] mx-auto mt-3" />
         <div className="relative w-full aspect-square">
@@ -270,12 +270,17 @@ function WheelModal({ wheel, onClose, onSelect }: { wheel: Wheel; onClose: () =>
             <h3 className="font-bold text-base leading-tight">{wheel.jant_adi}</h3>
             {wheel.marka && <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold flex-shrink-0" style={{ background: 'var(--border-color)', color: 'var(--text-secondary)' }}>{wheel.marka}</span>}
           </div>
-          <div className="space-y-2 mb-5">
-            {wheel.ebat && <div className="flex justify-between text-sm"><span className="text-[var(--text-secondary)]">Ebat</span><span className="font-medium">{wheel.ebat}</span></div>}
+          <div className="mb-5">
+            {wheel.ebat && (
+              <>
+                <div className="flex justify-between text-sm py-2"><span className="text-[var(--text-secondary)]">Ebat</span><span className="font-medium">{wheel.ebat}</span></div>
+                <div style={{ height: 1, background: 'var(--border-color)' }} />
+              </>
+            )}
             {wheel.fiyat != null && (
-              <div className="flex justify-between text-sm">
+              <div className="flex justify-between text-sm py-2">
                 <span className="text-[var(--text-secondary)]">Fiyat</span>
-                <span className="font-extrabold" style={{ background: 'linear-gradient(90deg,#FF6B35,#F72585)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>₺{wheel.fiyat.toLocaleString('tr-TR')}</span>
+                <span style={{ background: 'linear-gradient(90deg,#FF6B35,#F72585)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', fontWeight: 800, fontSize: '17px' }}>₺{wheel.fiyat.toLocaleString('tr-TR')}</span>
               </div>
             )}
           </div>
@@ -689,13 +694,13 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
 
             {/* ── LEFT PANEL ── */}
             <div className="lg:sticky lg:top-[65px] lg:h-[calc(100vh-65px)] lg:overflow-y-auto lg:pb-6 space-y-3"
-              style={{ animation: 'fadeSlideUp 0.3s ease-out both' }}>
+              style={{ animation: 'fadeSlideUp 0.4s ease-out 0.1s both' }}>
 
               {/* Car upload card */}
               <div className="rounded-2xl border border-[var(--border-color)] p-4"
                 style={{ background: 'rgba(18,18,26,0.7)', backdropFilter: 'blur(12px)' }}>
                 <div className="flex items-center gap-2 mb-3">
-                  <div className="w-1.5 h-1.5 rounded-full" style={{ background: 'var(--accent-orange)' }} />
+                  <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: 'var(--accent-orange)', boxShadow: '0 0 8px rgba(255,107,53,0.8)' }} />
                   <p className="text-xs font-semibold text-[var(--text-secondary)]">Araç Fotoğrafı</p>
                 </div>
                 {carPreview ? (
@@ -731,9 +736,9 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
                 ) : (
                   <button onClick={() => setUploadSheet(true)}
                     className="w-full flex flex-col items-center py-9 rounded-xl group transition-all"
-                    style={{ border: '1.5px dashed var(--border-color)', background: 'rgba(255,107,53,0.02)' }}
-                    onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = 'rgba(255,107,53,0.4)'; el.style.background = 'rgba(255,107,53,0.04)'; }}
-                    onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = 'var(--border-color)'; el.style.background = 'rgba(255,107,53,0.02)'; }}
+                    style={{ border: '1.5px dashed rgba(255,107,53,0.45)', background: 'rgba(255,107,53,0.02)', animation: 'dashedOrange 3s linear infinite' }}
+                    onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = 'rgba(255,107,53,0.75)'; el.style.background = 'rgba(255,107,53,0.05)'; }}
+                    onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = 'rgba(255,107,53,0.45)'; el.style.background = 'rgba(255,107,53,0.02)'; }}
                   >
                     <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-3 transition-transform group-hover:scale-110"
                       style={{ background: 'rgba(255,107,53,0.12)' }}>
@@ -749,7 +754,7 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
               <div className="rounded-2xl border border-[var(--border-color)] p-4"
                 style={{ background: 'rgba(18,18,26,0.7)', backdropFilter: 'blur(12px)' }}>
                 <div className="flex items-center gap-2 mb-3">
-                  <div className="w-1.5 h-1.5 rounded-full" style={{ background: 'var(--accent-pink)' }} />
+                  <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: 'var(--accent-pink)', boxShadow: '0 0 8px rgba(247,37,133,0.8)' }} />
                   <p className="text-xs font-semibold text-[var(--text-secondary)]">Seçilen Jant</p>
                 </div>
                 {selectedWheel ? (
@@ -770,9 +775,9 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
                 ) : (
                   <button onClick={() => catalogRef.current?.scrollIntoView({ behavior: 'smooth' })}
                     className="w-full flex flex-col items-center py-9 rounded-xl group transition-all"
-                    style={{ border: '1.5px dashed var(--border-color)', background: 'rgba(247,37,133,0.02)' }}
-                    onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = 'rgba(247,37,133,0.4)'; el.style.background = 'rgba(247,37,133,0.04)'; }}
-                    onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = 'var(--border-color)'; el.style.background = 'rgba(247,37,133,0.02)'; }}
+                    style={{ border: '1.5px dashed rgba(247,37,133,0.45)', background: 'rgba(247,37,133,0.02)', animation: 'dashedPink 3s linear infinite' }}
+                    onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = 'rgba(247,37,133,0.75)'; el.style.background = 'rgba(247,37,133,0.05)'; }}
+                    onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = 'rgba(247,37,133,0.45)'; el.style.background = 'rgba(247,37,133,0.02)'; }}
                   >
                     <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-3 transition-transform group-hover:scale-110"
                       style={{ background: 'rgba(247,37,133,0.1)' }}>
@@ -786,44 +791,60 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
 
               {/* Error */}
               {error && (
-                <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm flex items-start gap-2">
+                <div className="p-3.5 rounded-2xl flex items-start gap-2.5 text-sm"
+                  style={{ background: 'rgba(239,68,68,0.08)', backdropFilter: 'blur(8px)', border: '1px solid rgba(239,68,68,0.2)', color: '#f87171', animation: 'shake 0.4s ease-out' }}>
                   <X className="w-4 h-4 flex-shrink-0 mt-0.5" />{error}
                 </div>
               )}
 
               {/* Generate button — desktop */}
-              <button onClick={handleGenerate} disabled={!canGenerate}
-                className="relative overflow-hidden hidden lg:flex w-full py-4 text-base font-extrabold rounded-2xl items-center justify-center gap-2.5"
-                style={{
-                  background: canGenerate ? 'linear-gradient(135deg,#FF6B35,#F72585,#7209B7)' : 'rgba(18,18,26,0.7)',
-                  color: 'white', border: canGenerate ? 'none' : '1px solid var(--border-color)',
-                  opacity: !canGenerate && !generating ? 0.5 : 1,
-                  cursor: !canGenerate ? 'not-allowed' : 'pointer',
-                  boxShadow: canGenerate ? '0 8px 32px rgba(247,37,133,0.35)' : 'none',
-                  transition: 'all 0.2s ease',
-                }}
-                onMouseEnter={e => { if (canGenerate) { const el = e.currentTarget as HTMLElement; el.style.transform = 'translateY(-2px)'; el.style.boxShadow = '0 14px 40px rgba(247,37,133,0.45)'; } }}
-                onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.transform = ''; el.style.boxShadow = canGenerate ? '0 8px 32px rgba(247,37,133,0.35)' : 'none'; }}
-              >
-                {canGenerate && <span aria-hidden style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: '40%', background: 'linear-gradient(90deg,transparent,rgba(255,255,255,0.15),transparent)', animation: 'shimmerBtn 3s linear infinite' }} />}
-                {generating ? (
-                  <><Loader2 className="w-5 h-5 animate-spin flex-shrink-0" /><span className="truncate text-sm">{GENERATION_STEPS[genStep]}</span></>
-                ) : (
-                  <><span>Görsel Oluştur</span>{canGenerate && <ChevronRight className="w-5 h-5" />}</>
+              <div className="hidden lg:block relative" style={{ borderRadius: '18px' }}>
+                {canGenerate && (
+                  <span aria-hidden style={{
+                    position: 'absolute', inset: '-2px', borderRadius: '18px',
+                    background: 'conic-gradient(from 0deg, transparent 55%, #FF6B35 65%, #F72585 75%, #7209B7 85%, transparent 95%)',
+                    animation: `spin ${generating ? '1.5s' : '3s'} linear infinite`,
+                    filter: 'blur(4px)',
+                  }} />
                 )}
-              </button>
+                <button onClick={handleGenerate} disabled={!canGenerate}
+                  className="relative overflow-hidden w-full py-4 text-base font-extrabold rounded-2xl flex items-center justify-center gap-2.5"
+                  style={{
+                    position: 'relative', zIndex: 1,
+                    background: canGenerate ? 'linear-gradient(135deg,#FF6B35,#F72585,#7209B7)' : 'rgba(18,18,26,0.7)',
+                    color: 'white', border: canGenerate ? 'none' : '1px solid var(--border-color)',
+                    opacity: !canGenerate && !generating ? 0.5 : 1,
+                    cursor: !canGenerate ? 'not-allowed' : 'pointer',
+                    boxShadow: canGenerate ? '0 8px 32px rgba(247,37,133,0.35)' : 'none',
+                    transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                  }}
+                  onMouseEnter={e => { if (canGenerate) { const el = e.currentTarget as HTMLElement; el.style.transform = 'translateY(-2px)'; el.style.boxShadow = '0 14px 40px rgba(247,37,133,0.5)'; } }}
+                  onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.transform = ''; el.style.boxShadow = canGenerate ? '0 8px 32px rgba(247,37,133,0.35)' : 'none'; }}
+                >
+                  {canGenerate && <span aria-hidden style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: '40%', background: 'linear-gradient(90deg,transparent,rgba(255,255,255,0.15),transparent)', animation: 'shimmerBtn 3s linear infinite' }} />}
+                  {generating ? (
+                    <><Loader2 className="w-5 h-5 animate-spin flex-shrink-0" /><span className="truncate text-sm">{GENERATION_STEPS[genStep]}</span></>
+                  ) : (
+                    <><span>Görsel Oluştur</span>{canGenerate && <ChevronRight className="w-5 h-5" />}</>
+                  )}
+                </button>
+              </div>
               {!canGenerate && !generating && (
-                <p className="hidden lg:block text-center text-xs text-[var(--text-secondary)]">
-                  {!carImageUrl && !selectedWheel ? 'Araç fotoğrafı ve jant seçin' : !carImageUrl ? 'Araç fotoğrafı ekleyin' : 'Katalogdan jant seçin'}
-                </p>
+                <div className="hidden lg:flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl"
+                  style={{ background: 'rgba(18,18,26,0.6)', backdropFilter: 'blur(8px)', border: '1px solid var(--border-color)' }}>
+                  <span className="text-xs">💡</span>
+                  <p className="text-xs text-[var(--text-secondary)]">
+                    {!carImageUrl && !selectedWheel ? 'Araç fotoğrafı ve jant seçin' : !carImageUrl ? 'Araç fotoğrafı ekleyin' : 'Katalogdan jant seçin'}
+                  </p>
+                </div>
               )}
             </div>
 
             {/* ── RIGHT PANEL: Catalog ── */}
             <div ref={catalogRef} className="mt-4 lg:mt-0">
-              <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center justify-between mb-5" style={{ animation: 'fadeSlideUp 0.4s ease-out 0.2s both' }}>
                 <div>
-                  <h2 className="font-bold text-lg">Jant Kataloğu</h2>
+                  <h2 style={{ fontSize: '22px', fontWeight: 800 }}>Jant Kataloğu</h2>
                   <p className="text-xs text-[var(--text-secondary)] mt-0.5">Janta tıklayarak detay ve seçim yapın</p>
                 </div>
                 {wheels.length > 0 && (
@@ -842,19 +863,20 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
                     const isSelected = selectedWheel?.id === wheel.id;
                     return (
                       <button key={wheel.id} onClick={() => setModalWheel(wheel)}
-                        className="relative text-left rounded-2xl overflow-hidden active:scale-95"
+                        className="group relative text-left rounded-2xl overflow-hidden active:scale-[0.97]"
                         style={{
                           border: isSelected ? '2px solid var(--accent-orange)' : '1px solid var(--border-color)',
-                          boxShadow: isSelected ? '0 0 20px rgba(255,107,53,0.25)' : 'none',
-                          background: 'rgba(18,18,26,0.7)', backdropFilter: 'blur(8px)',
-                          animation: `fadeScale 0.4s ease-out ${idx * 0.04}s both`,
-                          transition: 'transform 0.3s cubic-bezier(0.4,0,0.2,1),border-color 0.3s ease,box-shadow 0.3s ease',
+                          boxShadow: isSelected ? '0 0 24px rgba(255,107,53,0.2)' : 'none',
+                          background: 'rgba(18,18,26,0.5)', backdropFilter: 'blur(8px)',
+                          animation: `fadeScale 0.4s ease-out ${idx * 0.05}s both`,
+                          transition: 'transform 0.4s cubic-bezier(0.4,0,0.2,1),border-color 0.3s ease,box-shadow 0.3s ease',
                         }}
-                        onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.transform = 'translateY(-4px)'; if (!isSelected) { el.style.borderColor = 'rgba(255,107,53,0.3)'; el.style.boxShadow = '0 12px 32px rgba(0,0,0,0.3),0 0 16px rgba(255,107,53,0.08)'; } }}
+                        onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.transform = 'translateY(-6px)'; if (!isSelected) { el.style.borderColor = 'rgba(255,107,53,0.3)'; el.style.boxShadow = '0 16px 40px rgba(0,0,0,0.4),0 0 20px rgba(255,107,53,0.08)'; } }}
                         onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.transform = ''; if (!isSelected) { el.style.borderColor = 'var(--border-color)'; el.style.boxShadow = 'none'; } }}
                       >
                         <div className="aspect-square w-full overflow-hidden">
-                          <WheelImg src={wheel.jant_foto_url} alt={wheel.jant_adi} priority={idx < 8} />
+                          <WheelImg src={wheel.jant_foto_url} alt={wheel.jant_adi} priority={idx < 8}
+                            className="transition-transform duration-500 group-hover:scale-[1.08]" />
                         </div>
                         <div className="px-3 py-2.5">
                           <p className="text-[13px] font-semibold leading-tight line-clamp-2 text-white">{wheel.jant_adi}</p>
@@ -867,10 +889,13 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
                           )}
                         </div>
                         {isSelected && (
-                          <div className="absolute top-2 right-2 w-6 h-6 rounded-full flex items-center justify-center shadow-lg"
-                            style={{ background: 'linear-gradient(135deg,#FF6B35,#F72585)' }}>
-                            <Check className="w-3.5 h-3.5 text-white" />
-                          </div>
+                          <>
+                            <div className="absolute top-2 right-2 w-6 h-6 rounded-full flex items-center justify-center shadow-lg"
+                              style={{ background: 'linear-gradient(135deg,#FF6B35,#F72585)', boxShadow: '0 4px 12px rgba(255,107,53,0.4)' }}>
+                              <Check className="w-3.5 h-3.5 text-white" />
+                            </div>
+                            <p style={{ fontSize: '10px', textAlign: 'center', color: 'var(--accent-orange)', paddingBottom: '6px', fontWeight: 600 }}>✓ Seçildi</p>
+                          </>
                         )}
                       </button>
                     );
@@ -888,25 +913,42 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
       {/* ══ STICKY GENERATE BUTTON (mobile only) ═══════════════════════════ */}
       {!resultUrl && (
         <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 px-4 pb-6 pt-3"
-          style={{ background: 'rgba(10,10,15,0.9)', backdropFilter: 'blur(20px)', borderTop: '1px solid var(--border-color)' }}>
-          <button onClick={handleGenerate} disabled={!canGenerate}
-            className="relative overflow-hidden w-full py-4 text-base font-extrabold rounded-2xl flex items-center justify-center gap-2.5"
-            style={{
-              background: canGenerate ? 'linear-gradient(135deg,#FF6B35,#F72585,#7209B7)' : 'rgba(18,18,26,0.7)',
-              color: 'white', border: canGenerate ? 'none' : '1px solid var(--border-color)',
-              opacity: !canGenerate && !generating ? 0.5 : 1,
-              cursor: !canGenerate ? 'not-allowed' : 'pointer',
-              boxShadow: canGenerate ? '0 8px 24px rgba(247,37,133,0.3)' : 'none',
-            }}>
-            {canGenerate && <span aria-hidden style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: '40%', background: 'linear-gradient(90deg,transparent,rgba(255,255,255,0.15),transparent)', animation: 'shimmerBtn 3s linear infinite' }} />}
-            {generating ? (
-              <><Loader2 className="w-5 h-5 animate-spin flex-shrink-0" /><span className="truncate text-sm">{GENERATION_STEPS[genStep]}</span></>
-            ) : (
-              <><span>Görsel Oluştur</span>{canGenerate && <ChevronRight className="w-5 h-5" />}</>
+          style={{ background: 'rgba(10,10,15,0.92)', backdropFilter: 'blur(20px)', borderTop: '1px solid var(--border-color)' }}>
+          <div className="relative" style={{ borderRadius: '18px' }}>
+            {canGenerate && (
+              <span aria-hidden style={{
+                position: 'absolute', inset: '-2px', borderRadius: '18px',
+                background: 'conic-gradient(from 0deg, transparent 55%, #FF6B35 65%, #F72585 75%, #7209B7 85%, transparent 95%)',
+                animation: `spin ${generating ? '1.5s' : '3s'} linear infinite`,
+                filter: 'blur(4px)',
+              }} />
             )}
-          </button>
-          {!carImageUrl && !selectedWheel && (
-            <p className="text-center text-xs text-[var(--text-secondary)] mt-2">Araç fotoğrafı ve jant seçin</p>
+            <button onClick={handleGenerate} disabled={!canGenerate}
+              className="relative overflow-hidden w-full py-4 text-base font-extrabold rounded-2xl flex items-center justify-center gap-2.5"
+              style={{
+                position: 'relative', zIndex: 1,
+                background: canGenerate ? 'linear-gradient(135deg,#FF6B35,#F72585,#7209B7)' : 'rgba(18,18,26,0.7)',
+                color: 'white', border: canGenerate ? 'none' : '1px solid var(--border-color)',
+                opacity: !canGenerate && !generating ? 0.5 : 1,
+                cursor: !canGenerate ? 'not-allowed' : 'pointer',
+                boxShadow: canGenerate ? '0 8px 24px rgba(247,37,133,0.3)' : 'none',
+              }}>
+              {canGenerate && <span aria-hidden style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: '40%', background: 'linear-gradient(90deg,transparent,rgba(255,255,255,0.15),transparent)', animation: 'shimmerBtn 3s linear infinite' }} />}
+              {generating ? (
+                <><Loader2 className="w-5 h-5 animate-spin flex-shrink-0" /><span className="truncate text-sm">{GENERATION_STEPS[genStep]}</span></>
+              ) : (
+                <><span>Görsel Oluştur</span>{canGenerate && <ChevronRight className="w-5 h-5" />}</>
+              )}
+            </button>
+          </div>
+          {!canGenerate && !generating && (
+            <div className="flex items-center justify-center gap-2 px-4 py-2 mt-2 rounded-xl"
+              style={{ background: 'rgba(18,18,26,0.6)', backdropFilter: 'blur(8px)', border: '1px solid var(--border-color)' }}>
+              <span className="text-xs">💡</span>
+              <p className="text-xs text-[var(--text-secondary)]">
+                {!carImageUrl && !selectedWheel ? 'Araç fotoğrafı ve jant seçin' : !carImageUrl ? 'Araç fotoğrafı ekleyin' : 'Katalogdan jant seçin'}
+              </p>
+            </div>
           )}
         </div>
       )}
