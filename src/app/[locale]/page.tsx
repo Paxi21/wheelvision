@@ -2,7 +2,10 @@
 
 import Image from 'next/image';
 import Navbar from '@/components/Navbar';
-import { ArrowRight, Sparkles, Zap, Shield, Upload, Disc3, Eye, Play } from 'lucide-react';
+import {
+  ArrowRight, Sparkles, Zap, Shield, Upload, Disc3, Eye, Play,
+  Smartphone, Gift, Building2, MessageCircle, CheckCircle2,
+} from 'lucide-react';
 import { motion } from 'motion/react';
 import { Spotlight } from '@/components/ui/spotlight';
 import { ShimmerButton } from '@/components/ui/shimmer-button';
@@ -12,11 +15,13 @@ import { createClient } from '@/lib/supabase';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 
-// ─── Before/After Slider ────────────────────────────────────────────────────
 const BEFORE_IMG = '/demo-before.jpg';
 const AFTER_IMG  = '/demo-after.jpg';
 
-function BeforeAfterSlider() {
+// ─── Before/After Slider ────────────────────────────────────────────────────
+type SliderSize = 'large' | 'small';
+
+function BeforeAfterSlider({ size = 'large' }: { size?: SliderSize }) {
   const t = useTranslations('hero');
   const [position, setPosition] = useState(50);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -38,70 +43,154 @@ function BeforeAfterSlider() {
     moveTo(e.clientX);
   }, [moveTo]);
 
+  const isLarge = size === 'large';
+
   return (
     <div className="relative w-full">
-      <div className="absolute -inset-4 rounded-3xl bg-gradient-to-r from-[#ec4899]/20 via-[#8b5cf6]/20 to-[#ec4899]/20 blur-2xl pointer-events-none" />
-      <div className="slider-border relative p-[2px] rounded-2xl"
-           style={{ background: 'linear-gradient(135deg, #ec4899, #8b5cf6, #ec4899)', backgroundSize: '200% 200%', animation: 'gradientShift 4s linear infinite' }}>
+      {isLarge && (
+        <div className="absolute -inset-4 rounded-3xl bg-gradient-to-r from-[#ec4899]/20 via-[#8b5cf6]/20 to-[#ec4899]/20 blur-2xl pointer-events-none" />
+      )}
+      <div
+        className={`relative p-[2px] rounded-2xl${isLarge ? ' slider-border' : ''}`}
+        style={isLarge
+          ? { background: 'linear-gradient(135deg, #ec4899, #8b5cf6, #ec4899)', backgroundSize: '200% 200%', animation: 'gradientShift 4s linear infinite' }
+          : { background: 'linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%)' }
+        }
+      >
         <div
           ref={containerRef}
-          className="relative select-none cursor-col-resize overflow-hidden rounded-[14px] aspect-[16/9] bg-black"
-          style={{ touchAction: 'none' }}
+          className="relative select-none cursor-col-resize overflow-hidden rounded-[14px] bg-black"
+          style={{ touchAction: 'none', aspectRatio: isLarge ? '16/9' : '4/3' }}
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
         >
-          <Image src={AFTER_IMG} alt="After wheel change - AI visualization" fill
-                 priority fetchPriority="high"
-                 sizes="(max-width: 390px) 390px, (max-width: 640px) 640px, (max-width: 1024px) 828px, 900px"
-                 className="object-cover pointer-events-none" draggable={false} />
+          <Image
+            src={AFTER_IMG} alt="After wheel change - AI visualization" fill
+            priority={isLarge}
+            sizes={isLarge
+              ? '(max-width: 390px) 390px, (max-width: 640px) 640px, (max-width: 1024px) 828px, 900px'
+              : '(max-width: 640px) 50vw, 400px'}
+            className="object-cover pointer-events-none" draggable={false}
+          />
           <div className="absolute inset-0" style={{ clipPath: `inset(0 ${100 - position}% 0 0)` }}>
-            <Image src={BEFORE_IMG} alt="Before wheel change - original car" fill
-                   priority fetchPriority="high"
-                   sizes="(max-width: 390px) 390px, (max-width: 640px) 640px, (max-width: 1024px) 828px, 900px"
-                   className="object-cover pointer-events-none" draggable={false} />
+            <Image
+              src={BEFORE_IMG} alt="Before wheel change - original car" fill
+              priority={isLarge}
+              sizes={isLarge
+                ? '(max-width: 390px) 390px, (max-width: 640px) 640px, (max-width: 1024px) 828px, 900px'
+                : '(max-width: 640px) 50vw, 400px'}
+              className="object-cover pointer-events-none" draggable={false}
+            />
           </div>
-          <div className="absolute top-3 left-3 px-3 py-1.5 rounded-full backdrop-blur-md bg-black/50 border border-white/15 text-xs font-semibold text-white/80 pointer-events-none">
+          <div className="absolute top-2 left-2 px-2 py-1 rounded-full backdrop-blur-md bg-black/50 border border-white/15 text-[10px] font-semibold text-white/80 pointer-events-none">
             {t('before')}
           </div>
-          <div className="absolute top-3 right-3 px-3 py-1.5 rounded-full backdrop-blur-md border border-white/20 text-xs font-bold text-white pointer-events-none"
-               style={{ background: 'linear-gradient(135deg, rgba(236,72,153,0.85), rgba(139,92,246,0.85))' }}>
+          <div
+            className="absolute top-2 right-2 px-2 py-1 rounded-full backdrop-blur-md border border-white/20 text-[10px] font-bold text-white pointer-events-none"
+            style={{ background: 'linear-gradient(135deg, rgba(236,72,153,0.85), rgba(139,92,246,0.85))' }}
+          >
             {t('after')} ✨
           </div>
-          <div className="absolute top-0 bottom-0 w-[2px] pointer-events-none"
-               style={{ left: `${position}%`, background: 'linear-gradient(to bottom, transparent, rgba(255,255,255,0.95) 15%, rgba(255,255,255,0.95) 85%, transparent)' }} />
-          <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 pointer-events-none z-10"
-               style={{ left: `${position}%` }}>
-            <div className="w-11 h-11 rounded-full bg-white flex items-center justify-center border-2 border-white/90"
-                 style={{ boxShadow: '0 0 0 4px rgba(139,92,246,0.3), 0 4px 20px rgba(0,0,0,0.4)' }}>
+          <div
+            className="absolute top-0 bottom-0 w-[2px] pointer-events-none"
+            style={{ left: `${position}%`, background: 'linear-gradient(to bottom, transparent, rgba(255,255,255,0.95) 15%, rgba(255,255,255,0.95) 85%, transparent)' }}
+          />
+          <div
+            className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 pointer-events-none z-10"
+            style={{ left: `${position}%` }}
+          >
+            <div
+              className="w-8 h-8 rounded-full bg-white flex items-center justify-center border-2 border-white/90"
+              style={{ boxShadow: '0 0 0 3px rgba(139,92,246,0.3), 0 4px 16px rgba(0,0,0,0.4)' }}
+            >
               <div className="flex items-center gap-0.5">
-                <svg width="8" height="12" viewBox="0 0 8 12" fill="none"><path d="M6 1L1 6L6 11" stroke="#374151" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                <svg width="8" height="12" viewBox="0 0 8 12" fill="none"><path d="M2 1L7 6L2 11" stroke="#374151" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                <svg width="6" height="10" viewBox="0 0 8 12" fill="none"><path d="M6 1L1 6L6 11" stroke="#374151" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                <svg width="6" height="10" viewBox="0 0 8 12" fill="none"><path d="M2 1L7 6L2 11" stroke="#374151" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
               </div>
             </div>
           </div>
         </div>
       </div>
-      <style>{`
-        @keyframes gradientShift {
-          0%   { background-position: 0% 50%; }
-          50%  { background-position: 100% 50%; }
-          100% { background-position: 0% 50%; }
-        }
-        @media (max-width: 640px), (prefers-reduced-motion: reduce) {
-          .slider-border { animation: none !important; }
-        }
-      `}</style>
+      {isLarge && (
+        <style>{`
+          @keyframes gradientShift {
+            0%   { background-position: 0% 50%; }
+            50%  { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+          }
+          @media (max-width: 640px), (prefers-reduced-motion: reduce) {
+            .slider-border { animation: none !important; }
+          }
+        `}</style>
+      )}
     </div>
   );
 }
 
+// ─── Animated counter ────────────────────────────────────────────────────────
+function CountUp({ end, suffix = '', duration = 1800, decimals = 0 }: {
+  end: number; suffix?: string; duration?: number; decimals?: number;
+}) {
+  const [count, setCount] = useState(0);
+  const ref = useRef<HTMLSpanElement>(null);
+  const started = useRef(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const factor = Math.pow(10, decimals);
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !started.current) {
+          started.current = true;
+          const startTime = performance.now();
+          const animate = (now: number) => {
+            const elapsed = now - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            const eased = 1 - Math.pow(1 - progress, 3);
+            setCount(Math.round(eased * end * factor));
+            if (progress < 1) requestAnimationFrame(animate);
+          };
+          requestAnimationFrame(animate);
+        }
+      },
+      { threshold: 0.5 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [end, duration, decimals]);
+
+  const factor = Math.pow(10, decimals);
+  const display = decimals > 0
+    ? (count / factor).toFixed(decimals)
+    : count.toLocaleString();
+
+  return <span ref={ref}>{display}{suffix}</span>;
+}
+
+// ─── Subtle separator between sections ─────────────────────────────────────
+function SectionSep() {
+  return (
+    <div className="max-w-[1400px] mx-auto px-6 lg:px-12">
+      <div className="h-px" style={{ background: 'linear-gradient(90deg, transparent, rgba(139,92,246,0.15), rgba(236,72,153,0.15), transparent)' }} />
+    </div>
+  );
+}
+
+// ─── Page ────────────────────────────────────────────────────────────────────
 export default function Home() {
-  const t = useTranslations('hero');
-  const tStats = useTranslations('stats');
-  const tSteps = useTranslations('steps');
+  const t         = useTranslations('hero');
+  const tStats    = useTranslations('stats');
+  const tSteps    = useTranslations('steps');
   const tFeatures = useTranslations('features');
-  const tSocial = useTranslations('social');
-  const tFooter = useTranslations('footerLinks');
+  const tSocial   = useTranslations('social');
+  const tFooter   = useTranslations('footerLinks');
+  const tSP       = useTranslations('socialProof');
+  const tGallery  = useTranslations('gallery');
+  const tB2B      = useTranslations('b2b');
+  const tTmn      = useTranslations('testimonials');
+  const tCta      = useTranslations('finalCta');
+
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const supabase = useMemo(() => createClient(), []);
 
@@ -116,8 +205,27 @@ export default function Home() {
   const steps = [
     { icon: Upload, title: tSteps('s1Title'), desc: tSteps('s1Desc'), time: '5s',   gradient: 'from-[#FF6B35] to-[#F72585]', featured: false },
     { icon: Disc3,  title: tSteps('s2Title'), desc: tSteps('s2Desc'), time: '3s',   gradient: 'from-[#F72585] to-[#7209B7]', featured: false },
-    { icon: Eye,    title: tSteps('s3Title'), desc: tSteps('s3Desc'), time: '~30s', gradient: 'from-[#8b5cf6] to-[#ec4899]', featured: true },
+    { icon: Eye,    title: tSteps('s3Title'), desc: tSteps('s3Desc'), time: '~30s', gradient: 'from-[#8b5cf6] to-[#ec4899]', featured: true  },
   ];
+
+  const features = [
+    { icon: Zap,        title: tFeatures('f1Title'), desc: tFeatures('f1Desc'), gradient: 'from-[#FF6B35] to-[#F72585]' },
+    { icon: Sparkles,   title: tFeatures('f2Title'), desc: tFeatures('f2Desc'), gradient: 'from-[#F72585] to-[#7209B7]' },
+    { icon: Shield,     title: tFeatures('f3Title'), desc: tFeatures('f3Desc'), gradient: 'from-[#7209B7] to-[#3A0CA3]' },
+    { icon: Smartphone, title: tFeatures('f4Title'), desc: tFeatures('f4Desc'), gradient: 'from-[#06b6d4] to-[#8b5cf6]' },
+    { icon: Gift,       title: tFeatures('f5Title'), desc: tFeatures('f5Desc'), gradient: 'from-[#FF6B35] to-[#ec4899]' },
+    { icon: Building2,  title: tFeatures('f6Title'), desc: tFeatures('f6Desc'), gradient: 'from-[#8b5cf6] to-[#3A0CA3]' },
+  ];
+
+  const testimonials = [
+    { quote: tTmn('q1'), author: tTmn('a1') },
+    { quote: tTmn('q2'), author: tTmn('a2') },
+    { quote: tTmn('q3'), author: tTmn('a3') },
+  ];
+
+  const galleryLabels = [tGallery('label1'), tGallery('label2'), tGallery('label3')];
+
+  const b2bFeatures = [tB2B('f1'), tB2B('f2'), tB2B('f3'), tB2B('f4')];
 
   return (
     <>
@@ -128,11 +236,14 @@ export default function Home() {
         <div className="hidden sm:block">
           <Spotlight className="-top-40 left-1/2 -translate-x-1/2" fill="rgba(139, 92, 246, 0.25)" />
         </div>
-        <div className="absolute inset-0 overflow-hidden pointer-events-none hidden sm:block">
-          <div className="absolute top-0 left-1/4 w-[500px] h-[500px] rounded-full blur-[150px] opacity-15"
+        {/* Background orbs + grid */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-0 left-1/4 w-[500px] h-[500px] rounded-full blur-[150px] opacity-10 hidden sm:block"
                style={{ background: 'radial-gradient(circle, #ec4899, transparent)' }} />
-          <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] rounded-full blur-[150px] opacity-15"
+          <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] rounded-full blur-[150px] opacity-10 hidden sm:block"
                style={{ background: 'radial-gradient(circle, #8b5cf6, transparent)' }} />
+          <div className="absolute inset-0 opacity-[0.02]"
+               style={{ backgroundImage: 'linear-gradient(var(--border-color) 1px, transparent 1px), linear-gradient(90deg, var(--border-color) 1px, transparent 1px)', backgroundSize: '50px 50px' }} />
         </div>
 
         <div className="relative z-10 w-full max-w-[1100px] mx-auto flex flex-col items-center text-center">
@@ -141,9 +252,10 @@ export default function Home() {
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-[#8b5cf6]/40 bg-[#8b5cf6]/10 text-sm text-[#c4b5fd] font-medium mb-6"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full border text-sm font-medium mb-6"
+            style={{ borderColor: 'rgba(255,107,53,0.4)', background: 'rgba(255,107,53,0.08)', color: '#ffb899' }}
           >
-            <span className="w-2 h-2 rounded-full bg-[#8b5cf6] animate-pulse" />
+            <span className="w-2 h-2 rounded-full animate-pulse" style={{ background: 'var(--accent-orange)' }} />
             {t('badge')}
           </motion.div>
 
@@ -152,30 +264,36 @@ export default function Home() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: 0.05 }}
-            className="text-4xl sm:text-5xl md:text-6xl xl:text-7xl font-bold leading-[1.1] tracking-tight mb-4 sm:mb-5"
+            className="leading-[1.05] tracking-[-0.03em] mb-4 sm:mb-5"
+            style={{ fontSize: 'clamp(38px, 7.5vw, 80px)', fontWeight: 900 }}
           >
             {t('title')}
             <br />
-            <span style={{ background: 'linear-gradient(135deg, #ec4899 0%, #8b5cf6 50%, #06b6d4 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
+            <span style={{ background: 'linear-gradient(135deg, #FF6B35 0%, #F72585 50%, #7209B7 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
               {t('titleHighlight')}
             </span>
           </motion.h1>
 
-          {/* Subtitle */}
+          {/* Subtitle with inline highlights */}
           <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
+            transition={{ duration: 0.5, delay: 0.15 }}
             className="text-base sm:text-lg md:text-xl text-[#a1a1aa] mb-6 sm:mb-8 max-w-2xl"
           >
-            {t('description')}
+            {t('descPre')}
+            <strong style={{ color: 'var(--accent-orange)', fontWeight: 700 }}>{t('descHighlight1')}</strong>
+            {t('descMid')}
+            <br className="hidden sm:block" />
+            <span style={{ borderBottom: '2px solid rgba(247,37,133,0.5)', paddingBottom: '1px' }}>{t('descHighlight2')}</span>
+            {t('descPost')}
           </motion.p>
 
           {/* CTAs */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.3 }}
+            transition={{ duration: 0.5, delay: 0.25 }}
             className="flex flex-col sm:flex-row items-center gap-3 mb-5"
           >
             <Link href={ctaHref}>
@@ -197,7 +315,7 @@ export default function Home() {
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: 0.5, delay: 0.4 }}
+            transition={{ duration: 0.5, delay: 0.35 }}
             className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm text-[#71717a] mb-10"
           >
             <span className="flex items-center gap-1.5">
@@ -219,7 +337,7 @@ export default function Home() {
             transition={{ duration: 0.7, delay: 0.45 }}
             className="w-full max-w-[900px]"
           >
-            <BeforeAfterSlider />
+            <BeforeAfterSlider size="large" />
             <p className="text-center text-xs text-[#52525b] mt-3 flex items-center justify-center gap-1.5">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 9l-3 3 3 3M9 5l3-3 3 3M15 19l-3 3-3-3M19 9l3 3-3 3"/></svg>
               {t('compare')}
@@ -228,7 +346,44 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── Steps ── */}
+      <SectionSep />
+
+      {/* ── Social Proof Band ── */}
+      <section className="py-12 relative">
+        <div className="max-w-[1400px] mx-auto px-6 lg:px-12">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5 }}
+            className="rounded-2xl px-6 sm:px-10 py-8 grid grid-cols-1 sm:grid-cols-3 gap-8"
+            style={{ background: 'rgba(18,18,26,0.7)', backdropFilter: 'blur(20px)', border: '1px solid var(--border-color)' }}
+          >
+            {([
+              { end: 50,  suffix: '+', decimals: 0, label: tSP('stat1Label') },
+              { end: 1000, suffix: '+', decimals: 0, label: tSP('stat2Label') },
+              { end: 4.9, suffix: '/5', decimals: 1, label: tSP('stat3Label') },
+            ] as const).map((stat, i) => (
+              <div
+                key={i}
+                className={`text-center ${i < 2 ? 'sm:border-r sm:border-[var(--border-color)]' : ''}`}
+              >
+                <div
+                  className="text-4xl font-black mb-1"
+                  style={{ background: 'linear-gradient(135deg, #FF6B35 0%, #F72585 50%, #7209B7 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}
+                >
+                  <CountUp end={stat.end} suffix={stat.suffix} decimals={stat.decimals} />
+                </div>
+                <p className="text-sm text-[var(--text-secondary)]">{stat.label}</p>
+              </div>
+            ))}
+          </motion.div>
+        </div>
+      </section>
+
+      <SectionSep />
+
+      {/* ── How It Works ── */}
       <section id="how-it-works" className="py-14 sm:py-24 relative">
         <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-12">
           <motion.div
@@ -245,8 +400,10 @@ export default function Home() {
           </motion.div>
 
           <div className="grid md:grid-cols-3 gap-6 relative">
-            <div className="hidden md:block absolute top-[4.5rem] left-[calc(100%/6)] right-[calc(100%/6)] h-px"
-                 style={{ background: 'linear-gradient(90deg, rgba(255,107,53,0.4) 0%, rgba(139,92,246,0.6) 50%, rgba(236,72,153,0.4) 100%)' }} />
+            <div
+              className="hidden md:block absolute top-[4.5rem] left-[calc(100%/6)] right-[calc(100%/6)] h-px"
+              style={{ background: 'linear-gradient(90deg, rgba(255,107,53,0.4) 0%, rgba(139,92,246,0.6) 50%, rgba(236,72,153,0.4) 100%)' }}
+            />
             <div className="hidden md:block absolute top-[4.5rem] left-1/3 -translate-x-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-[#8b5cf6] opacity-60" />
             <div className="hidden md:block absolute top-[4.5rem] right-1/3 translate-x-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-[#ec4899] opacity-60" />
 
@@ -268,7 +425,6 @@ export default function Home() {
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-xs font-bold text-white"
                        style={{ background: 'linear-gradient(135deg, #8b5cf6, #ec4899)' }}>
                     AI Magic ✨
-                  {/* brand label — kept in English intentionally */}
                   </div>
                 )}
                 <div className={`w-9 h-9 rounded-full bg-gradient-to-r ${step.gradient} flex items-center justify-center text-sm font-bold text-white mx-auto mb-5 shadow-lg`}>
@@ -296,7 +452,7 @@ export default function Home() {
           >
             <Link href={ctaHref}>
               <ShimmerButton className="text-base px-8 py-4 mx-auto">
-                {isLoggedIn ? t('ctaLoggedIn') : t('cta')} — Free
+                {isLoggedIn ? t('ctaLoggedIn') : t('cta')}
                 <ArrowRight className="w-4 h-4" />
               </ShimmerButton>
             </Link>
@@ -305,31 +461,84 @@ export default function Home() {
         </div>
       </section>
 
+      <SectionSep />
+
+      {/* ── Before/After Gallery ── */}
+      <section className="py-14 sm:py-20 relative">
+        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-12">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5 }}
+            className="text-center mb-12"
+          >
+            <h2 className="text-3xl md:text-4xl font-bold mb-3">
+              {tGallery('title')} <span className="gradient-text">{tGallery('titleHighlight')}</span>
+            </h2>
+            <p className="text-[var(--text-secondary)]">{tGallery('subtitle')}</p>
+          </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {galleryLabels.map((label, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: i * 0.15 }}
+              >
+                <BeforeAfterSlider size="small" />
+                <p className="text-center text-sm text-[var(--text-secondary)] mt-2.5 font-medium">{label}</p>
+              </motion.div>
+            ))}
+          </div>
+
+          <motion.div
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.4, delay: 0.4 }}
+            className="text-center mt-8"
+          >
+            <Link
+              href={ctaHref}
+              className="inline-flex items-center gap-1.5 text-sm font-semibold transition-colors hover:opacity-80"
+              style={{ color: 'var(--accent-orange)' }}
+            >
+              {tGallery('more')} <ArrowRight className="w-4 h-4" />
+            </Link>
+          </motion.div>
+        </div>
+      </section>
+
+      <SectionSep />
+
       {/* ── Features ── */}
       <section className="py-20 relative">
         <div className="max-w-[1400px] mx-auto px-6 lg:px-12">
-          <div className="text-center mb-12">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5 }}
+            className="text-center mb-12"
+          >
             <h2 className="text-3xl md:text-4xl font-bold mb-3">
               {tFeatures('title')} <span className="gradient-text">{tFeatures('titleBrand')}</span>
             </h2>
-            <p className="text-[var(--text-secondary)] max-w-lg mx-auto">
-              {tFeatures('subtitle')}
-            </p>
-          </div>
+            <p className="text-[var(--text-secondary)] max-w-lg mx-auto">{tFeatures('subtitle')}</p>
+          </motion.div>
 
-          <div className="grid md:grid-cols-3 gap-8">
-            {[
-              { icon: Zap,      title: tFeatures('f1Title'), desc: tFeatures('f1Desc'), gradient: 'from-[#FF6B35] to-[#F72585]' },
-              { icon: Sparkles, title: tFeatures('f2Title'), desc: tFeatures('f2Desc'), gradient: 'from-[#F72585] to-[#7209B7]' },
-              { icon: Shield,   title: tFeatures('f3Title'), desc: tFeatures('f3Desc'), gradient: 'from-[#7209B7] to-[#3A0CA3]' },
-            ].map((f, i) => (
+          <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6">
+            {features.map((f, i) => (
               <motion.div
                 key={i}
                 initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 whileHover={{ y: -6, transition: { duration: 0.25, ease: 'easeOut' } }}
-                transition={{ duration: 0.5, delay: i * 0.15 }}
                 viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: i * 0.1 }}
                 className="card text-center hover:shadow-[0_8px_32px_rgba(139,92,246,0.15)] transition-all duration-300 hover:border-white/10"
               >
                 <div className={`w-14 h-14 rounded-2xl bg-gradient-to-r ${f.gradient} flex items-center justify-center mx-auto mb-4`}>
@@ -343,51 +552,256 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── Social Proof / CTA ── */}
-      <section className="py-24 relative">
-        <div className="max-w-[760px] mx-auto px-6">
-          <AnimatedBorder containerClassName="w-full" duration={5}>
-            <div className="p-8 md:p-12 text-center">
-              <div className="flex justify-center gap-1 mb-4">
-                {[...Array(5)].map((_, i) => (
-                  <span key={i} className="text-yellow-400 text-xl">★</span>
-                ))}
-              </div>
-              <p className="text-[#a1a1aa] italic mb-6 max-w-lg mx-auto text-base">
-                &ldquo;{tSocial('quote')}&rdquo;
-              </p>
-              <p className="text-sm text-[#52525b] mb-8">{tSocial('author')}</p>
+      <SectionSep />
 
-              <h2 className="text-3xl md:text-4xl font-bold mb-2">{tSocial('title')}</h2>
-              <p className="text-[var(--text-secondary)] mb-2">{tSocial('desc')}</p>
-              <p className="text-sm text-[var(--accent-orange)] mb-8">{tSocial('watermarkNote')}</p>
-              <Link href={ctaHref}>
-                <ShimmerButton className="text-lg px-10 py-4 mx-auto">
-                  🚀 {isLoggedIn ? t('ctaLoggedIn') : t('cta')}
-                  <ArrowRight className="w-5 h-5" />
-                </ShimmerButton>
-              </Link>
-              <p className="text-xs text-[#52525b] mt-3">{tSocial('noCard')}</p>
-            </div>
-          </AnimatedBorder>
+      {/* ── B2B Section ── */}
+      <section className="py-20 relative">
+        <div className="max-w-[1400px] mx-auto px-6 lg:px-12">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5 }}
+          >
+            <AnimatedBorder containerClassName="w-full" duration={6}>
+              <div className="p-8 md:p-12 grid md:grid-cols-2 gap-10 items-center">
+                {/* Left */}
+                <div>
+                  <div
+                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold mb-5"
+                    style={{ background: 'rgba(255,107,53,0.1)', border: '1px solid rgba(255,107,53,0.3)', color: 'var(--accent-orange)' }}
+                  >
+                    <Building2 className="w-3.5 h-3.5" />
+                    {tB2B('eyebrow')}
+                  </div>
+                  <h2 className="text-3xl md:text-4xl font-black mb-3 leading-tight">{tB2B('title')}</h2>
+                  <p className="text-lg text-[var(--text-secondary)] mb-6">{tB2B('subtitle')}</p>
+                  <ul className="space-y-3 mb-8">
+                    {b2bFeatures.map((f, i) => (
+                      <li key={i} className="flex items-start gap-3 text-sm">
+                        <CheckCircle2 className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: 'var(--accent-orange)' }} />
+                        <span className="text-[var(--text-secondary)]">{f}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <div className="flex flex-wrap gap-3">
+                    <a
+                      href="mailto:info@wheelvision.io"
+                      className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-white transition-all duration-200 hover:opacity-90 hover:-translate-y-0.5"
+                      style={{ background: 'linear-gradient(135deg, #FF6B35, #F72585)' }}
+                    >
+                      <MessageCircle className="w-4 h-4" />
+                      {tB2B('cta1')}
+                    </a>
+                    <Link
+                      href="/pricing"
+                      className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all duration-200 hover:bg-white/10"
+                      style={{ border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}
+                    >
+                      {tB2B('cta2')}
+                    </Link>
+                  </div>
+                </div>
+
+                {/* Right: Phone mockup */}
+                <div className="flex justify-center">
+                  <div className="relative w-[260px]">
+                    <div
+                      className="rounded-[32px] p-3 shadow-2xl"
+                      style={{ background: 'rgba(18,18,26,0.95)', border: '2px solid rgba(139,92,246,0.4)', boxShadow: '0 0 60px rgba(139,92,246,0.2)' }}
+                    >
+                      {/* Status bar */}
+                      <div className="flex items-center justify-between px-3 py-1.5 mb-2">
+                        <div className="text-[10px] text-[var(--text-secondary)]">9:41</div>
+                        <div className="w-16 h-4 rounded-full bg-[#1a1a2e]" />
+                        <div className="flex gap-1">
+                          {[...Array(4)].map((_, j) => (
+                            <div key={j} className="w-0.5 h-2.5 rounded-full bg-[var(--text-secondary)]" style={{ opacity: 0.3 + j * 0.2 }} />
+                          ))}
+                        </div>
+                      </div>
+                      {/* Screen */}
+                      <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--bg-dark)' }}>
+                        <div
+                          className="px-3 py-2.5 flex items-center gap-2"
+                          style={{ background: 'rgba(18,18,26,0.9)', borderBottom: '1px solid var(--border-color)' }}
+                        >
+                          <div
+                            className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white"
+                            style={{ background: 'linear-gradient(135deg, var(--accent-orange), var(--accent-pink))' }}
+                          >W</div>
+                          <div>
+                            <div className="text-[10px] font-bold text-white">WheelVision</div>
+                            <div className="text-[8px] text-[var(--text-secondary)]">Jant Showroom</div>
+                          </div>
+                        </div>
+                        <div
+                          className="mx-2 mt-2 rounded-lg overflow-hidden flex items-center justify-center"
+                          style={{ aspectRatio: '16/9', background: '#1a1a2e', border: '1px solid var(--border-color)' }}
+                        >
+                          <div className="text-center">
+                            <div className="text-2xl mb-1">🚗</div>
+                            <div className="text-[9px] text-[var(--text-secondary)]">AI Görselleştirme</div>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-3 gap-1.5 p-2">
+                          {[...Array(6)].map((_, j) => (
+                            <div
+                              key={j}
+                              className="aspect-square rounded-lg flex items-center justify-center text-base"
+                              style={{
+                                background: j === 1 ? 'rgba(255,107,53,0.15)' : 'rgba(26,26,40,0.8)',
+                                border: j === 1 ? '1px solid rgba(255,107,53,0.5)' : '1px solid var(--border-color)',
+                              }}
+                            >🔘</div>
+                          ))}
+                        </div>
+                        <div className="px-2 pb-3">
+                          <div
+                            className="rounded-lg py-2 text-center text-[10px] font-bold text-white"
+                            style={{ background: 'linear-gradient(135deg, var(--accent-orange), var(--accent-pink))' }}
+                          >
+                            Görsel Oluştur ✨
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div
+                      className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-40 h-8 blur-xl rounded-full"
+                      style={{ background: 'linear-gradient(90deg, #FF6B35, #F72585, #7209B7)' }}
+                    />
+                  </div>
+                </div>
+              </div>
+            </AnimatedBorder>
+          </motion.div>
         </div>
       </section>
 
-      {/* ── Footer links ── */}
-      <footer className="py-8 border-t border-[var(--border-color)]">
-        <div className="max-w-[1400px] mx-auto px-6 lg:px-12 flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-r from-[var(--accent-orange)] to-[var(--accent-pink)] flex items-center justify-center">
-              <span className="text-white font-bold text-sm">W</span>
-            </div>
-            <span className="font-semibold">WheelVision</span>
+      <SectionSep />
+
+      {/* ── Testimonials ── */}
+      <section className="py-20 relative">
+        <div className="max-w-[1400px] mx-auto px-6 lg:px-12">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5 }}
+            className="text-center mb-12"
+          >
+            <h2 className="text-3xl md:text-4xl font-bold mb-3">{tTmn('title')}</h2>
+            <p className="text-[var(--text-secondary)]">{tTmn('subtitle')}</p>
+          </motion.div>
+
+          <div className="grid md:grid-cols-3 gap-6">
+            {testimonials.map((item, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: i * 0.15 }}
+                whileHover={{ y: -4, transition: { duration: 0.2 } }}
+                className="rounded-2xl p-6 flex flex-col gap-4 transition-all duration-300"
+                style={{ background: 'rgba(18,18,26,0.6)', backdropFilter: 'blur(12px)', border: '1px solid var(--border-color)' }}
+              >
+                <div className="flex gap-0.5">
+                  {[...Array(5)].map((_, j) => (
+                    <span key={j} className="text-yellow-400 text-sm">★</span>
+                  ))}
+                </div>
+                <p className="text-[var(--text-secondary)] italic text-sm leading-relaxed flex-1">
+                  &ldquo;{item.quote}&rdquo;
+                </p>
+                <p className="text-xs font-semibold" style={{ color: 'var(--accent-orange)' }}>{item.author}</p>
+              </motion.div>
+            ))}
           </div>
-          <p className="text-sm text-[var(--text-secondary)]">{tFooter('copyright')}</p>
-          <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-[var(--text-secondary)]">
-            <Link href="/pricing" className="hover:text-white transition-colors">{tFooter('pricing')}</Link>
-            <Link href="/privacy" className="hover:text-white transition-colors">{tFooter('privacy')}</Link>
-            <Link href="/terms" className="hover:text-white transition-colors">{tFooter('terms')}</Link>
-            <Link href="/login" className="hover:text-white transition-colors">{tFooter('login')}</Link>
+        </div>
+      </section>
+
+      <SectionSep />
+
+      {/* ── Final CTA ── */}
+      <section className="py-24 relative overflow-hidden">
+        <div className="absolute inset-0 pointer-events-none">
+          <div
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full blur-[130px] opacity-15"
+            style={{ background: 'radial-gradient(circle, #F72585, #7209B7, transparent)' }}
+          />
+        </div>
+        <div className="max-w-[760px] mx-auto px-6 relative z-10">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="text-center"
+          >
+            <p className="text-base font-semibold mb-2" style={{ color: 'var(--accent-orange)' }}>{tCta('eyebrow')}</p>
+            <h2 className="text-4xl md:text-5xl font-black mb-4 leading-tight">{tCta('title')}</h2>
+            <p className="text-[var(--text-secondary)] mb-8 text-lg">{tCta('desc')}</p>
+            <Link href={ctaHref}>
+              <ShimmerButton className="text-lg px-10 py-5 mx-auto">
+                🚀 {tCta('cta')}
+                <ArrowRight className="w-5 h-5" />
+              </ShimmerButton>
+            </Link>
+            <p className="text-xs text-[#52525b] mt-4">{tSocial('noCard')}</p>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* ── Footer ── */}
+      <footer className="py-10 border-t border-[var(--border-color)]">
+        <div className="max-w-[1400px] mx-auto px-6 lg:px-12">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+            {/* Logo + tagline */}
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-r from-[var(--accent-orange)] to-[var(--accent-pink)] flex items-center justify-center">
+                  <span className="text-white font-bold text-sm">W</span>
+                </div>
+                <span className="font-bold text-lg">WheelVision</span>
+              </div>
+              <p className="text-sm text-[var(--text-secondary)] max-w-[240px]">{tFooter('tagline')}</p>
+            </div>
+
+            {/* Nav links */}
+            <div className="flex flex-wrap gap-x-8 gap-y-3 md:justify-center">
+              <div className="flex flex-col gap-2.5">
+                <Link href="/app"     className="text-sm text-[var(--text-secondary)] hover:text-white transition-colors">{tFooter('app')}</Link>
+                <Link href="/pricing" className="text-sm text-[var(--text-secondary)] hover:text-white transition-colors">{tFooter('pricing')}</Link>
+                <Link href="/login"   className="text-sm text-[var(--text-secondary)] hover:text-white transition-colors">{tFooter('login')}</Link>
+              </div>
+              <div className="flex flex-col gap-2.5">
+                <Link href="/privacy" className="text-sm text-[var(--text-secondary)] hover:text-white transition-colors">{tFooter('privacy')}</Link>
+                <Link href="/terms"   className="text-sm text-[var(--text-secondary)] hover:text-white transition-colors">{tFooter('terms')}</Link>
+              </div>
+            </div>
+
+            {/* Social icons */}
+            <div className="flex items-start gap-3 md:justify-end">
+              <a
+                href="https://instagram.com/wheelvision" target="_blank" rel="noopener noreferrer"
+                className="w-9 h-9 rounded-full flex items-center justify-center text-[var(--text-secondary)] hover:text-white transition-all hover:-translate-y-0.5"
+                style={{ border: '1px solid var(--border-color)' }}
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+              </a>
+              <a
+                href="https://twitter.com/wheelvision" target="_blank" rel="noopener noreferrer"
+                className="w-9 h-9 rounded-full flex items-center justify-center text-[var(--text-secondary)] hover:text-white transition-all hover:-translate-y-0.5"
+                style={{ border: '1px solid var(--border-color)' }}
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.737-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+              </a>
+            </div>
+          </div>
+
+          <div className="border-t border-[var(--border-color)] pt-6 text-center">
+            <p className="text-sm text-[#52525b]">{tFooter('copyright')}</p>
           </div>
         </div>
       </footer>

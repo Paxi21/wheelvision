@@ -9,10 +9,15 @@
     "settings": "Einstellungen"
   },
   "hero": {
-    "badge": "KI-gestützte Felgen-Visualisierung — Kostenlos testen",
-    "title": "Passt diese Felge",
-    "titleHighlight": "zu deinem Auto?",
+    "badge": "🔥 KI-gestützte Felgen-Visualisierung — Kostenlos testen",
+    "title": "Felge kaufen, bereuen?",
+    "titleHighlight": "Erst sehen, dann entscheiden.",
     "description": "Sieh es bevor du kaufst. Lade dein Autofoto hoch, wähle eine Felge — KI montiert sie in 30 Sekunden.",
+    "descPre": "Lade dein Autofoto hoch, wähle eine Felge — KI montiert sie ",
+    "descHighlight1": "in 30 Sekunden",
+    "descMid": ". ",
+    "descHighlight2": "Bevor du Tausende ausgibst",
+    "descPost": ", sieh genau wie es aussieht.",
     "cta": "Kostenlos testen",
     "ctaLoggedIn": "Zur App",
     "howItWorks": "Wie funktioniert's?",
@@ -158,5 +163,91 @@
   },
   "footer": {
     "rights": "Alle Rechte vorbehalten"
+  },
+  "steps": {
+    "title": "3 Schritte",
+    "subtitle": "Nur 38 Sekunden — vereinfache deine Felgenentscheidung",
+    "s1Title": "Auto hochladen",
+    "s1Desc": "Wähle dein Autofoto",
+    "s2Title": "Felge wählen",
+    "s2Desc": "Lade die Felge hoch, die du ausprobieren möchtest",
+    "s3Title": "Ergebnis sehen",
+    "s3Desc": "KI platziert die Felgen auf deinem Auto",
+    "noCard": "Keine Kreditkarte · 2 kostenlose Visualisierungen"
+  },
+  "features": {
+    "title": "Warum",
+    "titleBrand": "WheelVision?",
+    "subtitle": "Falsche Felgen sind teuer. Wir sind hier, um das zu verhindern.",
+    "f1Title": "Sofortiges Ergebnis",
+    "f1Desc": "~30 Sekunden für hochwertige KI-Visualisierung. Kein Warten.",
+    "f2Title": "Realistische KI",
+    "f2Desc": "Licht, Schatten und Reflexionen automatisch angepasst. Sieht echt aus.",
+    "f3Title": "Sicher & Privat",
+    "f3Desc": "Deine Bilder werden verschlüsselt und nie mit Dritten geteilt.",
+    "f4Title": "Mobil bereit",
+    "f4Desc": "Funktioniert auf Handy oder Tablet — von überall zugreifen.",
+    "f5Title": "Kostenlos starten",
+    "f5Desc": "2 Gratis-Credits, keine Karte erforderlich. Jetzt ausprobieren.",
+    "f6Title": "Für Unternehmen",
+    "f6Desc": "Individuelles Showroom-Panel für Felgenhändler."
+  },
+  "social": {
+    "quote": "Es war toll zu sehen, wie die Felgen an meinem Auto aussehen, bevor ich sie kaufte. Endlich die richtigen Felgen gefunden.",
+    "author": "— Murat K., BMW E46 Besitzer",
+    "title": "Finde deine nächste perfekte Felge",
+    "desc": "Starte mit 2 kostenlosen Credits, mach weiter wenn du es magst.",
+    "watermarkNote": "💡 Auf bezahlten Plan upgraden und alle Wasserzeichen werden automatisch entfernt",
+    "noCard": "Keine Kreditkarte · Registrierung in 30 Sekunden"
+  },
+  "footerLinks": {
+    "app": "App",
+    "pricing": "Preise",
+    "privacy": "Datenschutz",
+    "terms": "AGB",
+    "login": "Anmelden",
+    "tagline": "KI-gestützte Felgen-Visualisierungsplattform.",
+    "copyright": "© 2026 WheelVision. Alle Rechte vorbehalten."
+  },
+  "socialProof": {
+    "stat1Label": "Felgenhändler vertrauen uns",
+    "stat2Label": "Visualisierungen erstellt",
+    "stat3Label": "Nutzerbewertung"
+  },
+  "gallery": {
+    "title": "Echte",
+    "titleHighlight": "Ergebnisse",
+    "subtitle": "Beispiele von Fahrzeugen unserer Kunden",
+    "more": "Mehr Beispiele ansehen",
+    "label1": "BMW 3er · Schwarze Felgen",
+    "label2": "Mercedes C-Klasse · Deep Dish",
+    "label3": "Audi A4 · Sportfelgen"
+  },
+  "b2b": {
+    "eyebrow": "Für Felgenhändler",
+    "title": "Bist du Felgenhändler?",
+    "subtitle": "Lass Kunden deine Felgen virtuell ausprobieren",
+    "f1": "Individuelle Showroom-Seite mit deiner eigenen Marke",
+    "f2": "Kunden laden Fotos hoch und sehen deine Felgen an ihrem Auto",
+    "f3": "Direktbestellungen über WhatsApp erhalten",
+    "f4": "Ab ₺899/Monat",
+    "cta1": "Kontakt aufnehmen",
+    "cta2": "Demo ansehen"
+  },
+  "testimonials": {
+    "title": "Was unsere Kunden sagen",
+    "subtitle": "Echte Nutzer, echte Ergebnisse",
+    "q1": "Ich fragte mich, wie die Felgen aussehen würden, bevor ich sie kaufte. Dank WheelVision sah ich, dass 18-Zoll-Schwarzfelgen toll an meinem BMW aussehen.",
+    "a1": "— Ahmet Y., BMW 3er",
+    "q2": "Es war toll zu sehen, wie die Felgen an meinem Auto aussehen, bevor ich sie kaufte. Endlich die richtigen Felgen.",
+    "a2": "— Murat K., BMW E46",
+    "q3": "Es ist jetzt so einfach, Kunden Felgen an ihren Autos virtuell ausprobieren zu lassen. Unser Umsatz stieg um 30%.",
+    "a3": "— Mehmet S., Felgenhändler"
+  },
+  "finalCta": {
+    "eyebrow": "Noch am Überlegen?",
+    "title": "2 kostenlose Credits warten auf dich",
+    "desc": "Sieh deine Felgen in 30 Sekunden. Keine Karte erforderlich.",
+    "cta": "Jetzt starten — Kostenlos"
   }
 }

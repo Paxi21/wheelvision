@@ -9,10 +9,15 @@
     "settings": "Settings"
   },
   "hero": {
-    "badge": "AI-Powered Wheel Visualization — Try Free",
-    "title": "Will That Wheel",
-    "titleHighlight": "Fit Your Car?",
+    "badge": "🔥 Turkey's First AI Wheel Visualization Platform",
+    "title": "Buy Wheels, Regret It?",
+    "titleHighlight": "See First, Decide Later.",
     "description": "See before you spend. Upload your car photo, choose a wheel — AI fits it in 30 seconds.",
+    "descPre": "Upload your car photo, pick a wheel from the catalog — AI will mount it ",
+    "descHighlight1": "in 30 seconds",
+    "descMid": ". ",
+    "descHighlight2": "Before spending thousands",
+    "descPost": ", see exactly how it looks.",
     "cta": "Try Free",
     "ctaLoggedIn": "Go to App",
     "howItWorks": "How It Works?",
@@ -187,7 +192,13 @@
     "f2Title": "Realistic AI",
     "f2Desc": "Light, shadow and reflections matched automatically. Looks real.",
     "f3Title": "Safe & Private",
-    "f3Desc": "Your images are encrypted, never shared with third parties."
+    "f3Desc": "Your images are encrypted, never shared with third parties.",
+    "f4Title": "Mobile Ready",
+    "f4Desc": "Works on phone or tablet — access from anywhere.",
+    "f5Title": "Start Free",
+    "f5Desc": "2 free credits, no card required. Try it now.",
+    "f6Title": "For Businesses",
+    "f6Desc": "Custom showroom panel and customer interface for wheel dealers."
   },
   "social": {
     "quote": "It was amazing to see how the wheels looked on my car before buying. I finally got the right wheels.",
@@ -198,11 +209,54 @@
     "noCard": "No credit card · Sign up in 30 seconds"
   },
   "footerLinks": {
+    "app": "App",
     "pricing": "Pricing",
     "privacy": "Privacy",
     "terms": "Terms",
     "login": "Login",
+    "tagline": "AI-powered wheel visualization platform.",
     "copyright": "© 2026 WheelVision. All rights reserved."
+  },
+  "socialProof": {
+    "stat1Label": "Wheel Dealers Trust Us",
+    "stat2Label": "Visuals Generated",
+    "stat3Label": "User Rating"
+  },
+  "gallery": {
+    "title": "Real",
+    "titleHighlight": "Results",
+    "subtitle": "Examples from our customers' vehicles",
+    "more": "See more examples",
+    "label1": "BMW 3 Series · Black Rims",
+    "label2": "Mercedes C-Class · Deep Dish",
+    "label3": "Audi A4 · Sport Wheels"
+  },
+  "b2b": {
+    "eyebrow": "For Wheel Dealers",
+    "title": "Are You a Wheel Dealer?",
+    "subtitle": "Let Customers Virtually Try Your Wheels",
+    "f1": "Custom showroom page with your own brand",
+    "f2": "Customers upload photos and see your wheels on their car",
+    "f3": "Receive direct orders via WhatsApp",
+    "f4": "Starting from ₺899/month",
+    "cta1": "Contact Us",
+    "cta2": "See Demo"
+  },
+  "testimonials": {
+    "title": "What Our Customers Say",
+    "subtitle": "Real users, real results",
+    "q1": "I was wondering how the wheels would look before buying. Thanks to WheelVision I saw that 18-inch black rims looked great on my BMW.",
+    "a1": "— Ahmet Y., BMW 3 Series",
+    "q2": "It was amazing to see how the wheels looked on my car before buying. I finally got the right wheels.",
+    "a2": "— Murat K., BMW E46",
+    "q3": "It's now so easy to let my customers try wheels on their cars virtually. Our sales increased 30%.",
+    "a3": "— Mehmet S., Wheel Dealer"
+  },
+  "finalCta": {
+    "eyebrow": "Still Thinking?",
+    "title": "2 Free Credits Are Waiting for You",
+    "desc": "See your wheels in 30 seconds. No card required.",
+    "cta": "Start Now — Free"
   },
   "login": {
     "title": "Welcome Back",

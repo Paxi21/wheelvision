@@ -9,10 +9,15 @@
     "settings": "Ayarlar"
   },
   "hero": {
-    "badge": "Yapay Zeka ile Jant Görselleştirme — Ücretsiz Dene",
-    "title": "O Jant Arabana",
-    "titleHighlight": "Yakışıyor mu?",
+    "badge": "🔥 Türkiye'nin İlk AI Jant Görselleştirme Platformu",
+    "title": "Jantı Al, Pişman Ol?",
+    "titleHighlight": "Önce Gör, Sonra Karar Ver.",
     "description": "Binlerce lira harcamadan önce gör. Arabanın fotoğrafını yükle, jantı seç — AI 30 saniyede arabana yerleştiriyor.",
+    "descPre": "Arabanın fotoğrafını yükle, kataloğdan jantı seç — yapay zeka ",
+    "descHighlight1": "30 saniyede",
+    "descMid": " montajlasın. ",
+    "descHighlight2": "Binlerce lira",
+    "descPost": " harcamadan önce nasıl görüneceğini gör.",
     "cta": "Ücretsiz Başla",
     "ctaLoggedIn": "Uygulamaya Git",
     "howItWorks": "Nasıl Çalışır?",
@@ -187,7 +192,13 @@
     "f2Title": "Gerçekçi AI",
     "f2Desc": "Işık, gölge ve yansımalar otomatik eşleştirilir. Gerçek görünür.",
     "f3Title": "Güvenli ve Gizli",
-    "f3Desc": "Görselleriniz şifrelenir, üçüncü taraflarla asla paylaşılmaz."
+    "f3Desc": "Görselleriniz şifrelenir, üçüncü taraflarla asla paylaşılmaz.",
+    "f4Title": "Mobil Uyumlu",
+    "f4Desc": "Telefon veya tabletten kolayca kullanın, her yerden erişin.",
+    "f5Title": "Ücretsiz Başla",
+    "f5Desc": "2 kredi hediye, kart bilgisi gerekmez. Hemen dene.",
+    "f6Title": "İşletmeler İçin",
+    "f6Desc": "Jant firmaları için özel showroom paneli ve müşteri arayüzü."
   },
   "social": {
     "quote": "Satın almadan önce jantların arabamda nasıl görüneceğini görmek harikaydı. Sonunda doğru jantları aldım.",
@@ -198,11 +209,54 @@
     "noCard": "Kart gerekmez · 30 saniyede kayıt ol"
   },
   "footerLinks": {
+    "app": "Uygulama",
     "pricing": "Fiyatlandırma",
     "privacy": "Gizlilik",
     "terms": "Şartlar",
     "login": "Giriş",
+    "tagline": "AI destekli jant görselleştirme platformu.",
     "copyright": "© 2026 WheelVision. Tüm hakları saklıdır."
+  },
+  "socialProof": {
+    "stat1Label": "Jant Firması Güveniyor",
+    "stat2Label": "Görsel Oluşturuldu",
+    "stat3Label": "Kullanıcı Puanı"
+  },
+  "gallery": {
+    "title": "Gerçek",
+    "titleHighlight": "Sonuçlar",
+    "subtitle": "Müşterilerimizin araçlarından örnekler",
+    "more": "Daha fazla örnek gör",
+    "label1": "BMW 3 Serisi · Siyah Jant",
+    "label2": "Mercedes C Serisi · Derin Jant",
+    "label3": "Audi A4 · Spor Jant"
+  },
+  "b2b": {
+    "eyebrow": "Jant Satıcıları İçin",
+    "title": "Jant Satıcısı mısınız?",
+    "subtitle": "Müşterilerinize Jantları Sanal Olarak Giydirin",
+    "f1": "Kendi markanızla özel showroom sayfası",
+    "f2": "Müşterileriniz fotoğraf yüklesin, jantınızı görsün",
+    "f3": "WhatsApp ile doğrudan sipariş alsın",
+    "f4": "Aylık ₺899'dan başlayan fiyatlar",
+    "cta1": "İletişime Geç",
+    "cta2": "Demo Gör"
+  },
+  "testimonials": {
+    "title": "Müşterilerimiz Ne Diyor?",
+    "subtitle": "Gerçek kullanıcılar, gerçek sonuçlar",
+    "q1": "Jant almadan önce nasıl görüneceğini merak ediyordum. WheelVision sayesinde 18 inç siyah jantların BMW'me çok yakıştığını gördüm.",
+    "a1": "— Ahmet Y., BMW 3 Serisi",
+    "q2": "Satın almadan önce jantların arabamda nasıl görüneceğini görmek harikaydı. Sonunda doğru jantları aldım.",
+    "a2": "— Murat K., BMW E46",
+    "q3": "Müşterilerimin araçlarına jant denemesi artık çok kolay. Satışlarımız %30 arttı.",
+    "a3": "— Mehmet S., Jant Satıcısı"
+  },
+  "finalCta": {
+    "eyebrow": "Hâlâ Düşünüyor musun?",
+    "title": "2 Ücretsiz Kredi Seni Bekliyor",
+    "desc": "30 saniyede jantını gör. Kart bilgisi gerekmez.",
+    "cta": "Hemen Başla — Ücretsiz"
   },
   "login": {
     "title": "Hoş Geldiniz",
