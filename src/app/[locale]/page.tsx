@@ -21,8 +21,10 @@ const AFTER_IMG  = '/demo-after.jpg';
 // ─── Before/After Slider ────────────────────────────────────────────────────
 type SliderSize = 'large' | 'small';
 
-function BeforeAfterSlider({ size = 'large' }: { size?: SliderSize }) {
+function BeforeAfterSlider({ size = 'large', beforeSrc, afterSrc }: { size?: SliderSize; beforeSrc?: string; afterSrc?: string }) {
   const t = useTranslations('hero');
+  const before = beforeSrc ?? BEFORE_IMG;
+  const after  = afterSrc  ?? AFTER_IMG;
   const [position, setPosition] = useState(50);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -65,7 +67,7 @@ function BeforeAfterSlider({ size = 'large' }: { size?: SliderSize }) {
           onPointerMove={onPointerMove}
         >
           <Image
-            src={AFTER_IMG} alt="After wheel change - AI visualization" fill
+            src={after} alt="After wheel change - AI visualization" fill
             priority={isLarge}
             sizes={isLarge
               ? '(max-width: 390px) 390px, (max-width: 640px) 640px, (max-width: 1024px) 828px, 900px'
@@ -74,7 +76,7 @@ function BeforeAfterSlider({ size = 'large' }: { size?: SliderSize }) {
           />
           <div className="absolute inset-0" style={{ clipPath: `inset(0 ${100 - position}% 0 0)` }}>
             <Image
-              src={BEFORE_IMG} alt="Before wheel change - original car" fill
+              src={before} alt="Before wheel change - original car" fill
               priority={isLarge}
               sizes={isLarge
                 ? '(max-width: 390px) 390px, (max-width: 640px) 640px, (max-width: 1024px) 828px, 900px'
@@ -223,7 +225,11 @@ export default function Home() {
     { quote: tTmn('q3'), author: tTmn('a3') },
   ];
 
-  const galleryLabels = [tGallery('label1'), tGallery('label2'), tGallery('label3')];
+  const galleryPairs = [
+    { before: '/gallery-before.jpg', after: '/gallery-after-1.jpg', label: tGallery('label1') },
+    { before: '/gallery-before.jpg', after: '/gallery-after-2.jpg', label: tGallery('label2') },
+    { before: '/gallery-before.jpg', after: '/gallery-after-3.jpg', label: tGallery('label3') },
+  ];
 
   const b2bFeatures = [tB2B('f1'), tB2B('f2'), tB2B('f3'), tB2B('f4')];
 
@@ -480,7 +486,7 @@ export default function Home() {
           </motion.div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {galleryLabels.map((label, i) => (
+            {galleryPairs.map((pair, i) => (
               <motion.div
                 key={i}
                 initial={{ opacity: 0, y: 30 }}
@@ -488,8 +494,8 @@ export default function Home() {
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: i * 0.15 }}
               >
-                <BeforeAfterSlider size="small" />
-                <p className="text-center text-sm text-[var(--text-secondary)] mt-2.5 font-medium">{label}</p>
+                <BeforeAfterSlider size="small" beforeSrc={pair.before} afterSrc={pair.after} />
+                <p className="text-center text-sm text-[var(--text-secondary)] mt-2.5 font-medium">{pair.label}</p>
               </motion.div>
             ))}
           </div>
@@ -555,8 +561,17 @@ export default function Home() {
       <SectionSep />
 
       {/* ── B2B Section ── */}
-      <section className="py-20 relative">
-        <div className="max-w-[1400px] mx-auto px-6 lg:px-12">
+      <section className="py-20 relative overflow-hidden">
+        {/* Background effects */}
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] rounded-full blur-[150px] opacity-10 pointer-events-none"
+             style={{ background: 'radial-gradient(circle, #FF6B35, transparent)' }} />
+        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] rounded-full blur-[150px] opacity-[0.08] pointer-events-none"
+             style={{ background: 'radial-gradient(circle, #F72585, transparent)' }} />
+        <div className="absolute inset-0 pointer-events-none opacity-[0.02]"
+             style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.3) 1px, transparent 1px)', backgroundSize: '60px 60px' }} />
+        <div className="absolute top-0 left-[10%] right-[10%] h-px pointer-events-none"
+             style={{ background: 'linear-gradient(90deg, transparent, #FF6B35, #F72585, #7209B7, transparent)', opacity: 0.3 }} />
+        <div className="relative z-10 max-w-[1400px] mx-auto px-6 lg:px-12">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -586,90 +601,45 @@ export default function Home() {
                   </ul>
                   <div className="flex flex-wrap gap-3">
                     <a
-                      href="mailto:info@wheelvision.io"
-                      className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-white transition-all duration-200 hover:opacity-90 hover:-translate-y-0.5"
+                      href="mailto:info@wheelvision.io?subject=WheelVision%20B2B%20Bilgi%20Talebi&body=Merhaba%2C%0A%0AJant%20firmam%20i%C3%A7in%20WheelVision%20hakk%C4%B1nda%20bilgi%20almak%20istiyorum.%0A%0AFirma%20Ad%C4%B1%3A%0ATelefon%3A"
+                      className="inline-flex items-center gap-2 px-8 py-3 rounded-xl font-semibold text-white transition-all duration-200 hover:opacity-90 hover:-translate-y-0.5"
                       style={{ background: 'linear-gradient(135deg, #FF6B35, #F72585)' }}
                     >
                       <MessageCircle className="w-4 h-4" />
                       {tB2B('cta1')}
                     </a>
-                    <Link
-                      href="/pricing"
-                      className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all duration-200 hover:bg-white/10"
-                      style={{ border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}
-                    >
-                      {tB2B('cta2')}
-                    </Link>
                   </div>
                 </div>
 
-                {/* Right: Phone mockup */}
-                <div className="flex justify-center">
-                  <div className="relative w-[260px]">
+                {/* Right: Phone mockup with iframe */}
+                <div className="hidden md:flex justify-center">
+                  <div className="relative mx-auto" style={{ width: 280, height: 560 }}>
                     <div
-                      className="rounded-[32px] p-3 shadow-2xl"
-                      style={{ background: 'rgba(18,18,26,0.95)', border: '2px solid rgba(139,92,246,0.4)', boxShadow: '0 0 60px rgba(139,92,246,0.2)' }}
+                      className="absolute inset-0 rounded-[40px] overflow-hidden shadow-2xl"
+                      style={{ border: '3px solid rgba(255,255,255,0.08)', background: '#000', boxShadow: '0 25px 60px rgba(0,0,0,0.5), 0 0 40px rgba(255,107,53,0.1)' }}
                     >
+                      {/* Notch */}
+                      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-6 bg-black rounded-b-2xl z-10" />
                       {/* Status bar */}
-                      <div className="flex items-center justify-between px-3 py-1.5 mb-2">
-                        <div className="text-[10px] text-[var(--text-secondary)]">9:41</div>
-                        <div className="w-16 h-4 rounded-full bg-[#1a1a2e]" />
-                        <div className="flex gap-1">
-                          {[...Array(4)].map((_, j) => (
-                            <div key={j} className="w-0.5 h-2.5 rounded-full bg-[var(--text-secondary)]" style={{ opacity: 0.3 + j * 0.2 }} />
-                          ))}
-                        </div>
+                      <div className="absolute top-1 left-6 text-[10px] text-white/60 z-10">9:41</div>
+                      <div className="absolute top-1 right-6 z-10">
+                        <div className="w-4 h-2.5 border border-white/40 rounded-sm" />
                       </div>
-                      {/* Screen */}
-                      <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--bg-dark)' }}>
-                        <div
-                          className="px-3 py-2.5 flex items-center gap-2"
-                          style={{ background: 'rgba(18,18,26,0.9)', borderBottom: '1px solid var(--border-color)' }}
-                        >
-                          <div
-                            className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white"
-                            style={{ background: 'linear-gradient(135deg, var(--accent-orange), var(--accent-pink))' }}
-                          >W</div>
-                          <div>
-                            <div className="text-[10px] font-bold text-white">WheelVision</div>
-                            <div className="text-[8px] text-[var(--text-secondary)]">Jant Showroom</div>
-                          </div>
-                        </div>
-                        <div
-                          className="mx-2 mt-2 rounded-lg overflow-hidden flex items-center justify-center"
-                          style={{ aspectRatio: '16/9', background: '#1a1a2e', border: '1px solid var(--border-color)' }}
-                        >
-                          <div className="text-center">
-                            <div className="text-2xl mb-1">🚗</div>
-                            <div className="text-[9px] text-[var(--text-secondary)]">AI Görselleştirme</div>
-                          </div>
-                        </div>
-                        <div className="grid grid-cols-3 gap-1.5 p-2">
-                          {[...Array(6)].map((_, j) => (
-                            <div
-                              key={j}
-                              className="aspect-square rounded-lg flex items-center justify-center text-base"
-                              style={{
-                                background: j === 1 ? 'rgba(255,107,53,0.15)' : 'rgba(26,26,40,0.8)',
-                                border: j === 1 ? '1px solid rgba(255,107,53,0.5)' : '1px solid var(--border-color)',
-                              }}
-                            >🔘</div>
-                          ))}
-                        </div>
-                        <div className="px-2 pb-3">
-                          <div
-                            className="rounded-lg py-2 text-center text-[10px] font-bold text-white"
-                            style={{ background: 'linear-gradient(135deg, var(--accent-orange), var(--accent-pink))' }}
-                          >
-                            Görsel Oluştur ✨
-                          </div>
-                        </div>
+                      {/* Iframe content */}
+                      <div className="w-full h-full pt-6 overflow-hidden">
+                        <iframe
+                          src="https://wheelvision.io/d/testjant"
+                          className="border-none pointer-events-none"
+                          style={{ width: 375, height: 812, transform: 'scale(0.72)', transformOrigin: 'top left' }}
+                          loading="lazy"
+                          tabIndex={-1}
+                        />
                       </div>
                     </div>
-                    <div
-                      className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-40 h-8 blur-xl rounded-full"
-                      style={{ background: 'linear-gradient(90deg, #FF6B35, #F72585, #7209B7)' }}
-                    />
+                    <div className="absolute -inset-4 rounded-[48px] pointer-events-none blur-2xl"
+                         style={{ background: 'linear-gradient(to bottom, rgba(255,107,53,0.1), rgba(247,37,133,0.05), transparent)' }} />
+                    <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-40 h-8 blur-xl rounded-full"
+                         style={{ background: 'linear-gradient(90deg, #FF6B35, #F72585, #7209B7)' }} />
                   </div>
                 </div>
               </div>

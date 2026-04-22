@@ -98,10 +98,21 @@
     "lastUpdated": "Last updated: April 2026",
     "s1Title": "1. Data We Collect",
     "s1Body": "At WheelVision, we collect the following data to provide our service:",
-    "s1Items": ["Email address and full name (account creation)", "Car and wheel images you upload", "AI-generated result images", "Credit balance and transaction history", "IP address and browser info (for security)"],
+    "s1Items": [
+      "Email address and full name (account creation)",
+      "Car and wheel images you upload",
+      "AI-generated result images",
+      "Credit balance and transaction history",
+      "IP address and browser info (for security)"
+    ],
     "s2Title": "2. How We Use Your Data",
     "s2Body": "Your data is used solely for the following purposes:",
-    "s2Items": ["Providing the visualization service", "Account management and authentication", "Credit system tracking", "Service security and abuse prevention"],
+    "s2Items": [
+      "Providing the visualization service",
+      "Account management and authentication",
+      "Credit system tracking",
+      "Service security and abuse prevention"
+    ],
     "s3Title": "3. Data Sharing",
     "s3Body": "Your personal data is never sold to third parties. It is only shared with the technical infrastructure providers required to operate the service (Supabase, Cloudinary, Fal AI).",
     "s4Title": "4. Image Storage",
@@ -120,7 +131,12 @@
     "s1Title": "1. Scope of Service",
     "s1Body": "WheelVision is a B2C SaaS application that simulates wheel changes on vehicle images using AI technology.",
     "s2Title": "2. Account & Credit System",
-    "s2Items": ["Each new account starts with 2 free credits.", "Each visualization consumes 1 credit.", "Purchased credits are non-refundable.", "Account sharing is prohibited."],
+    "s2Items": [
+      "Each new account starts with 2 free credits.",
+      "Each visualization consumes 1 credit.",
+      "Purchased credits are non-refundable.",
+      "Account sharing is prohibited."
+    ],
     "s3Title": "3. Uploaded Content",
     "s3Body": "You own the copyright of images you upload to the platform. Uploading content that infringes copyright, is obscene, or is illegal is strictly prohibited.",
     "s4Title": "4. Generated Images",
@@ -227,9 +243,9 @@
     "titleHighlight": "Results",
     "subtitle": "Examples from our customers' vehicles",
     "more": "See more examples",
-    "label1": "BMW 3 Series · Black Rims",
-    "label2": "Mercedes C-Class · Deep Dish",
-    "label3": "Audi A4 · Sport Wheels"
+    "label1": "BMW M4 G82 · Black Multi-Spoke",
+    "label2": "BMW M4 G82 · Star-Pattern Wheels",
+    "label3": "BMW M4 G82 · Silver BBS Wheels"
   },
   "b2b": {
     "eyebrow": "For Wheel Dealers",

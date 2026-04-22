@@ -98,10 +98,21 @@
     "lastUpdated": "Son güncelleme: Nisan 2026",
     "s1Title": "1. Toplanan Veriler",
     "s1Body": "WheelVision olarak, hizmetimizi sunabilmek için aşağıdaki verileri toplamaktayız:",
-    "s1Items": ["E-posta adresi ve ad-soyad (hesap oluşturma)", "Yüklediğiniz araba ve jant görselleri", "Yapay zeka tarafından oluşturulan sonuç görselleri", "Kredi bakiyesi ve işlem geçmişi", "IP adresi ve tarayıcı bilgileri (güvenlik amacıyla)"],
+    "s1Items": [
+      "E-posta adresi ve ad-soyad (hesap oluşturma)",
+      "Yüklediğiniz araba ve jant görselleri",
+      "Yapay zeka tarafından oluşturulan sonuç görselleri",
+      "Kredi bakiyesi ve işlem geçmişi",
+      "IP adresi ve tarayıcı bilgileri (güvenlik amacıyla)"
+    ],
     "s2Title": "2. Verilerin Kullanımı",
     "s2Body": "Topladığımız veriler yalnızca aşağıdaki amaçlarla kullanılmaktadır:",
-    "s2Items": ["Görselleştirme hizmetinin sunulması", "Hesap yönetimi ve kimlik doğrulama", "Kredi sistemi takibi", "Hizmet güvenliği ve kötüye kullanım önleme"],
+    "s2Items": [
+      "Görselleştirme hizmetinin sunulması",
+      "Hesap yönetimi ve kimlik doğrulama",
+      "Kredi sistemi takibi",
+      "Hizmet güvenliği ve kötüye kullanım önleme"
+    ],
     "s3Title": "3. Veri Paylaşımı",
     "s3Body": "Kişisel verileriniz hiçbir koşulda üçüncü taraflarla satılmaz. Hizmetin sunulması için gerekli olan teknik altyapı sağlayıcıları (Supabase, Cloudinary, Fal AI) dışında paylaşılmaz.",
     "s4Title": "4. Görsel Depolama",
@@ -120,7 +131,12 @@
     "s1Title": "1. Hizmetin Kapsamı",
     "s1Body": "WheelVision, yapay zeka teknolojisi kullanarak araç görsellerinde jant değişikliği simülasyonu sunan bir B2C SaaS uygulamasıdır.",
     "s2Title": "2. Hesap ve Kredi Sistemi",
-    "s2Items": ["Her yeni hesap 2 ücretsiz kredi ile başlar.", "Her görselleştirme işlemi 1 kredi tüketir.", "Satın alınan krediler iade edilmez.", "Hesap paylaşımı yasaktır."],
+    "s2Items": [
+      "Her yeni hesap 2 ücretsiz kredi ile başlar.",
+      "Her görselleştirme işlemi 1 kredi tüketir.",
+      "Satın alınan krediler iade edilmez.",
+      "Hesap paylaşımı yasaktır."
+    ],
     "s3Title": "3. Yüklenen İçerikler",
     "s3Body": "Platforma yüklediğiniz görsellerin telif hakkı size aittir. Telif hakkı ihlali içeren, müstehcen veya yasadışı içerik yüklemek kesinlikle yasaktır.",
     "s4Title": "4. Oluşturulan Görseller",
@@ -227,9 +243,9 @@
     "titleHighlight": "Sonuçlar",
     "subtitle": "Müşterilerimizin araçlarından örnekler",
     "more": "Daha fazla örnek gör",
-    "label1": "BMW 3 Serisi · Siyah Jant",
-    "label2": "Mercedes C Serisi · Derin Jant",
-    "label3": "Audi A4 · Spor Jant"
+    "label1": "BMW M4 G82 · Siyah Multi-Spoke",
+    "label2": "BMW M4 G82 · Star-Pattern Jant",
+    "label3": "BMW M4 G82 · Silver BBS Jant"
   },
   "b2b": {
     "eyebrow": "Jant Satıcıları İçin",
