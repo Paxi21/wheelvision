@@ -4,8 +4,16 @@ import Image from 'next/image';
 import Navbar from '@/components/Navbar';
 import {
   ArrowRight, Sparkles, Zap, Shield, Upload, Disc3, Eye, Play,
-  Smartphone, Gift, Building2, MessageCircle, CheckCircle2,
+  Smartphone, Gift, Building2, MessageCircle, CheckCircle2, Mail,
 } from 'lucide-react';
+
+function IGIcon({ size = 16 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+    </svg>
+  );
+}
 import { motion } from 'motion/react';
 import { Spotlight } from '@/components/ui/spotlight';
 import { ShimmerButton } from '@/components/ui/shimmer-button';
@@ -209,6 +217,7 @@ export default function Home() {
   const tCta      = useTranslations('finalCta');
 
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [showContactModal, setShowContactModal] = useState(false);
   const supabase = useMemo(() => createClient(), []);
 
   useEffect(() => {
@@ -398,25 +407,18 @@ export default function Home() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5 }}
-            className="rounded-2xl px-6 sm:px-10 py-8 grid grid-cols-1 sm:grid-cols-3 gap-8"
+            className="rounded-2xl px-6 sm:px-10 py-7 flex flex-wrap items-center justify-center gap-6 sm:gap-10"
             style={{ background: 'rgba(18,18,26,0.7)', backdropFilter: 'blur(20px)', border: '1px solid var(--border-color)' }}
           >
-            {([
-              { end: 50,  suffix: '+', decimals: 0, label: tSP('stat1Label') },
-              { end: 1000, suffix: '+', decimals: 0, label: tSP('stat2Label') },
-              { end: 4.9, suffix: '/5', decimals: 1, label: tSP('stat3Label') },
-            ] as const).map((stat, i) => (
-              <div
-                key={i}
-                className={`text-center ${i < 2 ? 'sm:border-r sm:border-[var(--border-color)]' : ''}`}
-              >
-                <div
-                  className="text-4xl font-black mb-1"
-                  style={{ background: 'linear-gradient(135deg, #FF6B35 0%, #F72585 50%, #7209B7 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}
-                >
-                  <CountUp end={stat.end} suffix={stat.suffix} decimals={stat.decimals} />
-                </div>
-                <p className="text-sm text-[var(--text-secondary)]">{stat.label}</p>
+            {[
+              { icon: '⚡', label: tSP('feat1') },
+              { icon: '🎯', label: tSP('feat2') },
+              { icon: '💳', label: tSP('feat3') },
+            ].map(({ icon, label }, i) => (
+              <div key={i} className="flex items-center gap-2.5">
+                {i > 0 && <span className="hidden sm:block w-px h-5 bg-[var(--border-color)]" />}
+                <span className="text-xl">{icon}</span>
+                <span className="text-sm font-semibold text-white">{label}</span>
               </div>
             ))}
           </motion.div>
@@ -505,54 +507,8 @@ export default function Home() {
 
       <SectionSep />
 
-      {/* ── Before/After Gallery ── */}
-      <section className="py-14 sm:py-20 relative">
-        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-12">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
-            className="text-center mb-12"
-          >
-            <h2 className="text-3xl md:text-4xl font-bold mb-3">
-              {tGallery('title')} <span className="gradient-text">{tGallery('titleHighlight')}</span>
-            </h2>
-            <p className="text-[var(--text-secondary)]">{tGallery('subtitle')}</p>
-          </motion.div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {galleryPairs.map((pair, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: i * 0.15 }}
-              >
-                <BeforeAfterSlider size="small" beforeSrc={pair.before} afterSrc={pair.after} suppressWatermark={pair.suppressWatermark} plateCensors={pair.plateCensors} />
-                <p className="text-center text-sm text-[var(--text-secondary)] mt-2.5 font-medium">{pair.label}</p>
-              </motion.div>
-            ))}
-          </div>
-
-          <motion.div
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.4, delay: 0.4 }}
-            className="text-center mt-8"
-          >
-            <Link
-              href={ctaHref}
-              className="inline-flex items-center gap-1.5 text-sm font-semibold transition-colors hover:opacity-80"
-              style={{ color: 'var(--accent-orange)' }}
-            >
-              {tGallery('more')} <ArrowRight className="w-4 h-4" />
-            </Link>
-          </motion.div>
-        </div>
-      </section>
+      {/* ── Before/After Gallery — kaliteli görseller hazır olduğunda tekrar açılacak ── */}
+      {/* <section className="py-14 sm:py-20 relative">...</section> */}
 
       <SectionSep />
 
@@ -647,42 +603,86 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* Right: Phone mockup with iframe */}
-                <div className="hidden md:flex justify-center">
-                  <div className="relative mx-auto" style={{ width: 280, height: 560 }}>
-                    <div
-                      className="absolute inset-0 rounded-[40px] overflow-hidden shadow-2xl"
-                      style={{ border: '3px solid rgba(255,255,255,0.08)', background: '#000', boxShadow: '0 25px 60px rgba(0,0,0,0.5), 0 0 40px rgba(255,107,53,0.1)' }}
-                    >
-                      {/* Notch */}
-                      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-6 bg-black rounded-b-2xl z-10" />
-                      {/* Status bar */}
-                      <div className="absolute top-1 left-6 text-[10px] text-white/60 z-10">9:41</div>
-                      <div className="absolute top-1 right-6 z-10">
-                        <div className="w-4 h-2.5 border border-white/40 rounded-sm" />
-                      </div>
-                      {/* Iframe content */}
-                      <div className="w-full h-full pt-6 overflow-hidden">
-                        <iframe
-                          src="https://wheelvision.io/d/testjant"
-                          className="border-none pointer-events-none"
-                          style={{ width: 375, height: 812, transform: 'scale(0.72)', transformOrigin: 'top left' }}
-                          loading="lazy"
-                          tabIndex={-1}
-                        />
-                      </div>
+                {/* Right: Live demo phone */}
+                <div className="relative mx-auto hidden lg:block" style={{ width: 300, height: 600 }}>
+                  <div
+                    className="absolute inset-0 rounded-[44px] border-2 border-white/10 bg-[#0A0A0F] overflow-hidden"
+                    style={{ boxShadow: '0 30px 80px rgba(0,0,0,0.6), 0 0 40px rgba(247,37,133,0.08)' }}
+                  >
+                    {/* Notch */}
+                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-28 h-7 bg-[#0A0A0F] rounded-b-3xl z-20" />
+                    {/* Dynamic Island */}
+                    <div className="absolute top-2 left-1/2 -translate-x-1/2 w-20 h-5 bg-black rounded-full z-20" />
+                    {/* iframe */}
+                    <div className="w-full h-full overflow-hidden rounded-[42px]">
+                      <iframe
+                        src="/d/testjant"
+                        className="border-none"
+                        style={{ width: '390px', height: '844px', transform: 'scale(0.71)', transformOrigin: 'top left' }}
+                        loading="lazy"
+                        tabIndex={-1}
+                        sandbox="allow-same-origin allow-scripts"
+                      />
                     </div>
-                    <div className="absolute -inset-4 rounded-[48px] pointer-events-none blur-2xl"
-                         style={{ background: 'linear-gradient(to bottom, rgba(255,107,53,0.1), rgba(247,37,133,0.05), transparent)' }} />
-                    <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-40 h-8 blur-xl rounded-full"
-                         style={{ background: 'linear-gradient(90deg, #FF6B35, #F72585, #7209B7)' }} />
+                    {/* Overlay — tıklanınca contact modal */}
+                    <div
+                      className="absolute inset-0 z-30 cursor-pointer rounded-[44px]"
+                      onClick={() => setShowContactModal(true)}
+                    />
                   </div>
+                  {/* Glow */}
+                  <div
+                    className="absolute -inset-6 rounded-[56px] pointer-events-none"
+                    style={{ background: 'radial-gradient(ellipse at center, rgba(247,37,133,0.06), transparent 70%)' }}
+                  />
                 </div>
               </div>
             </AnimatedBorder>
           </motion.div>
         </div>
       </section>
+
+      {/* ── Contact Modal ── */}
+      {showContactModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
+          <div className="bg-[#12121A] border border-white/10 rounded-2xl p-8 max-w-md w-full text-center"
+               style={{ animation: 'modalIn 0.25s ease-out' }}>
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center"
+                 style={{ background: 'linear-gradient(135deg, #FF6B35, #F72585)' }}>
+              <Mail className="w-8 h-8 text-white" />
+            </div>
+            <h3 className="text-xl font-bold text-white mb-2">Demo İçin İletişime Geçin</h3>
+            <p className="text-[#A0A0B0] text-sm mb-6">
+              Kendi jant showroom&apos;unuzu oluşturmak için bizimle iletişime geçin.
+            </p>
+            <div className="flex flex-col gap-3">
+              <a
+                href="mailto:info@wheelvision.io?subject=WheelVision%20Demo%20Talebi"
+                className="w-full py-3 rounded-xl font-bold text-sm text-white flex items-center justify-center gap-2 transition-opacity hover:opacity-90"
+                style={{ background: 'linear-gradient(135deg, #FF6B35, #F72585, #7209B7)' }}
+              >
+                <Mail className="w-4 h-4" />
+                E-posta Gönder
+              </a>
+              <a
+                href="https://instagram.com/wheelvisionioofficial"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full py-3 rounded-xl border border-white/10 text-white font-bold text-sm flex items-center justify-center gap-2 transition-colors hover:border-[#FF6B35]/30"
+              >
+                <IGIcon size={16} />
+                Instagram
+              </a>
+              <button
+                onClick={() => setShowContactModal(false)}
+                className="text-[#A0A0B0] text-sm hover:text-white transition-colors mt-2"
+              >
+                Kapat
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <SectionSep />
 

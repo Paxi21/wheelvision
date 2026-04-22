@@ -492,6 +492,11 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
   const [resultLoaded,  setResultLoaded]  = useState(false);
   const [error,         setError]         = useState<string | null>(null);
   const [uploadSheet,   setUploadSheet]   = useState(false);
+  const [isUnlocked,     setIsUnlocked]     = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [loginUser,      setLoginUser]      = useState('');
+  const [loginPass,      setLoginPass]      = useState('');
+  const [loginError,     setLoginError]     = useState('');
 
   const galleryRef = useRef<HTMLInputElement>(null);
   const cameraRef  = useRef<HTMLInputElement>(null);
@@ -575,6 +580,16 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
     setModalWheel(null);
     setResultUrl(null);
     setError(null);
+  };
+
+  const handleLogin = () => {
+    if (loginUser === 'wheelvision' && loginPass === '092399') {
+      setIsUnlocked(true);
+      setShowLoginModal(false);
+      setLoginError('');
+    } else {
+      setLoginError('Kullanıcı adı veya şifre hatalı');
+    }
   };
 
   const waPhone = dealer.whatsapp.replace(/\D/g, '');
@@ -734,7 +749,7 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
                     )}
                   </div>
                 ) : (
-                  <button onClick={() => setUploadSheet(true)}
+                  <button onClick={() => { if (!isUnlocked) { setShowLoginModal(true); } else { setUploadSheet(true); } }}
                     className="w-full flex flex-col items-center py-9 rounded-xl group transition-all"
                     style={{ border: '1.5px dashed rgba(255,107,53,0.45)', background: 'rgba(255,107,53,0.02)', animation: 'dashedOrange 3s linear infinite' }}
                     onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = 'rgba(255,107,53,0.75)'; el.style.background = 'rgba(255,107,53,0.05)'; }}
@@ -862,7 +877,7 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
                   {wheels.map((wheel, idx) => {
                     const isSelected = selectedWheel?.id === wheel.id;
                     return (
-                      <button key={wheel.id} onClick={() => setModalWheel(wheel)}
+                      <button key={wheel.id} onClick={() => { if (!isUnlocked) { setShowLoginModal(true); } else { setModalWheel(wheel); } }}
                         className="group relative text-left rounded-2xl overflow-hidden active:scale-[0.97]"
                         style={{
                           border: isSelected ? '2px solid var(--accent-orange)' : '1px solid var(--border-color)',
@@ -1007,6 +1022,73 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
       {/* ══ WHEEL DETAIL MODAL ══════════════════════════════════════════════ */}
       {modalWheel && (
         <WheelModal wheel={modalWheel} onClose={() => setModalWheel(null)} onSelect={handleWheelSelect} />
+      )}
+
+      {/* ══ LOGIN MODAL ═════════════════════════════════════════════════════ */}
+      {showLoginModal && (
+        <>
+          <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm" onClick={() => setShowLoginModal(false)} />
+          <div
+            className="fixed inset-x-4 bottom-0 sm:inset-auto sm:left-1/2 sm:-translate-x-1/2 sm:bottom-auto sm:top-1/2 sm:-translate-y-1/2 sm:w-[380px] z-50 rounded-t-3xl sm:rounded-2xl border border-[var(--border-color)] overflow-hidden"
+            style={{ background: 'rgba(18,18,26,0.95)', backdropFilter: 'blur(24px)', animation: 'modalIn 0.25s ease-out' }}
+          >
+            <div className="sm:hidden w-12 h-1 rounded-full bg-[var(--border-color)] mx-auto mt-3" />
+            <div className="p-6">
+              <div className="text-center mb-6">
+                <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4"
+                  style={{ background: 'linear-gradient(135deg,rgba(255,107,53,0.15),rgba(247,37,133,0.15))' }}>
+                  <Sparkles className="w-7 h-7" style={{ color: 'var(--accent-pink)' }} />
+                </div>
+                <h3 className="font-bold text-lg text-white">Demo Giriş</h3>
+                <p className="text-sm text-[var(--text-secondary)] mt-1">Bu paneli kullanmak için giriş yapın</p>
+              </div>
+              <div className="space-y-3">
+                <input
+                  type="text"
+                  placeholder="Kullanıcı adı"
+                  value={loginUser}
+                  onChange={e => setLoginUser(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') handleLogin(); }}
+                  className="w-full px-4 py-3 rounded-xl text-sm text-white placeholder-[var(--text-secondary)] outline-none transition-all"
+                  style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}
+                  onFocus={e => { e.currentTarget.style.borderColor = '#FF6B35'; }}
+                  onBlur={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; }}
+                />
+                <input
+                  type="password"
+                  placeholder="Şifre"
+                  value={loginPass}
+                  onChange={e => setLoginPass(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') handleLogin(); }}
+                  className="w-full px-4 py-3 rounded-xl text-sm text-white placeholder-[var(--text-secondary)] outline-none transition-all"
+                  style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}
+                  onFocus={e => { e.currentTarget.style.borderColor = '#FF6B35'; }}
+                  onBlur={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; }}
+                />
+                {loginError && (
+                  <p className="text-sm text-red-400 text-center font-medium" style={{ animation: 'shake 0.4s ease-out' }}>
+                    {loginError}
+                  </p>
+                )}
+                <button
+                  onClick={handleLogin}
+                  className="relative overflow-hidden w-full py-3.5 rounded-xl font-bold text-sm text-white flex items-center justify-center gap-2"
+                  style={{ background: 'linear-gradient(135deg,#FF6B35,#F72585,#7209B7)', boxShadow: '0 4px 16px rgba(247,37,133,0.3)', marginTop: '4px' }}
+                >
+                  <span aria-hidden style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: '40%', background: 'linear-gradient(90deg,transparent,rgba(255,255,255,0.15),transparent)', animation: 'shimmerBtn 3s linear infinite' }} />
+                  <Zap className="w-4 h-4" /> Giriş Yap
+                </button>
+                <button
+                  onClick={() => setShowLoginModal(false)}
+                  className="w-full py-3 rounded-xl text-sm text-[var(--text-secondary)] font-medium transition-colors hover:text-white"
+                  style={{ border: '1px solid var(--border-color)', background: 'transparent' }}
+                >
+                  İptal
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
       )}
 
       <input ref={galleryRef} type="file" accept="image/*"                       className="hidden" onChange={handleFileChange} />
