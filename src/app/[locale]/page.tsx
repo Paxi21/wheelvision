@@ -21,7 +21,15 @@ const AFTER_IMG  = '/demo-after.jpg';
 // ─── Before/After Slider ────────────────────────────────────────────────────
 type SliderSize = 'large' | 'small';
 
-function BeforeAfterSlider({ size = 'large', beforeSrc, afterSrc }: { size?: SliderSize; beforeSrc?: string; afterSrc?: string }) {
+type PlateRect = { left: string; top: string; width: string; height: string };
+
+function BeforeAfterSlider({ size = 'large', beforeSrc, afterSrc, plateCensors, suppressWatermark }: {
+  size?: SliderSize;
+  beforeSrc?: string;
+  afterSrc?: string;
+  plateCensors?: PlateRect[];
+  suppressWatermark?: boolean;
+}) {
   const t = useTranslations('hero');
   const before = beforeSrc ?? BEFORE_IMG;
   const after  = afterSrc  ?? AFTER_IMG;
@@ -74,6 +82,9 @@ function BeforeAfterSlider({ size = 'large', beforeSrc, afterSrc }: { size?: Sli
               : '(max-width: 640px) 50vw, 400px'}
             className="object-cover pointer-events-none" draggable={false}
           />
+          {suppressWatermark && (
+            <div className="absolute inset-0 pointer-events-none" style={{ background: 'rgba(5,5,10,0.18)', mixBlendMode: 'multiply' }} />
+          )}
           <div className="absolute inset-0" style={{ clipPath: `inset(0 ${100 - position}% 0 0)` }}>
             <Image
               src={before} alt="Before wheel change - original car" fill
@@ -84,6 +95,10 @@ function BeforeAfterSlider({ size = 'large', beforeSrc, afterSrc }: { size?: Sli
               className="object-cover pointer-events-none" draggable={false}
             />
           </div>
+          {plateCensors?.map((r, i) => (
+            <div key={i} className="absolute pointer-events-none rounded-sm z-10"
+                 style={{ left: r.left, top: r.top, width: r.width, height: r.height, backdropFilter: 'blur(10px) brightness(0.4)', background: 'rgba(0,0,0,0.45)' }} />
+          ))}
           <div className="absolute top-2 left-2 px-2 py-1 rounded-full backdrop-blur-md bg-black/50 border border-white/15 text-[10px] font-semibold text-white/80 pointer-events-none">
             {t('before')}
           </div>
@@ -226,9 +241,30 @@ export default function Home() {
   ];
 
   const galleryPairs = [
-    { before: '/gallery-before.jpg', after: '/gallery-after-1.jpg', label: tGallery('label1') },
-    { before: '/gallery-before.jpg', after: '/gallery-after-2.jpg', label: tGallery('label2') },
-    { before: '/gallery-before.jpg', after: '/gallery-after-3.jpg', label: tGallery('label3') },
+    {
+      before: '/leon.jpg',
+      after: '/wheelvision-result-1776800198489.jpg',
+      label: tGallery('label1'),
+      suppressWatermark: true,
+      plateCensors: [{ left: '12%', top: '77%', width: '28%', height: '8%' }],
+    },
+    {
+      before: '/pexels-skylake-18145770.jpg',
+      after: '/wheelvision-result-1776800186967.jpg',
+      label: tGallery('label2'),
+      suppressWatermark: true,
+      plateCensors: [] as PlateRect[],
+    },
+    {
+      before: '/WhatsApp Image 2026-04-21 at 14.38.52.jpeg',
+      after: '/wheelvision-result-1776800225458.jpg',
+      label: tGallery('label3'),
+      suppressWatermark: true,
+      plateCensors: [
+        { left: '48%', top: '81%', width: '24%', height: '6%' },
+        { left: '2%',  top: '83%', width: '20%', height: '6%' },
+      ],
+    },
   ];
 
   const b2bFeatures = [tB2B('f1'), tB2B('f2'), tB2B('f3'), tB2B('f4')];
@@ -494,7 +530,7 @@ export default function Home() {
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: i * 0.15 }}
               >
-                <BeforeAfterSlider size="small" beforeSrc={pair.before} afterSrc={pair.after} />
+                <BeforeAfterSlider size="small" beforeSrc={pair.before} afterSrc={pair.after} suppressWatermark={pair.suppressWatermark} plateCensors={pair.plateCensors} />
                 <p className="text-center text-sm text-[var(--text-secondary)] mt-2.5 font-medium">{pair.label}</p>
               </motion.div>
             ))}
