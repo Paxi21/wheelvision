@@ -535,7 +535,22 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
     setUploadSheet(false);
     setUploading(true);
     try {
-      setCarImageUrl(await uploadToCloudinary(file));
+      const cloudinaryUrl = await uploadToCloudinary(file);
+
+      const validateRes = await fetch('/api/validate-car', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image_url: cloudinaryUrl }),
+      });
+      const validation = await validateRes.json() as { valid: boolean; message: string };
+
+      if (!validation.valid) {
+        setError(validation.message);
+        setCarPreview(null);
+        return;
+      }
+
+      setCarImageUrl(cloudinaryUrl);
     } catch {
       setError('Fotoğraf yüklenemedi. Tekrar deneyin.');
       setCarPreview(null);

@@ -114,6 +114,21 @@ export default function AppPage() {
         resolveUpload(wheelUploadRef, wheelFile),
       ]);
 
+      const validateRes = await fetch('/api/validate-car', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image_url: carUrl }),
+      });
+      const validation = await validateRes.json() as { valid: boolean; message: string };
+
+      if (!validation.valid) {
+        setError(validation.message);
+        setCarImage(null);
+        setCarFile(null);
+        carUploadRef.current = null;
+        return;
+      }
+
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) {
         throw new Error(t('sessionExpired'));
