@@ -100,6 +100,17 @@ async function downloadWithWatermark(imageUrl: string, slug: string) {
   }, 'image/jpeg', 0.92);
 }
 
+/* ─── Direct download (no watermark) ─────────────────────────────────────── */
+async function downloadDirect(imageUrl: string, slug: string) {
+  const res  = await fetch(`/api/proxy-image?url=${encodeURIComponent(imageUrl)}`);
+  const blob = await res.blob();
+  const a    = document.createElement('a');
+  a.href     = URL.createObjectURL(blob);
+  a.download = `${slug}-wheelvision.jpg`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
 /* ─── WhatsApp icon ───────────────────────────────────────────────────────── */
 function WAIcon({ size = 18 }: { size?: number }) {
   return (
@@ -675,7 +686,7 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
                 Sipariş Ver / Fiyat Al
               </a>
 
-              <button onClick={() => downloadWithWatermark(resultUrl, dealer.slug)}
+              <button onClick={() => dealer.slug === 'testjant' ? downloadDirect(resultUrl, dealer.slug) : downloadWithWatermark(resultUrl, dealer.slug)}
                 className="btn-secondary flex items-center justify-center gap-2 py-4 text-sm font-bold rounded-2xl">
                 <Download className="w-4 h-4" />
                 Görseli İndir
