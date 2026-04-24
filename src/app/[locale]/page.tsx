@@ -603,8 +603,9 @@ export default function Home() {
                 <div className="relative mx-auto hidden lg:block" style={{ width: 280, height: 580 }}>
                   <style>{`
                     @keyframes phoneScroll {
-                      0%, 15%   { transform: scale(0.718) translateY(0px); }
-                      85%, 100% { transform: scale(0.718) translateY(-620px); }
+                      0%, 8%   { transform: scale(0.718) translateY(0px); }
+                      70%, 82% { transform: scale(0.718) translateY(-620px); }
+                      92%, 100%{ transform: scale(0.718) translateY(0px); }
                     }
                   `}</style>
                   {/* Telefon çerçevesi */}
@@ -625,7 +626,7 @@ export default function Home() {
                           transformOrigin: 'top left',
                           border: 'none',
                           pointerEvents: 'none',
-                          animation: 'phoneScroll 10s ease-in-out infinite alternate',
+                          animation: 'phoneScroll 12s ease-in-out infinite',
                         }}
                         loading="lazy"
                         tabIndex={-1}
