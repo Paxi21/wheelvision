@@ -599,7 +599,7 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* Right: Live demo phone */}
+                {/* Right: Phone mockup */}
                 <div className="relative mx-auto hidden lg:block" style={{ width: 300, height: 600 }}>
                   <div
                     className="absolute inset-0 rounded-[44px] border-2 border-white/10 bg-[#0A0A0F] overflow-hidden"
@@ -609,15 +609,18 @@ export default function Home() {
                     <div className="absolute top-0 left-1/2 -translate-x-1/2 w-28 h-7 bg-[#0A0A0F] rounded-b-3xl z-20" />
                     {/* Dynamic Island */}
                     <div className="absolute top-2 left-1/2 -translate-x-1/2 w-20 h-5 bg-black rounded-full z-20" />
-                    {/* iframe */}
+                    {/* Scrolling screenshot */}
                     <div className="w-full h-full overflow-hidden rounded-[42px]">
-                      <iframe
-                        src="/d/testjant"
-                        className="border-none"
-                        style={{ width: '390px', height: '844px', transform: 'scale(0.71)', transformOrigin: 'top left' }}
-                        loading="lazy"
-                        tabIndex={-1}
-                        sandbox="allow-same-origin allow-scripts"
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src="/dealer-mockup.png"
+                        alt="Dealer demo"
+                        style={{
+                          width: '100%',
+                          height: 'auto',
+                          display: 'block',
+                          animation: 'scrollMockup 10s ease-in-out infinite alternate',
+                        }}
                       />
                     </div>
                     {/* Overlay — tıklanınca contact modal */}
@@ -631,6 +634,12 @@ export default function Home() {
                     className="absolute -inset-6 rounded-[56px] pointer-events-none"
                     style={{ background: 'radial-gradient(ellipse at center, rgba(247,37,133,0.06), transparent 70%)' }}
                   />
+                  <style>{`
+                    @keyframes scrollMockup {
+                      0%, 20%  { transform: translateY(0%); }
+                      80%, 100% { transform: translateY(-50%); }
+                    }
+                  `}</style>
                 </div>
               </div>
             </AnimatedBorder>
