@@ -83,7 +83,7 @@ function BeforeAfterSlider({ size = 'large', beforeSrc, afterSrc, plateCensors, 
           onPointerMove={onPointerMove}
         >
           <Image
-            src={after} alt="After wheel change - AI visualization" fill
+            src={after} alt="Sonra" fill
             priority={isLarge}
             sizes={isLarge
               ? '(max-width: 390px) 390px, (max-width: 640px) 640px, (max-width: 1024px) 828px, 900px'
@@ -95,7 +95,7 @@ function BeforeAfterSlider({ size = 'large', beforeSrc, afterSrc, plateCensors, 
           )}
           <div className="absolute inset-0" style={{ clipPath: `inset(0 ${100 - position}% 0 0)` }}>
             <Image
-              src={before} alt="Before wheel change - original car" fill
+              src={before} alt="Önce" fill
               priority={isLarge}
               sizes={isLarge
                 ? '(max-width: 390px) 390px, (max-width: 640px) 640px, (max-width: 1024px) 828px, 900px'
