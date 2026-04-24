@@ -590,7 +590,10 @@ export default function Home() {
                   <div className="flex flex-wrap gap-3">
                     <a
                       href="mailto:info@wheelvision.io?subject=WheelVision%20B2B%20Bilgi%20Talebi&body=Merhaba%2C%0A%0AJant%20firmam%20i%C3%A7in%20WheelVision%20hakk%C4%B1nda%20bilgi%20almak%20istiyorum.%0A%0AFirma%20Ad%C4%B1%3A%0ATelefon%3A"
-                      className="inline-flex items-center gap-2 px-8 py-3 rounded-xl font-semibold text-white transition-all duration-200 hover:opacity-90 hover:-translate-y-0.5"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={e => { e.stopPropagation(); window.location.href = 'mailto:info@wheelvision.io?subject=WheelVision%20B2B%20Bilgi%20Talebi&body=Merhaba%2C%0A%0AJant%20firmam%20i%C3%A7in%20WheelVision%20hakk%C4%B1nda%20bilgi%20almak%20istiyorum.%0A%0AFirma%20Ad%C4%B1%3A%0ATelefon%3A'; }}
+                      className="inline-flex items-center gap-2 px-8 py-3 rounded-xl font-semibold text-white transition-all duration-200 hover:opacity-90 hover:-translate-y-0.5 cursor-pointer"
                       style={{ background: 'linear-gradient(135deg, #FF6B35, #F72585)' }}
                     >
                       <MessageCircle className="w-4 h-4" />
