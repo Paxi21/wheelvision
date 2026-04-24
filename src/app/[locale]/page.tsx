@@ -599,47 +599,37 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* Right: Phone mockup */}
-                <div className="relative mx-auto hidden lg:block" style={{ width: 300, height: 600 }}>
+                {/* Right: Phone mockup — live iframe */}
+                <div className="relative mx-auto hidden lg:block" style={{ width: 280, height: 580 }}>
+                  {/* Telefon çerçevesi */}
                   <div
                     className="absolute inset-0 rounded-[44px] border-2 border-white/10 bg-[#0A0A0F] overflow-hidden"
-                    style={{ boxShadow: '0 30px 80px rgba(0,0,0,0.6), 0 0 40px rgba(247,37,133,0.08)' }}
+                    style={{ boxShadow: '0 30px 80px rgba(0,0,0,0.5), 0 0 30px rgba(247,37,133,0.08)' }}
                   >
-                    {/* Notch */}
-                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-28 h-7 bg-[#0A0A0F] rounded-b-3xl z-20" />
                     {/* Dynamic Island */}
-                    <div className="absolute top-2 left-1/2 -translate-x-1/2 w-20 h-5 bg-black rounded-full z-20" />
-                    {/* Scrolling screenshot */}
-                    <div className="w-full h-full overflow-hidden rounded-[42px]">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src="/dealer-mockup.png"
-                        alt="Dealer demo"
+                    <div className="absolute top-3 left-1/2 -translate-x-1/2 w-20 h-5 bg-black rounded-full z-20" />
+                    {/* iframe — gerçek testjant sayfası */}
+                    <div className="w-full h-full overflow-hidden rounded-[42px] pt-8">
+                      <iframe
+                        src="/d/testjant"
                         style={{
-                          width: '100%',
-                          height: 'auto',
-                          display: 'block',
-                          animation: 'scrollMockup 10s ease-in-out infinite alternate',
+                          width: '390px',
+                          height: '844px',
+                          transform: 'scale(0.718)',
+                          transformOrigin: 'top left',
+                          border: 'none',
+                          pointerEvents: 'none',
                         }}
+                        loading="lazy"
+                        tabIndex={-1}
                       />
                     </div>
-                    {/* Overlay — tıklanınca contact modal */}
-                    <div
-                      className="absolute inset-0 z-30 cursor-pointer rounded-[44px]"
-                      onClick={() => setShowContactModal(true)}
-                    />
                   </div>
                   {/* Glow */}
                   <div
                     className="absolute -inset-6 rounded-[56px] pointer-events-none"
                     style={{ background: 'radial-gradient(ellipse at center, rgba(247,37,133,0.06), transparent 70%)' }}
                   />
-                  <style>{`
-                    @keyframes scrollMockup {
-                      0%, 20%  { transform: translateY(0%); }
-                      80%, 100% { transform: translateY(-50%); }
-                    }
-                  `}</style>
                 </div>
               </div>
             </AnimatedBorder>
