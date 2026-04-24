@@ -251,28 +251,25 @@ export default function Home() {
 
   const galleryPairs = [
     {
-      before: '/leon.jpg',
-      after: '/wheelvision-result-1776800198489.jpg',
+      before: '/gallery-before-1.jpg',
+      after: '/gallery-after-1.jpg',
       label: tGallery('label1'),
       suppressWatermark: true,
-      plateCensors: [{ left: '12%', top: '77%', width: '28%', height: '8%' }],
+      plateCensors: [] as PlateRect[],
     },
     {
-      before: '/pexels-skylake-18145770.jpg',
-      after: '/wheelvision-result-1776800186967.jpg',
+      before: '/gallery-before-2.jpg',
+      after: '/gallery-after-2.jpg',
       label: tGallery('label2'),
       suppressWatermark: true,
       plateCensors: [] as PlateRect[],
     },
     {
-      before: '/WhatsApp Image 2026-04-21 at 14.38.52.jpeg',
-      after: '/wheelvision-result-1776800225458.jpg',
+      before: '/gallery-before-3.jpg',
+      after: '/gallery-after-3.jpg',
       label: tGallery('label3'),
       suppressWatermark: true,
-      plateCensors: [
-        { left: '48%', top: '81%', width: '24%', height: '6%' },
-        { left: '2%',  top: '83%', width: '20%', height: '6%' },
-      ],
+      plateCensors: [] as PlateRect[],
     },
   ];
 
@@ -507,8 +504,60 @@ export default function Home() {
 
       <SectionSep />
 
-      {/* ── Before/After Gallery — kaliteli görseller hazır olduğunda tekrar açılacak ── */}
-      {/* <section className="py-14 sm:py-20 relative">...</section> */}
+      {/* ── Before/After Gallery ── */}
+      <section className="py-14 sm:py-20 relative">
+        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-12">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5 }}
+            className="text-center mb-12"
+          >
+            <h2 className="text-3xl md:text-4xl font-bold mb-3">
+              {tGallery('title')} <span className="gradient-text">{tGallery('titleHighlight')}</span>
+            </h2>
+            <p className="text-[var(--text-secondary)]">{tGallery('subtitle')}</p>
+          </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {galleryPairs.map((pair, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: i * 0.15 }}
+              >
+                <BeforeAfterSlider
+                  size="small"
+                  beforeSrc={pair.before}
+                  afterSrc={pair.after}
+                  suppressWatermark={pair.suppressWatermark}
+                  plateCensors={pair.plateCensors}
+                />
+                <p className="text-center text-sm text-[var(--text-secondary)] mt-2.5 font-medium">{pair.label}</p>
+              </motion.div>
+            ))}
+          </div>
+
+          <motion.div
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.4, delay: 0.4 }}
+            className="text-center mt-8"
+          >
+            <Link
+              href={ctaHref}
+              className="inline-flex items-center gap-1.5 text-sm font-semibold transition-colors hover:opacity-80"
+              style={{ color: 'var(--accent-orange)' }}
+            >
+              {tGallery('more')} <ArrowRight className="w-4 h-4" />
+            </Link>
+          </motion.div>
+        </div>
+      </section>
 
       <SectionSep />
 
