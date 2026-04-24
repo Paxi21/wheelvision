@@ -599,8 +599,14 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* Right: Phone mockup — live iframe */}
+                {/* Right: Phone mockup — live iframe with scroll animation */}
                 <div className="relative mx-auto hidden lg:block" style={{ width: 280, height: 580 }}>
+                  <style>{`
+                    @keyframes phoneScroll {
+                      0%, 15%   { transform: scale(0.718) translateY(0px); }
+                      85%, 100% { transform: scale(0.718) translateY(-620px); }
+                    }
+                  `}</style>
                   {/* Telefon çerçevesi */}
                   <div
                     className="absolute inset-0 rounded-[44px] border-2 border-white/10 bg-[#0A0A0F] overflow-hidden"
@@ -614,16 +620,22 @@ export default function Home() {
                         src="/d/testjant"
                         style={{
                           width: '390px',
-                          height: '844px',
+                          height: '1800px',
                           transform: 'scale(0.718)',
                           transformOrigin: 'top left',
                           border: 'none',
                           pointerEvents: 'none',
+                          animation: 'phoneScroll 10s ease-in-out infinite alternate',
                         }}
                         loading="lazy"
                         tabIndex={-1}
                       />
                     </div>
+                    {/* Alt fade — scroll devam ediyor hissi */}
+                    <div
+                      className="absolute bottom-0 left-0 right-0 h-16 rounded-b-[42px] pointer-events-none z-10"
+                      style={{ background: 'linear-gradient(to top, #0A0A0F, transparent)' }}
+                    />
                   </div>
                   {/* Glow */}
                   <div
