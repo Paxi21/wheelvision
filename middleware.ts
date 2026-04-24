@@ -22,6 +22,11 @@ export default function middleware(request: NextRequest) {
     return intlMiddleware(request);
   }
 
+  // /d/* paths → direct dealer routes, pass through to Next.js router
+  if (firstSegment === 'd') {
+    return NextResponse.next();
+  }
+
   // Unknown first segment → treat as dealer slug
   // Rewrite internally to /d/[slug] while keeping original URL in browser
   const url = request.nextUrl.clone();
