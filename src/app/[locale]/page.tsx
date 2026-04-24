@@ -504,60 +504,7 @@ export default function Home() {
 
       <SectionSep />
 
-      {/* ── Before/After Gallery ── */}
-      <section className="py-14 sm:py-20 relative">
-        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-12">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
-            className="text-center mb-12"
-          >
-            <h2 className="text-3xl md:text-4xl font-bold mb-3">
-              {tGallery('title')} <span className="gradient-text">{tGallery('titleHighlight')}</span>
-            </h2>
-            <p className="text-[var(--text-secondary)]">{tGallery('subtitle')}</p>
-          </motion.div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {galleryPairs.map((pair, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: i * 0.15 }}
-              >
-                <BeforeAfterSlider
-                  size="small"
-                  beforeSrc={pair.before}
-                  afterSrc={pair.after}
-                  suppressWatermark={pair.suppressWatermark}
-                  plateCensors={pair.plateCensors}
-                />
-                <p className="text-center text-sm text-[var(--text-secondary)] mt-2.5 font-medium">{pair.label}</p>
-              </motion.div>
-            ))}
-          </div>
-
-          <motion.div
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.4, delay: 0.4 }}
-            className="text-center mt-8"
-          >
-            <Link
-              href={ctaHref}
-              className="inline-flex items-center gap-1.5 text-sm font-semibold transition-colors hover:opacity-80"
-              style={{ color: 'var(--accent-orange)' }}
-            >
-              {tGallery('more')} <ArrowRight className="w-4 h-4" />
-            </Link>
-          </motion.div>
-        </div>
-      </section>
+      {/* ── Before/After Gallery — şimdilik gizli ── */}
 
       <SectionSep />
 
