@@ -3,7 +3,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import {
   Camera, ImageIcon, Check, Loader2,
-  X, RefreshCw, Download, ChevronRight, ChevronDown, ChevronLeft, Sparkles, Zap,
+  X, RefreshCw, Download, ChevronRight, ChevronDown, ChevronLeft, Star,
 } from 'lucide-react';
 import type { Dealer, Wheel } from '@/app/d/[slug]/page';
 
@@ -489,6 +489,13 @@ function WelcomeScreen({ dealer, wheels, onStart }: { dealer: Dealer; wheels: Wh
   );
 }
 
+/* ─── Sample cars for instant demo ───────────────────────────────────────── */
+const SAMPLE_CARS = [
+  { label: 'Mercedes SL',    path: '/gallery-before-1.jpg' },
+  { label: 'Aston Martin V8', path: '/gallery-before-2.jpg' },
+  { label: 'BMW E30',         path: '/gallery-before-3.jpg' },
+];
+
 /* ─── Main component ──────────────────────────────────────────────────────── */
 export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels: Wheel[] }) {
   const [showApp,       setShowApp]       = useState(false);
@@ -502,12 +509,11 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
   const [resultUrl,     setResultUrl]     = useState<string | null>(null);
   const [resultLoaded,  setResultLoaded]  = useState(false);
   const [error,         setError]         = useState<string | null>(null);
-  const [uploadSheet,   setUploadSheet]   = useState(false);
-  const [isUnlocked,     setIsUnlocked]     = useState(false);
-  const [showLoginModal, setShowLoginModal] = useState(false);
-  const [loginUser,      setLoginUser]      = useState('');
-  const [loginPass,      setLoginPass]      = useState('');
-  const [loginError,     setLoginError]     = useState('');
+  const [uploadSheet,     setUploadSheet]     = useState(false);
+  const [demoUsage,       setDemoUsage]       = useState(0);
+  const [showLimitModal,  setShowLimitModal]  = useState(false);
+
+  const DEMO_LIMIT = 2;
 
   const galleryRef = useRef<HTMLInputElement>(null);
   const cameraRef  = useRef<HTMLInputElement>(null);
@@ -519,6 +525,15 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
     const id = setInterval(() => setGenStep(s => (s + 1) % GENERATION_STEPS.length), 4000);
     return () => clearInterval(id);
   }, [generating]);
+
+  /* Persist demo usage in localStorage */
+  useEffect(() => {
+    const saved = localStorage.getItem('wheelvision_demo_usage');
+    if (saved) setDemoUsage(parseInt(saved));
+  }, []);
+  useEffect(() => {
+    localStorage.setItem('wheelvision_demo_usage', demoUsage.toString());
+  }, [demoUsage]);
 
   if (!showApp) {
     return <WelcomeScreen dealer={dealer} wheels={wheels} onStart={() => setShowApp(true)} />;
@@ -574,6 +589,7 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
 
   const handleGenerate = async () => {
     if (!canGenerate) return;
+    if (demoUsage >= DEMO_LIMIT) { setShowLimitModal(true); return; }
     setGenerating(true);
     setError(null);
     setResultUrl(null);
@@ -587,6 +603,7 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
       if (!res.ok) throw new Error(data.error ?? 'Görsel oluşturulamadı');
       setResultLoaded(false);
       setResultUrl(data.output_url!);
+      setDemoUsage(prev => prev + 1);
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -608,13 +625,14 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
     setError(null);
   };
 
-  const handleLogin = () => {
-    if (loginUser === 'wheelvision' && loginPass === '092399') {
-      setIsUnlocked(true);
-      setShowLoginModal(false);
-      setLoginError('');
-    } else {
-      setLoginError('Kullanıcı adı veya şifre hatalı');
+  const handleSampleCar = async (imagePath: string) => {
+    try {
+      const res  = await fetch(imagePath);
+      const blob = await res.blob();
+      const file = new File([blob], 'sample-car.jpg', { type: blob.type || 'image/jpeg' });
+      processFile(file);
+    } catch {
+      setError('Örnek araç seçilemedi. Lütfen tekrar deneyin.');
     }
   };
 
@@ -775,19 +793,44 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
                     )}
                   </div>
                 ) : (
-                  <button onClick={() => { if (!isUnlocked) { setShowLoginModal(true); } else { setUploadSheet(true); } }}
-                    className="w-full flex flex-col items-center py-9 rounded-xl group transition-all"
-                    style={{ border: '1.5px dashed rgba(255,107,53,0.45)', background: 'rgba(255,107,53,0.02)', animation: 'dashedOrange 3s linear infinite' }}
-                    onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = 'rgba(255,107,53,0.75)'; el.style.background = 'rgba(255,107,53,0.05)'; }}
-                    onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = 'rgba(255,107,53,0.45)'; el.style.background = 'rgba(255,107,53,0.02)'; }}
-                  >
-                    <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-3 transition-transform group-hover:scale-110"
-                      style={{ background: 'rgba(255,107,53,0.12)' }}>
-                      <Camera className="w-6 h-6 text-[var(--accent-orange)]" />
+                  <div className="space-y-3">
+                    <button onClick={() => setUploadSheet(true)}
+                      className="w-full flex flex-col items-center py-7 rounded-xl group transition-all"
+                      style={{ border: '1.5px dashed rgba(255,107,53,0.45)', background: 'rgba(255,107,53,0.02)', animation: 'dashedOrange 3s linear infinite' }}
+                      onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = 'rgba(255,107,53,0.75)'; el.style.background = 'rgba(255,107,53,0.05)'; }}
+                      onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = 'rgba(255,107,53,0.45)'; el.style.background = 'rgba(255,107,53,0.02)'; }}
+                    >
+                      <div className="w-10 h-10 rounded-2xl flex items-center justify-center mb-2 transition-transform group-hover:scale-110"
+                        style={{ background: 'rgba(255,107,53,0.12)' }}>
+                        <Camera className="w-5 h-5 text-[var(--accent-orange)]" />
+                      </div>
+                      <p className="font-semibold text-sm text-white">Fotoğraf Ekle</p>
+                      <p className="text-xs text-[var(--text-secondary)] mt-0.5">Kamera veya galeriden yükleyin</p>
+                    </button>
+
+                    {/* Örnek araçlar */}
+                    <div>
+                      <p className="text-[10px] text-[var(--text-secondary)] text-center mb-2 uppercase tracking-wider">— ya da örnek araç seç —</p>
+                      <div className="grid grid-cols-3 gap-1.5">
+                        {SAMPLE_CARS.map((car) => (
+                          <button
+                            key={car.path}
+                            onClick={() => handleSampleCar(car.path)}
+                            className="relative rounded-lg overflow-hidden group"
+                            style={{ aspectRatio: '4/3', border: '1px solid var(--border-color)' }}
+                            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,107,53,0.5)'; }}
+                            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--border-color)'; }}
+                          >
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={car.path} alt={car.label} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110" />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-1">
+                              <p className="text-[9px] font-semibold text-white leading-tight">{car.label}</p>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                    <p className="font-semibold text-sm text-white">Fotoğraf Ekle</p>
-                    <p className="text-xs text-[var(--text-secondary)] mt-1">Kamera veya galeriden yükleyin</p>
-                  </button>
+                  </div>
                 )}
               </div>
 
@@ -879,6 +922,10 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
                   </p>
                 </div>
               )}
+              <p className="hidden lg:block text-center text-[11px] mt-1"
+                style={{ color: demoUsage === 0 ? '#4ade80' : demoUsage === 1 ? '#FF6B35' : '#f87171' }}>
+                Kalan demo hakkı: {Math.max(0, DEMO_LIMIT - demoUsage)}/{DEMO_LIMIT}
+              </p>
             </div>
 
             {/* ── RIGHT PANEL: Catalog ── */}
@@ -903,7 +950,7 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
                   {wheels.map((wheel, idx) => {
                     const isSelected = selectedWheel?.id === wheel.id;
                     return (
-                      <button key={wheel.id} onClick={() => { if (!isUnlocked) { setShowLoginModal(true); } else { setModalWheel(wheel); } }}
+                      <button key={wheel.id} onClick={() => setModalWheel(wheel)}
                         className="group relative text-left rounded-2xl overflow-hidden active:scale-[0.97]"
                         style={{
                           border: isSelected ? '2px solid var(--accent-orange)' : '1px solid var(--border-color)',
@@ -1050,10 +1097,10 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
         <WheelModal wheel={modalWheel} onClose={() => setModalWheel(null)} onSelect={handleWheelSelect} />
       )}
 
-      {/* ══ LOGIN MODAL ═════════════════════════════════════════════════════ */}
-      {showLoginModal && (
+      {/* ══ DEMO LIMIT MODAL ════════════════════════════════════════════════ */}
+      {showLimitModal && (
         <>
-          <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm" onClick={() => setShowLoginModal(false)} />
+          <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm" onClick={() => setShowLimitModal(false)} />
           <div
             className="fixed inset-x-4 bottom-0 sm:inset-auto sm:left-1/2 sm:-translate-x-1/2 sm:bottom-auto sm:top-1/2 sm:-translate-y-1/2 sm:w-[380px] z-50 rounded-t-3xl sm:rounded-2xl border border-[var(--border-color)] overflow-hidden"
             style={{ background: 'rgba(18,18,26,0.95)', backdropFilter: 'blur(24px)', animation: 'modalIn 0.25s ease-out' }}
@@ -1063,53 +1110,37 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
               <div className="text-center mb-6">
                 <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4"
                   style={{ background: 'linear-gradient(135deg,rgba(255,107,53,0.15),rgba(247,37,133,0.15))' }}>
-                  <Sparkles className="w-7 h-7" style={{ color: 'var(--accent-pink)' }} />
+                  <Star className="w-7 h-7" style={{ color: 'var(--accent-pink)' }} />
                 </div>
-                <h3 className="font-bold text-lg text-white">Demo Giriş</h3>
-                <p className="text-sm text-[var(--text-secondary)] mt-1">Bu paneli kullanmak için giriş yapın</p>
+                <h3 className="font-bold text-lg text-white">Demo Limitiniz Doldu</h3>
+                <p className="text-sm text-[var(--text-secondary)] mt-1 leading-relaxed">
+                  Kendi jant showroom&apos;unuzu oluşturmak ve sınırsız kullanmak için bizimle iletişime geçin.
+                </p>
               </div>
               <div className="space-y-3">
-                <input
-                  type="text"
-                  placeholder="Kullanıcı adı"
-                  value={loginUser}
-                  onChange={e => setLoginUser(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter') handleLogin(); }}
-                  className="w-full px-4 py-3 rounded-xl text-sm text-white placeholder-[var(--text-secondary)] outline-none transition-all"
-                  style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}
-                  onFocus={e => { e.currentTarget.style.borderColor = '#FF6B35'; }}
-                  onBlur={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; }}
-                />
-                <input
-                  type="password"
-                  placeholder="Şifre"
-                  value={loginPass}
-                  onChange={e => setLoginPass(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter') handleLogin(); }}
-                  className="w-full px-4 py-3 rounded-xl text-sm text-white placeholder-[var(--text-secondary)] outline-none transition-all"
-                  style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}
-                  onFocus={e => { e.currentTarget.style.borderColor = '#FF6B35'; }}
-                  onBlur={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; }}
-                />
-                {loginError && (
-                  <p className="text-sm text-red-400 text-center font-medium" style={{ animation: 'shake 0.4s ease-out' }}>
-                    {loginError}
-                  </p>
-                )}
-                <button
-                  onClick={handleLogin}
+                <a
+                  href="mailto:info@wheelvision.io?subject=WheelVision%20Demo%20Talebi"
                   className="relative overflow-hidden w-full py-3.5 rounded-xl font-bold text-sm text-white flex items-center justify-center gap-2"
-                  style={{ background: 'linear-gradient(135deg,#FF6B35,#F72585,#7209B7)', boxShadow: '0 4px 16px rgba(247,37,133,0.3)', marginTop: '4px' }}
+                  style={{ background: 'linear-gradient(135deg,#FF6B35,#F72585,#7209B7)', boxShadow: '0 4px 16px rgba(247,37,133,0.3)' }}
                 >
                   <span aria-hidden style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: '40%', background: 'linear-gradient(90deg,transparent,rgba(255,255,255,0.15),transparent)', animation: 'shimmerBtn 3s linear infinite' }} />
-                  <Zap className="w-4 h-4" /> Giriş Yap
-                </button>
+                  📧 E-posta Gönder
+                </a>
+                <a
+                  href="https://instagram.com/wheelvisionioofficial"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="relative overflow-hidden w-full py-3.5 rounded-xl font-bold text-sm text-white flex items-center justify-center gap-2 transition-opacity hover:opacity-90"
+                  style={{ background: 'linear-gradient(135deg,#833ab4,#fd1d1d,#fcb045)', boxShadow: '0 4px 16px rgba(253,29,29,0.25)' }}
+                >
+                  📸 Instagram&apos;dan Ulaş
+                </a>
                 <button
-                  onClick={() => setShowLoginModal(false)}
+                  onClick={() => setShowLimitModal(false)}
                   className="w-full py-3 rounded-xl text-sm text-[var(--text-secondary)] font-medium transition-colors hover:text-white"
                   style={{ border: '1px solid var(--border-color)', background: 'transparent' }}
                 >
-                  İptal
+                  Kapat
                 </button>
               </div>
             </div>
