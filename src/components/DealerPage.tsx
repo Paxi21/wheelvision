@@ -725,23 +725,31 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
 
               {/* CTA buttons */}
               <a href={waUrl} target="_blank" rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2.5 py-4 rounded-2xl font-bold text-sm text-white transition-all hover:brightness-110 active:scale-95"
-                style={{ background: '#25D366', boxShadow: '0 4px 16px rgba(37,211,102,0.3)' }}>
-                <WAIcon size={20} />
-                Sipariş Ver / Fiyat Al
+                className="flex items-center justify-center gap-3 py-4 rounded-2xl font-bold text-lg text-white active:scale-95 transition-all"
+                style={{ background: '#25D366', animation: 'whatsappPulse 2s ease-in-out infinite' }}
+                onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.background = '#20BD5A'; el.style.transform = 'translateY(-2px)'; el.style.animation = 'none'; el.style.boxShadow = '0 8px 24px rgba(37,211,102,0.3)'; }}
+                onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.background = '#25D366'; el.style.transform = ''; el.style.animation = 'whatsappPulse 2s ease-in-out infinite'; el.style.boxShadow = ''; }}
+              >
+                <WAIcon size={24} />
+                WhatsApp ile Sipariş Ver
               </a>
 
               <button onClick={() => dealer.slug === 'testjant' ? downloadDirect(resultUrl, dealer.slug) : downloadWithWatermark(resultUrl, dealer.slug)}
-                className="btn-secondary flex items-center justify-center gap-2 py-4 text-sm font-bold rounded-2xl">
+                className="flex items-center justify-center gap-2 py-3.5 text-sm font-semibold rounded-2xl text-white transition-all"
+                style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.1)' }}
+                onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = 'rgba(255,255,255,0.2)'; el.style.background = 'rgba(255,255,255,0.05)'; }}
+                onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = 'rgba(255,255,255,0.1)'; el.style.background = 'transparent'; }}
+              >
                 <Download className="w-4 h-4" />
                 Görseli İndir
               </button>
 
-              <div className="hidden lg:block h-px bg-[var(--border-color)]" />
-
               <button onClick={handleReset}
-                className="flex items-center justify-center gap-2 py-3.5 text-sm rounded-2xl border border-[var(--border-color)] text-[var(--text-secondary)] hover:text-white hover:border-white/20 transition-colors"
-                style={{ background: 'var(--bg-card)' }}>
+                className="flex items-center justify-center gap-2 py-3 text-sm rounded-2xl transition-colors"
+                style={{ color: '#A0A0B0' }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#ffffff'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#A0A0B0'; }}
+              >
                 <RefreshCw className="w-4 h-4" />
                 Yeni Görsel Oluştur
               </button>
