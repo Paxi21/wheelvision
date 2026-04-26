@@ -453,6 +453,14 @@ function WelcomeScreen({ dealer, wheels, onStart }: { dealer: Dealer; wheels: Wh
               Ücretsiz · Kayıt gerekmez · 30 saniye
             </p>
 
+            {/* Mobile-only demo slider */}
+            <div className="lg:hidden w-full max-w-[400px] mx-auto my-4" style={{ animation: 'fadeSlideUp 0.5s ease-out 0.62s both' }}>
+              <div className="rounded-xl overflow-hidden" style={{ aspectRatio: '16/9' }}>
+                <BeforeAfterSlider before="/demo-before.jpg" after="/demo-after.jpg" />
+              </div>
+              <p className="text-xs text-[#A0A0B0] text-center mt-2">↔ Kaydırarak karşılaştırın</p>
+            </div>
+
             {/* Stats bar */}
             <div className="flex items-center gap-6 mt-8 pt-8 border-t border-[var(--border-color)] w-full max-w-sm lg:max-w-none"
               style={{ animation: 'fadeSlideUp 0.5s ease-out 0.65s both' }}>
