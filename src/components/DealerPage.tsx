@@ -463,6 +463,17 @@ function WelcomeScreen({ dealer, wheels, onStart }: { dealer: Dealer; wheels: Wh
                 </div>
               ))}
             </div>
+
+            {/* Demo before/after — desktop only */}
+            <div className="hidden md:block w-full mt-10"
+              style={{ animation: 'fadeSlideUp 0.5s ease-out 0.9s both' }}>
+              <p className="text-sm text-[#A0A0B0] text-center mb-3">AI Sonuç Örneği</p>
+              <div className="max-w-[600px] mx-auto rounded-2xl overflow-hidden"
+                style={{ border: '1px solid rgba(255,107,53,0.2)', boxShadow: '0 0 40px rgba(255,107,53,0.08)', aspectRatio: '4/3' }}>
+                <BeforeAfterSlider before="/demo-before.jpg" after="/demo-after.jpg" />
+              </div>
+              <p className="text-xs text-[#A0A0B0] text-center mt-2">↔ Kaydırarak karşılaştırın</p>
+            </div>
           </div>
 
           {/* ── Right: Wheel showcase (desktop only) ── */}
