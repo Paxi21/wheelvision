@@ -58,28 +58,11 @@ async function compressAndStore(sourceUrl: string): Promise<string> {
 const TRUSTED_IMAGE_DOMAINS = [
   'fal.media',
   'v3.fal.media',
+  'fal.run',
+  'cdn.fal.ai',
   'res.cloudinary.com',
   'storage.googleapis.com',
 ];
-
-// In-memory rate limiter: max 5 generations per hour per user
-// Note: For multi-instance deployments, replace with Redis
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
-
-function checkRateLimit(email: string): boolean {
-  const now = Date.now();
-  const windowMs = 60 * 60 * 1000;
-  const maxRequests = 5;
-
-  const entry = rateLimitMap.get(email);
-  if (!entry || now > entry.resetAt) {
-    rateLimitMap.set(email, { count: 1, resetAt: now + windowMs });
-    return true;
-  }
-  if (entry.count >= maxRequests) return false;
-  entry.count++;
-  return true;
-}
 
 function isValidCloudinaryUrl(url: unknown): boolean {
   if (typeof url !== 'string') return false;
@@ -151,14 +134,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // 3. Rate limit check
-    if (!checkRateLimit(user.email)) {
-      return NextResponse.json(
-        { error: 'Çok fazla istek. Lütfen 1 saat bekleyin.' },
-        { status: 429 }
-      );
-    }
-
     // 4. Validate request body
     let body: Record<string, unknown>;
     try {
@@ -218,7 +193,7 @@ export async function POST(request: NextRequest) {
     };
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 60_000);
+    const timeoutId = setTimeout(() => controller.abort(), 90_000);
 
     let n8nResponse: Response;
     try {
