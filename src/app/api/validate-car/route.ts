@@ -1,6 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { redis } from '@/lib/redis';
 
 export async function POST(req: NextRequest) {
+  // IP rate limit — 10 requests/min, fail open on Redis error
+  try {
+    const ip = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown';
+    const key = `ratelimit:validate:${ip}`;
+    const count = await redis.incr(key);
+    if (count === 1) await redis.expire(key, 60);
+    if (count > 10) {
+      return NextResponse.json(
+        { valid: false, message: 'Çok fazla istek gönderdiniz. Lütfen 1 dakika bekleyip tekrar deneyin.' },
+        { status: 429 }
+      );
+    }
+  } catch (e) {
+    console.warn('[validate-car] rate limit check failed (Redis error), allowing request:', e);
+  }
+
   try {
     const { image_url } = await req.json();
 

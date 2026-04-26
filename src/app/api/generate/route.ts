@@ -111,6 +111,22 @@ function isValidOutputImageUrl(url: unknown): url is string {
 }
 
 export async function POST(request: NextRequest) {
+  // IP rate limit — 5 requests/min, fail open on Redis error
+  try {
+    const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
+    const key = `ratelimit:${ip}`;
+    const count = await redis.incr(key);
+    if (count === 1) await redis.expire(key, 60);
+    if (count > 5) {
+      return NextResponse.json(
+        { error: 'Çok fazla istek gönderdiniz. Lütfen 1 dakika bekleyip tekrar deneyin.' },
+        { status: 429 }
+      );
+    }
+  } catch (e) {
+    console.warn('[generate] rate limit check failed (Redis error), allowing request:', e);
+  }
+
   // Fail fast if server is misconfigured
   if (!n8nUrl) {
     console.error('[generate] N8N_WEBHOOK_URL environment variable is not set');
