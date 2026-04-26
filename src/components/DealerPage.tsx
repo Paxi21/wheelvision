@@ -974,9 +974,9 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
                           boxShadow: isSelected ? '0 0 24px rgba(255,107,53,0.2)' : 'none',
                           background: 'rgba(18,18,26,0.5)', backdropFilter: 'blur(8px)',
                           animation: `fadeScale 0.4s ease-out ${idx * 0.05}s both`,
-                          transition: 'transform 0.4s cubic-bezier(0.4,0,0.2,1),border-color 0.3s ease,box-shadow 0.3s ease',
+                          transition: 'all 0.3s cubic-bezier(0.4,0,0.2,1)',
                         }}
-                        onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.transform = 'translateY(-6px)'; if (!isSelected) { el.style.borderColor = 'rgba(255,107,53,0.3)'; el.style.boxShadow = '0 16px 40px rgba(0,0,0,0.4),0 0 20px rgba(255,107,53,0.08)'; } }}
+                        onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.transform = 'translateY(-6px)'; if (!isSelected) { el.style.borderColor = 'rgba(255,107,53,0.3)'; el.style.boxShadow = '0 12px 32px rgba(0,0,0,0.3),0 0 16px rgba(255,107,53,0.08)'; } }}
                         onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.transform = ''; if (!isSelected) { el.style.borderColor = 'var(--border-color)'; el.style.boxShadow = 'none'; } }}
                       >
                         <div className="aspect-square w-full overflow-hidden">
@@ -987,8 +987,8 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
                           <p className="text-[13px] font-semibold leading-tight line-clamp-2 text-white">{wheel.jant_adi}</p>
                           {wheel.marka && <p className="text-[11px] text-[var(--text-secondary)] mt-0.5">{wheel.marka}</p>}
                           {wheel.fiyat != null && (
-                            <p className="text-[14px] font-extrabold mt-1.5"
-                              style={{ background: 'linear-gradient(90deg,#FF6B35,#F72585)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
+                            <p className="text-[14px] mt-1.5"
+                              style={{ background: 'linear-gradient(135deg,#FF6B35,#F72585)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', fontWeight: 800 }}>
                               ₺{wheel.fiyat.toLocaleString('tr-TR')}
                             </p>
                           )}
