@@ -269,6 +269,11 @@ body {
   to   { transform: translateY(0); }
 }
 
+@keyframes slideDownSheet {
+  from { transform: translateY(0); }
+  to   { transform: translateY(100%); }
+}
+
 @keyframes dashedOrange {
   0%, 100% { border-color: rgba(255,107,53,0.5); }
   50%       { border-color: rgba(247,37,133,0.5); }

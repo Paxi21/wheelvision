@@ -172,7 +172,7 @@ function BeforeAfterSlider({ before, after, onAfterLoad }: { before: string; aft
           <div className="absolute top-0 bottom-0 w-[2px] pointer-events-none"
             style={{ left: `${position}%`, background: 'linear-gradient(to bottom,transparent,rgba(255,255,255,0.95) 15%,rgba(255,255,255,0.95) 85%,transparent)' }} />
           <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 pointer-events-none z-10" style={{ left: `${position}%` }}>
-            <div className="w-11 h-11 rounded-full bg-white flex items-center justify-center border-2 border-white/90"
+            <div className="w-12 h-12 sm:w-11 sm:h-11 rounded-full bg-white flex items-center justify-center border-2 border-white/90"
               style={{ boxShadow: '0 0 0 4px rgba(247,37,133,0.3),0 4px 20px rgba(0,0,0,0.4)' }}>
               <div className="flex items-center gap-0.5">
                 <svg width="8" height="12" viewBox="0 0 8 12" fill="none"><path d="M6 1L1 6L6 11" stroke="#374151" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
@@ -402,7 +402,7 @@ function WelcomeScreen({ dealer, wheels, onStart }: { dealer: Dealer; wheels: Wh
 
             {/* Heading */}
             <h1 className="font-black leading-tight mb-4"
-              style={{ fontSize: 'clamp(36px,5vw,52px)', letterSpacing: '-0.02em', animation: 'fadeSlideUp 0.5s ease-out 0.1s both' }}>
+              style={{ fontSize: 'clamp(28px,5vw,52px)', letterSpacing: '-0.02em', animation: 'fadeSlideUp 0.5s ease-out 0.1s both' }}>
               Hayal Et, Gör, Sahip Ol<br />
               <span className="gradient-text">Jantını Şimdi Dene</span>
             </h1>
@@ -529,6 +529,7 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
   const [resultLoaded,  setResultLoaded]  = useState(false);
   const [error,         setError]         = useState<string | null>(null);
   const [uploadSheet,     setUploadSheet]     = useState(false);
+  const [sheetClosing,    setSheetClosing]    = useState(false);
   const [demoUsage,       setDemoUsage]       = useState(0);
   const [showLimitModal,  setShowLimitModal]  = useState(false);
 
@@ -639,6 +640,11 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
     setSelectedWheel(null);
     clearCar();
     setError(null);
+  };
+
+  const closeUploadSheet = () => {
+    setSheetClosing(true);
+    setTimeout(() => { setUploadSheet(false); setSheetClosing(false); }, 200);
   };
 
   const handleWheelSelect = (wheel: Wheel) => {
@@ -963,7 +969,7 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
               {wheels.length === 0 ? (
                 <p className="py-12 text-center text-sm text-[var(--text-secondary)]">Henüz jant eklenmemiş.</p>
               ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-[10px] lg:gap-4">
                   {wheels.map((wheel, idx) => {
                     const isSelected = selectedWheel?.id === wheel.id;
                     return (
@@ -983,9 +989,9 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
                           <WheelImg src={wheel.jant_foto_url} alt={wheel.jant_adi} priority={idx < 8}
                             className="transition-transform duration-500 group-hover:scale-[1.08]" />
                         </div>
-                        <div className="px-3 py-2.5">
-                          <p className="text-[13px] font-semibold leading-tight line-clamp-2 text-white">{wheel.jant_adi}</p>
-                          {wheel.marka && <p className="text-[11px] text-[var(--text-secondary)] mt-0.5">{wheel.marka}</p>}
+                        <div className="px-2 py-2 sm:px-3 sm:py-2.5">
+                          <p className="text-[12px] sm:text-[13px] font-semibold leading-tight line-clamp-2 text-white">{wheel.jant_adi}</p>
+                          {wheel.marka && <p className="text-[10px] sm:text-[11px] text-[var(--text-secondary)] mt-0.5">{wheel.marka}</p>}
                           {wheel.fiyat != null && (
                             <p className="text-[14px] mt-1.5"
                               style={{ background: 'linear-gradient(135deg,#FF6B35,#F72585)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', fontWeight: 800 }}>
@@ -1015,30 +1021,23 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
         </main>
       )}
 
-      {/* ══ STICKY GENERATE BUTTON (mobile only) ═══════════════════════════ */}
-      {!resultUrl && (
+      {/* ══ STICKY GENERATE BUTTON (mobile only — shown only when ready) ═══ */}
+      {!resultUrl && canGenerate && (
         <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 px-4 pb-6 pt-3"
-          style={{ background: 'rgba(10,10,15,0.92)', backdropFilter: 'blur(20px)', borderTop: '1px solid var(--border-color)' }}>
-          <button onClick={handleGenerate} disabled={!canGenerate}
+          style={{ background: 'rgba(10,10,15,0.95)', backdropFilter: 'blur(20px)', borderTop: '1px solid var(--border-color)' }}>
+          <button onClick={handleGenerate}
             className="w-full py-4 text-base font-extrabold rounded-2xl flex items-center justify-center gap-2.5"
             style={{
-              background: canGenerate ? 'linear-gradient(135deg,#FF6B35,#F72585,#7209B7)' : 'rgba(18,18,26,0.7)',
-              color: 'white', border: canGenerate ? 'none' : '1px solid var(--border-color)',
-              opacity: !canGenerate ? 0.5 : 1,
-              cursor: !canGenerate ? 'not-allowed' : 'pointer',
-              boxShadow: canGenerate ? '0 8px 24px rgba(247,37,133,0.3)' : 'none',
+              background: 'linear-gradient(135deg,#FF6B35,#F72585,#7209B7)',
+              color: 'white',
+              boxShadow: '0 8px 24px rgba(247,37,133,0.3)',
             }}>
-            <span>Görsel Oluştur</span>{canGenerate && <ChevronRight className="w-5 h-5" />}
+            <span>Görsel Oluştur</span><ChevronRight className="w-5 h-5" />
           </button>
-          {!canGenerate && !generating && (
-            <div className="flex items-center justify-center gap-2 px-4 py-2 mt-2 rounded-xl"
-              style={{ background: 'rgba(18,18,26,0.6)', backdropFilter: 'blur(8px)', border: '1px solid var(--border-color)' }}>
-              <span className="text-xs">💡</span>
-              <p className="text-xs text-[var(--text-secondary)]">
-                {!carImageUrl && !selectedWheel ? 'Araç fotoğrafı ve jant seçin' : !carImageUrl ? 'Araç fotoğrafı ekleyin' : 'Katalogdan jant seçin'}
-              </p>
-            </div>
-          )}
+          <p className="text-center text-[11px] mt-1.5"
+            style={{ color: demoUsage === 0 ? '#4ade80' : demoUsage === 1 ? '#FF6B35' : '#f87171' }}>
+            Kalan demo hakkı: {Math.max(0, DEMO_LIMIT - demoUsage)}/{DEMO_LIMIT}
+          </p>
         </div>
       )}
 
@@ -1085,9 +1084,9 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
       {/* ══ UPLOAD BOTTOM SHEET ═════════════════════════════════════════════ */}
       {uploadSheet && (
         <>
-          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm" onClick={() => setUploadSheet(false)} />
+          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm" onClick={closeUploadSheet} />
           <div className="fixed bottom-0 left-0 right-0 z-50 rounded-t-3xl border-t border-[var(--border-color)]"
-            style={{ background: 'rgba(18,18,26,0.95)', backdropFilter: 'blur(24px)', animation: 'slideUpSheet 0.3s ease-out' }}>
+            style={{ background: 'rgba(18,18,26,0.95)', backdropFilter: 'blur(24px)', animation: sheetClosing ? 'slideDownSheet 0.2s ease-in forwards' : 'slideUpSheet 0.3s ease-out' }}>
             <div className="max-w-lg mx-auto px-4 pt-4 pb-10">
               <div className="w-12 h-1 rounded-full bg-[var(--border-color)] mx-auto mb-5" />
               <h3 className="font-bold text-base text-center mb-5">Fotoğraf Ekle</h3>
@@ -1123,7 +1122,7 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
                   <ChevronRight className="w-4 h-4 text-[var(--text-secondary)] ml-auto" />
                 </button>
               </div>
-              <button onClick={() => setUploadSheet(false)}
+              <button onClick={closeUploadSheet}
                 className="w-full mt-4 py-3 rounded-xl text-sm text-[var(--text-secondary)] font-medium transition-colors hover:text-white"
                 style={{ border: '1px solid var(--border-color)', background: 'transparent' }}>
                 İptal
