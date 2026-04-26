@@ -54,6 +54,22 @@ const GENERATION_STEPS = [
   'Görsel hazırlanıyor...',
 ];
 
+/* ─── Client-side image compression (falls back to original on error) ───── */
+async function compressImage(file: File): Promise<File> {
+  try {
+    const imageCompression = (await import('browser-image-compression')).default;
+    return await imageCompression(file, {
+      maxWidthOrHeight: 1920,
+      maxSizeMB: 2,
+      useWebWorker: true,
+      fileType: 'image/jpeg',
+      initialQuality: 0.85,
+    });
+  } catch {
+    return file;
+  }
+}
+
 /* ─── Cloudinary upload ───────────────────────────────────────────────────── */
 async function uploadToCloudinary(file: File): Promise<string> {
   const fd = new FormData();
@@ -550,7 +566,8 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
     setUploadSheet(false);
     setUploading(true);
     try {
-      const cloudinaryUrl = await uploadToCloudinary(file);
+      const compressed = await compressImage(file);
+      const cloudinaryUrl = await uploadToCloudinary(compressed);
 
       const validateRes = await fetch('/api/validate-car', {
         method: 'POST',

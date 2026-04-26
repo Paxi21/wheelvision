@@ -50,8 +50,22 @@ export default function AppPage() {
       throw new Error(`Dosya boyutu çok büyük. Maksimum ${MAX_FILE_SIZE_MB}MB yükleyebilirsiniz.`);
     }
 
+    let uploadFile = file;
+    try {
+      const imageCompression = (await import('browser-image-compression')).default;
+      uploadFile = await imageCompression(file, {
+        maxWidthOrHeight: 1920,
+        maxSizeMB: 2,
+        useWebWorker: true,
+        fileType: 'image/jpeg',
+        initialQuality: 0.85,
+      });
+    } catch {
+      // compression failed — upload original
+    }
+
     const formData = new FormData();
-    formData.append('file', file);
+    formData.append('file', uploadFile);
     formData.append('upload_preset', 'wheelvision');
 
     const response = await fetch(
