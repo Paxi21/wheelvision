@@ -6,6 +6,15 @@ const serviceKey   = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 const n8nUrl       = process.env.N8N_WEBHOOK_URL!;
 const cloudName    = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME!;
 
+const INTERNAL_KEYWORDS = ['dealer@wheelvision.io', 'supabase', 'Supabase', 'n8n', 'N8N', 'webhook', 'Webhook'];
+
+function toUserMessage(msg: string): string {
+  if (INTERNAL_KEYWORDS.some(k => msg.includes(k))) {
+    return 'Bir sorun oluştu. Lütfen tekrar deneyin.';
+  }
+  return msg;
+}
+
 function isValidCloudinaryUrl(url: unknown): boolean {
   if (typeof url !== 'string') return false;
   try {
@@ -144,7 +153,7 @@ export async function POST(request: NextRequest) {
     console.log('[dealer/generate] calling n8n...');
 
     const controller = new AbortController();
-    const timeoutId  = setTimeout(() => controller.abort(), 120_000);
+    const timeoutId  = setTimeout(() => controller.abort(), 60_000);
 
     let n8nRes: Response;
     try {
@@ -158,9 +167,11 @@ export async function POST(request: NextRequest) {
         body: JSON.stringify(n8nPayload),
       });
     } catch (err) {
-      if ((err as Error).name === 'AbortError') throw new Error('İstek zaman aşımına uğradı (120s).');
+      if ((err as Error).name === 'AbortError') {
+        throw new Error('İşlem uzun sürdü. Lütfen tekrar deneyin.');
+      }
       console.error('[dealer/generate] n8n fetch error:', err);
-      throw new Error('Görsel servisi şu an ulaşılamıyor.');
+      throw new Error('Servis geçici olarak kullanılamıyor. Lütfen birkaç dakika sonra tekrar deneyin.');
     } finally {
       clearTimeout(timeoutId);
     }
@@ -169,38 +180,28 @@ export async function POST(request: NextRequest) {
 
     if (!n8nRes.ok) {
       const errBody = await n8nRes.text().catch(() => '');
-      console.error('[dealer/generate] n8n error body:', errBody);
-      throw new Error(`n8n hata döndürdü: ${n8nRes.status}`);
+      console.error('[dealer/generate] n8n error response:', n8nRes.status, errBody);
+      throw new Error('Bir sorun oluştu. Lütfen tekrar deneyin.');
     }
 
     const text = await n8nRes.text();
     console.log('[dealer/generate] n8n raw response:', text);
 
     if (!text?.trim()) {
-      // Empty body = n8n workflow didn't reach "Respond to Webhook" node.
-      // Most common cause: dealer@wheelvision.io user not found in Supabase at workflow runtime.
-      throw new Error(
-        'n8n boş yanıt döndürdü. ' +
-        'Muhtemelen n8n workflow "dealer@wheelvision.io" kullanıcısını bulamadı. ' +
-        'Supabase → users tablosuna bu email\'i ekleyin.'
-      );
+      console.error('[dealer/generate] empty response from n8n — workflow may not have reached Respond node');
+      throw new Error('Görsel oluşturma servisi şu an meşgul. Lütfen birkaç saniye bekleyip tekrar deneyin.');
     }
 
     let data: Record<string, unknown>;
     try { data = JSON.parse(text); }
     catch {
       console.error('[dealer/generate] invalid JSON from n8n:', text);
-      throw new Error('Geçersiz servis yanıtı.');
+      throw new Error('Bir sorun oluştu. Lütfen tekrar deneyin.');
     }
 
     if (data.error) {
-      const msg = data.error as string;
-      console.error('[dealer/generate] n8n returned error:', msg);
-      throw new Error(
-        msg === 'Yetersiz kredi'
-          ? 'Servis kredisi yetersiz. Yönetici ile iletişime geçin.'
-          : 'Görsel oluşturulamadı.'
-      );
+      console.error('[dealer/generate] n8n returned error:', data.error);
+      throw new Error('Bir sorun oluştu. Lütfen tekrar deneyin.');
     }
 
     const candidates = [
@@ -212,7 +213,7 @@ export async function POST(request: NextRequest) {
     const outputUrl = candidates.find(isValidOutputUrl);
     if (!outputUrl) {
       console.error('[dealer/generate] no valid image URL in response:', data);
-      throw new Error('Görsel URL bulunamadı.');
+      throw new Error('Görsel oluşturulamadı. Lütfen farklı bir fotoğraf ile tekrar deneyin.');
     }
     console.log('[dealer/generate] output URL:', outputUrl);
 
@@ -236,6 +237,6 @@ export async function POST(request: NextRequest) {
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Bir hata oluştu';
     console.error('[dealer/generate] fatal error:', message);
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ error: toUserMessage(message) }, { status: 500 });
   }
 }

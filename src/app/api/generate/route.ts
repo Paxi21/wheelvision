@@ -9,6 +9,15 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 const n8nUrl = process.env.N8N_WEBHOOK_URL!;
 const cloudinaryCloud = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME!;
 
+const INTERNAL_KEYWORDS = ['supabase', 'Supabase', 'n8n', 'N8N', 'webhook', 'Webhook', '@'];
+
+function toUserMessage(msg: string): string {
+  if (INTERNAL_KEYWORDS.some(k => msg.includes(k))) {
+    return 'Bir sorun oluştu. Lütfen tekrar deneyin.';
+  }
+  return msg;
+}
+
 /**
  * Compress an image URL via TinyPNG, re-upload to Cloudinary, return new URL.
  * Falls back to the original URL on any failure — never blocks generation.
@@ -193,7 +202,7 @@ export async function POST(request: NextRequest) {
     };
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 120_000);
+    const timeoutId = setTimeout(() => controller.abort(), 60_000);
 
     let n8nResponse: Response;
     try {
@@ -208,25 +217,26 @@ export async function POST(request: NextRequest) {
       });
     } catch (fetchErr) {
       if ((fetchErr as Error).name === 'AbortError') {
-        throw new Error('İstek zaman aşımına uğradı (120s).');
+        throw new Error('İşlem uzun sürdü. Lütfen tekrar deneyin.');
       }
       console.error('[generate] n8n fetch error:', fetchErr);
-      throw new Error('İşlem servisi şu an ulaşılamıyor. Lütfen tekrar deneyin.');
+      throw new Error('Servis geçici olarak kullanılamıyor. Lütfen birkaç dakika sonra tekrar deneyin.');
     } finally {
       clearTimeout(timeoutId);
     }
 
     if (!n8nResponse.ok) {
       const errBody = await n8nResponse.text().catch(() => '');
-      console.error('[generate] n8n error response body:', errBody);
-      throw new Error('Görsel işleme sırasında bir hata oluştu.');
+      console.error('[generate] n8n error response:', n8nResponse.status, errBody);
+      throw new Error('Bir sorun oluştu. Lütfen tekrar deneyin.');
     }
 
     const text = await n8nResponse.text();
     console.log('[generate] n8n raw response:', text);
 
     if (!text?.trim()) {
-      throw new Error('n8n yanıt vermedi.');
+      console.error('[generate] empty response from n8n');
+      throw new Error('Görsel oluşturma servisi şu an meşgul. Lütfen birkaç saniye bekleyip tekrar deneyin.');
     }
 
     let data: Record<string, unknown>;
@@ -234,13 +244,12 @@ export async function POST(request: NextRequest) {
       data = JSON.parse(text);
     } catch {
       console.error('[generate] n8n invalid JSON, raw:', text);
-      throw new Error('Sunucu geçersiz yanıt döndü.');
+      throw new Error('Bir sorun oluştu. Lütfen tekrar deneyin.');
     }
 
     if (data.error) {
-      const safeErrors = ['Yetersiz kredi'];
-      const errMsg = data.error as string;
-      throw new Error(safeErrors.includes(errMsg) ? errMsg : 'Görsel oluşturma başarısız.');
+      console.error('[generate] n8n returned error:', data.error);
+      throw new Error('Bir sorun oluştu. Lütfen tekrar deneyin.');
     }
 
     const candidates = [
@@ -254,7 +263,7 @@ export async function POST(request: NextRequest) {
 
     if (!rawImageUrl) {
       console.error('[generate] no valid image URL in response:', data);
-      throw new Error('Görsel URL bulunamadı.');
+      throw new Error('Görsel oluşturulamadı. Lütfen farklı bir fotoğraf ile tekrar deneyin.');
     }
 
     // 8. Compress with TinyPNG and re-upload to Cloudinary (falls back on error)
@@ -271,6 +280,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ output_url: imageUrl });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Bir hata oluştu';
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.error('[generate] fatal error:', message);
+    return NextResponse.json({ error: toUserMessage(message) }, { status: 500 });
   }
 }
