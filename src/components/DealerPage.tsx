@@ -45,14 +45,6 @@ function WheelImg({ src, alt, priority = false, className = '' }: { src: string;
   );
 }
 
-const GENERATION_STEPS = [
-  'Araç analiz ediliyor...',
-  'Jant yerleştiriliyor...',
-  'Işık ve gölge uyumu...',
-  'Renk eşleştirme yapılıyor...',
-  'Son rötuşlar uygulanıyor...',
-  'Görsel hazırlanıyor...',
-];
 
 /* ─── Client-side image compression (falls back to original on error) ───── */
 async function compressImage(file: File): Promise<File> {
@@ -535,11 +527,14 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
   const cameraRef  = useRef<HTMLInputElement>(null);
   const catalogRef = useRef<HTMLDivElement>(null);
 
-  /* Cycle generation step text every 4 s while generating */
+  /* Advance genStep on a fixed schedule during generation */
   useEffect(() => {
     if (!generating) { setGenStep(0); return; }
-    const id = setInterval(() => setGenStep(s => (s + 1) % GENERATION_STEPS.length), 4000);
-    return () => clearInterval(id);
+    setGenStep(1);
+    const t1 = setTimeout(() => setGenStep(2), 5000);
+    const t2 = setTimeout(() => setGenStep(3), 15000);
+    const t3 = setTimeout(() => setGenStep(4), 25000);
+    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
   }, [generating]);
 
   /* Persist demo usage in localStorage */
@@ -899,22 +894,13 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
               )}
 
               {/* Generate button — desktop */}
-              <div className="hidden lg:block relative" style={{ borderRadius: '18px' }}>
-                {canGenerate && (
-                  <span aria-hidden style={{
-                    position: 'absolute', inset: '-2px', borderRadius: '18px',
-                    background: 'conic-gradient(from 0deg, transparent 55%, #FF6B35 65%, #F72585 75%, #7209B7 85%, transparent 95%)',
-                    animation: `spin ${generating ? '1.5s' : '3s'} linear infinite`,
-                    filter: 'blur(4px)',
-                  }} />
-                )}
+              <div className="hidden lg:block">
                 <button onClick={handleGenerate} disabled={!canGenerate}
-                  className="relative overflow-hidden w-full py-4 text-base font-extrabold rounded-2xl flex items-center justify-center gap-2.5"
+                  className="w-full py-4 text-base font-extrabold rounded-2xl flex items-center justify-center gap-2.5"
                   style={{
-                    position: 'relative', zIndex: 1,
                     background: canGenerate ? 'linear-gradient(135deg,#FF6B35,#F72585,#7209B7)' : 'rgba(18,18,26,0.7)',
                     color: 'white', border: canGenerate ? 'none' : '1px solid var(--border-color)',
-                    opacity: !canGenerate && !generating ? 0.5 : 1,
+                    opacity: !canGenerate ? 0.5 : 1,
                     cursor: !canGenerate ? 'not-allowed' : 'pointer',
                     boxShadow: canGenerate ? '0 8px 32px rgba(247,37,133,0.35)' : 'none',
                     transition: 'transform 0.2s ease, box-shadow 0.2s ease',
@@ -922,12 +908,7 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
                   onMouseEnter={e => { if (canGenerate) { const el = e.currentTarget as HTMLElement; el.style.transform = 'translateY(-2px)'; el.style.boxShadow = '0 14px 40px rgba(247,37,133,0.5)'; } }}
                   onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.transform = ''; el.style.boxShadow = canGenerate ? '0 8px 32px rgba(247,37,133,0.35)' : 'none'; }}
                 >
-                  {canGenerate && <span aria-hidden style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: '40%', background: 'linear-gradient(90deg,transparent,rgba(255,255,255,0.15),transparent)', animation: 'shimmerBtn 3s linear infinite' }} />}
-                  {generating ? (
-                    <><Loader2 className="w-5 h-5 animate-spin flex-shrink-0" /><span className="truncate text-sm">{GENERATION_STEPS[genStep]}</span></>
-                  ) : (
-                    <><span>Görsel Oluştur</span>{canGenerate && <ChevronRight className="w-5 h-5" />}</>
-                  )}
+                  <span>Görsel Oluştur</span>{canGenerate && <ChevronRight className="w-5 h-5" />}
                 </button>
               </div>
               {!canGenerate && !generating && (
@@ -1019,33 +1000,17 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
       {!resultUrl && (
         <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 px-4 pb-6 pt-3"
           style={{ background: 'rgba(10,10,15,0.92)', backdropFilter: 'blur(20px)', borderTop: '1px solid var(--border-color)' }}>
-          <div className="relative" style={{ borderRadius: '18px' }}>
-            {canGenerate && (
-              <span aria-hidden style={{
-                position: 'absolute', inset: '-2px', borderRadius: '18px',
-                background: 'conic-gradient(from 0deg, transparent 55%, #FF6B35 65%, #F72585 75%, #7209B7 85%, transparent 95%)',
-                animation: `spin ${generating ? '1.5s' : '3s'} linear infinite`,
-                filter: 'blur(4px)',
-              }} />
-            )}
-            <button onClick={handleGenerate} disabled={!canGenerate}
-              className="relative overflow-hidden w-full py-4 text-base font-extrabold rounded-2xl flex items-center justify-center gap-2.5"
-              style={{
-                position: 'relative', zIndex: 1,
-                background: canGenerate ? 'linear-gradient(135deg,#FF6B35,#F72585,#7209B7)' : 'rgba(18,18,26,0.7)',
-                color: 'white', border: canGenerate ? 'none' : '1px solid var(--border-color)',
-                opacity: !canGenerate && !generating ? 0.5 : 1,
-                cursor: !canGenerate ? 'not-allowed' : 'pointer',
-                boxShadow: canGenerate ? '0 8px 24px rgba(247,37,133,0.3)' : 'none',
-              }}>
-              {canGenerate && <span aria-hidden style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: '40%', background: 'linear-gradient(90deg,transparent,rgba(255,255,255,0.15),transparent)', animation: 'shimmerBtn 3s linear infinite' }} />}
-              {generating ? (
-                <><Loader2 className="w-5 h-5 animate-spin flex-shrink-0" /><span className="truncate text-sm">{GENERATION_STEPS[genStep]}</span></>
-              ) : (
-                <><span>Görsel Oluştur</span>{canGenerate && <ChevronRight className="w-5 h-5" />}</>
-              )}
-            </button>
-          </div>
+          <button onClick={handleGenerate} disabled={!canGenerate}
+            className="w-full py-4 text-base font-extrabold rounded-2xl flex items-center justify-center gap-2.5"
+            style={{
+              background: canGenerate ? 'linear-gradient(135deg,#FF6B35,#F72585,#7209B7)' : 'rgba(18,18,26,0.7)',
+              color: 'white', border: canGenerate ? 'none' : '1px solid var(--border-color)',
+              opacity: !canGenerate ? 0.5 : 1,
+              cursor: !canGenerate ? 'not-allowed' : 'pointer',
+              boxShadow: canGenerate ? '0 8px 24px rgba(247,37,133,0.3)' : 'none',
+            }}>
+            <span>Görsel Oluştur</span>{canGenerate && <ChevronRight className="w-5 h-5" />}
+          </button>
           {!canGenerate && !generating && (
             <div className="flex items-center justify-center gap-2 px-4 py-2 mt-2 rounded-xl"
               style={{ background: 'rgba(18,18,26,0.6)', backdropFilter: 'blur(8px)', border: '1px solid var(--border-color)' }}>
@@ -1055,6 +1020,46 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
               </p>
             </div>
           )}
+        </div>
+      )}
+
+      {/* ══ GENERATING OVERLAY ══════════════════════════════════════════════ */}
+      {generating && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+          <div className="flex flex-col items-center gap-6 p-8">
+
+            {/* Gradient spinning ring */}
+            <div className="relative w-20 h-20">
+              <div className="absolute inset-0 rounded-full border-4 border-white/10" />
+              <div className="absolute inset-0 rounded-full border-4 border-transparent"
+                style={{ borderTopColor: '#FF6B35', borderRightColor: '#F72585', animation: 'spin 1s linear infinite' }} />
+              <div className="absolute inset-3 rounded-full bg-[#12121A] flex items-center justify-center">
+                <span className="text-2xl">⚡</span>
+              </div>
+            </div>
+
+            {/* Step message */}
+            <div className="text-center">
+              <p className="text-white font-bold text-lg mb-1">
+                {genStep <= 1 && 'Araç analiz ediliyor...'}
+                {genStep === 2 && 'Jant yerleştiriliyor...'}
+                {genStep === 3 && 'Son rötuşlar yapılıyor...'}
+                {genStep >= 4 && 'Neredeyse hazır...'}
+              </p>
+              <p className="text-[#A0A0B0] text-sm">Bu işlem yaklaşık 30 saniye sürer</p>
+            </div>
+
+            {/* Progress bar */}
+            <div className="w-64 h-1.5 bg-white/10 rounded-full overflow-hidden">
+              <div
+                className="h-full rounded-full transition-all duration-1000 ease-out"
+                style={{
+                  width: genStep <= 1 ? '25%' : genStep === 2 ? '55%' : genStep === 3 ? '80%' : '95%',
+                  background: 'linear-gradient(90deg,#FF6B35,#F72585,#7209B7)',
+                }}
+              />
+            </div>
+          </div>
         </div>
       )}
 
