@@ -190,8 +190,8 @@ function BeforeAfterSlider({ before, after, onAfterLoad }: { before: string; aft
 function BgEffects() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const glowRef   = useRef<HTMLDivElement>(null);
-  const mouseRef  = useRef({ x: window.innerWidth / 2, y: window.innerHeight / 2 });
-  const lerpRef   = useRef({ x: window.innerWidth / 2, y: window.innerHeight / 2 });
+  const mouseRef  = useRef({ x: 0, y: 0 });
+  const lerpRef   = useRef({ x: 0, y: 0 });
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -202,6 +202,8 @@ function BgEffects() {
 
     const resize = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; };
     resize();
+    mouseRef.current = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+    lerpRef.current  = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
     window.addEventListener('resize', resize, { passive: true });
 
     const count = window.innerWidth < 768 ? 30 : 60;
@@ -558,11 +560,15 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
 
   /* Persist demo usage in localStorage */
   useEffect(() => {
-    const saved = localStorage.getItem('wheelvision_demo_usage');
-    if (saved) setDemoUsage(parseInt(saved));
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('wheelvision_demo_usage');
+      if (saved) setDemoUsage(parseInt(saved));
+    }
   }, []);
   useEffect(() => {
-    localStorage.setItem('wheelvision_demo_usage', demoUsage.toString());
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('wheelvision_demo_usage', demoUsage.toString());
+    }
   }, [demoUsage]);
 
   if (!showApp) {
