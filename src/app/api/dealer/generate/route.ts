@@ -176,12 +176,12 @@ export async function POST(request: NextRequest) {
 
     let n8nRes: Response;
     try {
+      const n8nHeaders: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (process.env.N8N_WEBHOOK_SECRET) n8nHeaders['X-Webhook-Secret'] = process.env.N8N_WEBHOOK_SECRET;
+
       n8nRes = await fetch(n8nUrl, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Webhook-Secret': process.env.N8N_WEBHOOK_SECRET ?? '',
-        },
+        headers: n8nHeaders,
         signal: controller.signal,
         body: JSON.stringify(n8nPayload),
       });
