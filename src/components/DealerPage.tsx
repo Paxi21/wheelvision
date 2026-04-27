@@ -543,6 +543,7 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
   const [showLimitModal,  setShowLimitModal]  = useState(false);
 
   const DEMO_LIMIT = 2;
+  const DEMO_LIMIT_ENABLED = false; // TODO: testler bittikten sonra true yap
 
   const galleryRef = useRef<HTMLInputElement>(null);
   const cameraRef  = useRef<HTMLInputElement>(null);
@@ -626,7 +627,7 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
 
   const handleGenerate = async () => {
     if (!canGenerate) return;
-    if (demoUsage >= DEMO_LIMIT) { setShowLimitModal(true); return; }
+    if (DEMO_LIMIT_ENABLED && demoUsage >= DEMO_LIMIT) { setShowLimitModal(true); return; }
     setGenerating(true);
     setError(null);
     setResultUrl(null);
@@ -958,10 +959,12 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
                   </p>
                 </div>
               )}
-              <p className="hidden lg:block text-center text-[11px] mt-1"
-                style={{ color: demoUsage === 0 ? '#4ade80' : demoUsage === 1 ? '#FF6B35' : '#f87171' }}>
-                Kalan demo hakkı: {Math.max(0, DEMO_LIMIT - demoUsage)}/{DEMO_LIMIT}
-              </p>
+              {DEMO_LIMIT_ENABLED && (
+                <p className="hidden lg:block text-center text-[11px] mt-1"
+                  style={{ color: demoUsage === 0 ? '#4ade80' : demoUsage === 1 ? '#FF6B35' : '#f87171' }}>
+                  Kalan demo hakkı: {Math.max(0, DEMO_LIMIT - demoUsage)}/{DEMO_LIMIT}
+                </p>
+              )}
             </div>
 
             {/* ── RIGHT PANEL: Catalog ── */}
@@ -1047,10 +1050,12 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
             }}>
             <span>Görsel Oluştur</span><ChevronRight className="w-5 h-5" />
           </button>
-          <p className="text-center text-[11px] mt-1.5"
-            style={{ color: demoUsage === 0 ? '#4ade80' : demoUsage === 1 ? '#FF6B35' : '#f87171' }}>
-            Kalan demo hakkı: {Math.max(0, DEMO_LIMIT - demoUsage)}/{DEMO_LIMIT}
-          </p>
+          {DEMO_LIMIT_ENABLED && (
+            <p className="text-center text-[11px] mt-1.5"
+              style={{ color: demoUsage === 0 ? '#4ade80' : demoUsage === 1 ? '#FF6B35' : '#f87171' }}>
+              Kalan demo hakkı: {Math.max(0, DEMO_LIMIT - demoUsage)}/{DEMO_LIMIT}
+            </p>
+          )}
         </div>
       )}
 
