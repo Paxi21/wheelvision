@@ -517,6 +517,13 @@ function WelcomeScreen({ dealer, wheels, onStart }: { dealer: Dealer; wheels: Wh
   );
 }
 
+/* ─── Parse inch size from ebat string (e.g. "8.5x19 5x112" → 19) ────────── */
+function parseInchSize(ebat: string | null | undefined): number | null {
+  if (!ebat) return null;
+  const match = ebat.match(/\b(1[4-9]|2[0-4])\b/);
+  return match ? parseInt(match[1]) : null;
+}
+
 /* ─── Sample cars for instant demo ───────────────────────────────────────── */
 const SAMPLE_CARS = [
   { label: 'Mercedes SL',    path: '/gallery-before-1.jpg' },
@@ -539,8 +546,11 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
   const [error,         setError]         = useState<string | null>(null);
   const [uploadSheet,     setUploadSheet]     = useState(false);
   const [sheetClosing,    setSheetClosing]    = useState(false);
-  const [demoUsage,       setDemoUsage]       = useState(0);
-  const [showLimitModal,  setShowLimitModal]  = useState(false);
+  const [demoUsage,           setDemoUsage]           = useState(0);
+  const [showLimitModal,      setShowLimitModal]      = useState(false);
+  const [detectedCarWheelSize, setDetectedCarWheelSize] = useState<number | null>(null);
+  const [showSizeWarning,     setShowSizeWarning]     = useState(false);
+  const [sizeWarningConfirmed, setSizeWarningConfirmed] = useState(false);
 
   const DEMO_LIMIT = 2;
   const DEMO_LIMIT_ENABLED = false; // TODO: testler bittikten sonra true yap
@@ -595,7 +605,7 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ image_url: cloudinaryUrl }),
       });
-      const validation = await validateRes.json() as { valid: boolean; message: string };
+      const validation = await validateRes.json() as { valid: boolean; message: string; wheel_size?: number | null };
 
       if (!validation.valid) {
         setError(validation.message);
@@ -603,6 +613,7 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
         return;
       }
 
+      setDetectedCarWheelSize(validation.wheel_size ?? null);
       setCarImageUrl(cloudinaryUrl);
     } catch {
       setError('Fotoğraf yüklenemedi. Tekrar deneyin.');
@@ -621,6 +632,8 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
     setCarPreview(null);
     setCarImageUrl(null);
     setResultUrl(null);
+    setDetectedCarWheelSize(null);
+    setSizeWarningConfirmed(false);
     if (galleryRef.current) galleryRef.current.value = '';
     if (cameraRef.current)  cameraRef.current.value  = '';
   };
@@ -628,14 +641,28 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
   const handleGenerate = async () => {
     if (!canGenerate) return;
     if (DEMO_LIMIT_ENABLED && demoUsage >= DEMO_LIMIT) { setShowLimitModal(true); return; }
+
+    // Size mismatch check
+    const selectedInch = parseInchSize(selectedWheel!.ebat);
+    const sizeMismatch = detectedCarWheelSize !== null && selectedInch !== null
+      && detectedCarWheelSize !== selectedInch;
+
+    if (sizeMismatch && !sizeWarningConfirmed) {
+      setShowSizeWarning(true);
+      return;
+    }
+
+    const generationType = sizeMismatch ? 'full_wheel' : 'rim_only';
+
     setGenerating(true);
     setError(null);
     setResultUrl(null);
+    setSizeWarningConfirmed(false);
     try {
       const res  = await fetch('/api/dealer/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ dealer_id: dealer.id, slug: dealer.slug, car_image: carImageUrl, wheel_id: selectedWheel!.id }),
+        body: JSON.stringify({ dealer_id: dealer.id, slug: dealer.slug, car_image: carImageUrl, wheel_id: selectedWheel!.id, generation_type: generationType }),
       });
       const data = await res.json() as { output_url?: string; error?: string };
       if (!res.ok) throw new Error(data.error ?? 'Görsel oluşturulamadı');
@@ -1153,6 +1180,59 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
       {/* ══ WHEEL DETAIL MODAL ══════════════════════════════════════════════ */}
       {modalWheel && (
         <WheelModal wheel={modalWheel} onClose={() => setModalWheel(null)} onSelect={handleWheelSelect} />
+      )}
+
+      {/* ══ SIZE WARNING MODAL ══════════════════════════════════════════════ */}
+      {showSizeWarning && (
+        <>
+          <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm" onClick={() => setShowSizeWarning(false)} />
+          <div
+            className="fixed inset-x-4 bottom-0 sm:inset-auto sm:left-1/2 sm:-translate-x-1/2 sm:bottom-auto sm:top-1/2 sm:-translate-y-1/2 sm:w-[400px] z-50 rounded-t-3xl sm:rounded-2xl border border-yellow-500/30 overflow-hidden"
+            style={{ background: 'rgba(18,18,26,0.97)', backdropFilter: 'blur(24px)', animation: 'modalIn 0.25s ease-out' }}
+          >
+            <div className="sm:hidden w-12 h-1 rounded-full bg-[var(--border-color)] mx-auto mt-3" />
+            <div className="p-6">
+              <div className="text-center mb-5">
+                <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4"
+                  style={{ background: 'rgba(234,179,8,0.12)', border: '1px solid rgba(234,179,8,0.25)' }}>
+                  <span className="text-2xl">⚠️</span>
+                </div>
+                <h3 className="font-bold text-lg text-white">Jant Boyutu Uyumsuzluğu</h3>
+                <p className="text-sm text-[var(--text-secondary)] mt-3 leading-relaxed">
+                  Aracınızın tahmini jant boyutu:{' '}
+                  <span className="font-bold text-white">{detectedCarWheelSize}&quot;</span>
+                  <br />
+                  Seçtiğiniz jant boyutu:{' '}
+                  <span className="font-bold text-white">{parseInchSize(selectedWheel?.ebat)}&quot;</span>
+                </p>
+                <p className="text-xs text-yellow-400/80 mt-3 leading-relaxed">
+                  Boyut farkı nedeniyle jant ile birlikte lastik görünümü de değiştirilecek.
+                </p>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={() => setShowSizeWarning(false)}
+                  className="py-3.5 rounded-xl text-sm font-semibold transition-colors"
+                  style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-color)', color: 'var(--text-secondary)' }}
+                >
+                  Vazgeç
+                </button>
+                <button
+                  onClick={() => {
+                    setSizeWarningConfirmed(true);
+                    setShowSizeWarning(false);
+                    setTimeout(handleGenerate, 0);
+                  }}
+                  className="relative overflow-hidden py-3.5 rounded-xl text-sm font-bold text-white"
+                  style={{ background: 'linear-gradient(135deg,#FF6B35,#F72585,#7209B7)', boxShadow: '0 4px 16px rgba(247,37,133,0.3)' }}
+                >
+                  <span aria-hidden style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: '40%', background: 'linear-gradient(90deg,transparent,rgba(255,255,255,0.15),transparent)', animation: 'shimmerBtn 3s linear infinite' }} />
+                  Devam Et →
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
       )}
 
       {/* ══ DEMO LIMIT MODAL ════════════════════════════════════════════════ */}

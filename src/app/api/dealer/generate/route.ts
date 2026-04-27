@@ -74,8 +74,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Geçersiz istek' }, { status: 400 });
     }
 
-    const { dealer_id, slug, car_image, wheel_id } = body;
-    console.log('[dealer/generate] dealer_id:', dealer_id, 'slug:', slug, 'wheel_id:', wheel_id);
+    const { dealer_id, slug, car_image, wheel_id, generation_type } = body;
+    console.log('[dealer/generate] dealer_id:', dealer_id, 'slug:', slug, 'wheel_id:', wheel_id, 'generation_type:', generation_type);
 
     if (!isValidCloudinaryUrl(car_image)) {
       console.error('[dealer/generate] invalid car_image URL:', car_image);
@@ -116,6 +116,10 @@ export async function POST(request: NextRequest) {
       console.error('[dealer/generate] wheel not found:', wheelErr?.message);
       return NextResponse.json({ error: 'Jant bulunamadı' }, { status: 404 });
     }
+    if (!wheel.jant_foto_url) {
+      console.error('[dealer/generate] wheel has no image URL:', wheel.id);
+      return NextResponse.json({ error: 'Bu janta ait görsel bulunamadı. Lütfen başka bir jant seçin.' }, { status: 400 });
+    }
     console.log('[dealer/generate] wheel OK:', wheel.jant_adi);
     console.log('[dealer/generate] wheel image URL:', wheel.jant_foto_url);
 
@@ -154,12 +158,16 @@ export async function POST(request: NextRequest) {
     }
 
     // 5. Call n8n
-    const n8nPayload = {
-      user_email: 'dealer@wheelvision.io',
-      car_image,
-      wheel_image: wheel.jant_foto_url,
-      prompt:
-        'You are a professional automotive photo editor. ' +
+    const prompt = generation_type === 'full_wheel'
+      ? 'You are a professional automotive photo editor. ' +
+        'Task: replace the COMPLETE wheel assembly (rim AND tire) on the car using the wheel design from the second image. ' +
+        'The new rim must exactly replicate the spoke pattern, finish, color, and design of the reference wheel. ' +
+        'Adjust the tire sidewall height and profile proportionally to fit the new rim diameter. ' +
+        'Maintain the correct perspective, angle, and scale for each wheel position on the car. ' +
+        'Match all lighting, shadows, and reflections so the new wheels look naturally lit. ' +
+        'Do NOT change the car body, paint color, windows, interior, background, or road surface. ' +
+        'The final result must look like a real professional photograph — seamless, photorealistic, no artificial edges or artifacts.'
+      : 'You are a professional automotive photo editor. ' +
         'Task: swap ONLY the wheel rims on the car in the first image using the exact rim design from the second image. ' +
         'The new rim must replicate the spoke pattern, finish, color, and design of the reference wheel precisely. ' +
         'Maintain the correct perspective, angle, and scale of the original wheel position on the car. ' +
@@ -167,7 +175,13 @@ export async function POST(request: NextRequest) {
         'Keep the tire sidewall, brake calipers, and all surrounding car parts completely untouched. ' +
         'Do NOT change the car body, paint color, windows, interior, background, or road surface. ' +
         'The final result must look like a real professional photograph — seamless, photorealistic, no artificial edges or artifacts. ' +
-        'Only the rim design changes. Everything else is identical to the original photo.',
+        'Only the rim design changes. Everything else is identical to the original photo.';
+
+    const n8nPayload = {
+      user_email: 'dealer@wheelvision.io',
+      car_image,
+      wheel_image: wheel.jant_foto_url,
+      prompt,
     };
     console.log('[dealer/generate] calling n8n...');
 

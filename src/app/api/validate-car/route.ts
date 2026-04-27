@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
       },
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
-        max_tokens: 10,
+        max_tokens: 40,
         messages: [{
           role: 'user',
           content: [
@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
             },
             {
               type: 'text',
-              text: 'Is there a car, vehicle, or automobile visible in this image? Reply ONLY with yes or no.',
+              text: 'Is there a car in this image? If yes, estimate the wheel/rim diameter in inches (typically 15-22). Reply ONLY with JSON: {"car": true, "wheel_size": 19}. If no car: {"car": false, "wheel_size": null}. If car visible but wheel not clearly visible: {"car": true, "wheel_size": null}',
             },
           ],
         }],
@@ -52,17 +52,29 @@ export async function POST(req: NextRequest) {
     });
 
     const data = await response.json();
-    const answer = (data.content?.[0]?.text as string | undefined)?.toLowerCase().trim();
-    const isValid = answer === 'yes';
+    const rawText = (data.content?.[0]?.text as string | undefined)?.trim() ?? '';
+
+    let isValid = false;
+    let wheelSize: number | null = null;
+
+    try {
+      const parsed = JSON.parse(rawText) as { car?: boolean; wheel_size?: number | null };
+      isValid = parsed.car === true;
+      wheelSize = typeof parsed.wheel_size === 'number' ? parsed.wheel_size : null;
+    } catch {
+      // JSON parse failed — fall back to yes/no check, fail-open for wheel_size
+      isValid = rawText.toLowerCase().includes('true');
+    }
 
     return NextResponse.json({
       valid: isValid,
+      wheel_size: wheelSize,
       message: isValid
         ? 'ok'
         : 'Lütfen bir araç fotoğrafı yükleyin. Yüklediğiniz görselde araç tespit edilemedi.',
     });
   } catch {
     // Hata durumunda kullanıcıyı engelleme — geçişe izin ver
-    return NextResponse.json({ valid: true, message: 'ok' });
+    return NextResponse.json({ valid: true, wheel_size: null, message: 'ok' });
   }
 }
