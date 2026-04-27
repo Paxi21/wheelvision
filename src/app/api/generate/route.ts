@@ -4,6 +4,8 @@ import { createHash } from 'crypto';
 import { redis } from '@/lib/redis';
 import tinify from 'tinify';
 
+export const maxDuration = 120;
+
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 const n8nUrl = process.env.N8N_WEBHOOK_URL!;
