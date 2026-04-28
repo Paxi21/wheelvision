@@ -2,76 +2,22 @@
 
 import Navbar from '@/components/Navbar';
 import { motion } from 'motion/react';
-import { Check, X, Sparkles, Zap, Crown, Gift } from 'lucide-react';
+import { Check, Sparkles, Building2 } from 'lucide-react';
 import { ShimmerButton } from '@/components/ui/shimmer-button';
 import { AnimatedBorder } from '@/components/ui/animated-border';
 import { useTranslations } from 'next-intl';
-import { Link } from '@/i18n/navigation';
 
 export default function PricingPage() {
   const t = useTranslations('pricing');
 
-  const plans = [
-    {
-      id: 'free',
-      name: t('free'),
-      price: t('freePrice'),
-      period: '',
-      icon: Gift,
-      description: t('planFreeDesc'),
-      color: 'from-[#6B7280] to-[#4B5563]',
-      popular: false,
-      isFree: true,
-      buyLabel: t('freeBuy'),
-      features: [
-        { text: t('featTrialCredit'), included: true },
-        { text: t('featOneTimeBonus'), included: true },
-        { text: t('featStandardQuality'), included: true },
-        { text: t('featWatermark'), included: true, isLimit: true },
-        { text: t('featHistory'), included: false },
-        { text: t('featPriorityProcessing'), included: false },
-      ],
-    },
-    {
-      id: 'starter',
-      name: t('starter'),
-      price: t('starterPrice'),
-      period: t('month'),
-      icon: Zap,
-      description: t('planStarterDesc'),
-      color: 'from-[#FF6B35] to-[#F72585]',
-      popular: false,
-      isFree: false,
-      buyLabel: t('buy'),
-      features: [
-        { text: t('featImagesPerMonth', { count: 10 }), included: true },
-        { text: t('featNoWatermark'), included: true },
-        { text: t('featHighQuality'), included: true },
-        { text: t('featHistory'), included: true },
-        { text: t('featEmailSupport'), included: true },
-        { text: t('featPriorityProcessing'), included: false },
-      ],
-    },
-    {
-      id: 'professional',
-      name: t('professional'),
-      price: t('professionalPrice'),
-      period: t('month'),
-      icon: Crown,
-      description: t('planProfessionalDesc'),
-      color: 'from-[#F72585] to-[#7209B7]',
-      popular: true,
-      isFree: false,
-      buyLabel: t('buy'),
-      features: [
-        { text: t('featImagesPerMonth', { count: 30 }), included: true },
-        { text: t('featNoWatermark'), included: true },
-        { text: t('featUltraQuality'), included: true },
-        { text: t('featHistory'), included: true },
-        { text: t('featPriorityProcessing'), included: true },
-        { text: t('featPrioritySupport'), included: true },
-      ],
-    },
+  const features = [
+    t('feat200Images'),
+    t('featHDNoWatermark'),
+    t('featCustomPage'),
+    t('featCatalog'),
+    t('featWhatsAppLead'),
+    t('featPrioritySupport'),
+    t('featSetup'),
   ];
 
   return (
@@ -87,7 +33,7 @@ export default function PricingPage() {
         <div className="max-w-[1400px] mx-auto px-6 lg:px-12 relative z-10">
 
           {/* Header */}
-          <div className="text-center mb-16">
+          <div className="text-center mb-14">
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
               <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[var(--bg-card)] border border-[var(--border-color)] text-sm mb-6">
                 <Sparkles className="w-4 h-4 text-[var(--accent-orange)]" />
@@ -99,49 +45,94 @@ export default function PricingPage() {
               {t('headTitle')} <span className="gradient-text">{t('headHighlight')}</span>
             </motion.h1>
 
-            <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.2 }} className="text-[var(--text-secondary)] text-lg max-w-xl mx-auto mb-4">
+            <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.2 }} className="text-[var(--text-secondary)] text-lg max-w-xl mx-auto">
               {t('headDesc')}
             </motion.p>
-
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.3 }} className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-[var(--accent-orange)]/15 to-[var(--accent-purple)]/15 border border-[var(--accent-orange)]/30 text-sm">
-              <span>🚀</span>
-              <span className="text-[var(--accent-orange)] font-medium">{t('upgradeBanner')}</span>
-            </motion.div>
           </div>
 
-          {/* Plans Grid — 3 plans */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-            {plans.map((plan, index) => {
-              const Icon = plan.icon;
-              return (
-                <motion.div
-                  key={plan.id}
-                  initial={{ opacity: 0, y: 30 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: index * 0.1 }}
-                  className="relative"
+          {/* Single Dealer Plan Card */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+            className="max-w-lg mx-auto"
+          >
+            <AnimatedBorder containerClassName="w-full" duration={4}>
+              <div className="flex flex-col p-8 md:p-10">
+
+                {/* Plan header */}
+                <div className="flex items-start justify-between gap-4 mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-r from-[var(--accent-orange)] to-[var(--accent-pink)] flex items-center justify-center flex-shrink-0">
+                      <Building2 className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <h2 className="font-bold text-xl">{t('dealerPro')}</h2>
+                      <p className="text-sm text-[var(--text-secondary)]">{t('dealerProDesc')}</p>
+                    </div>
+                  </div>
+
+                  {/* Discount badge */}
+                  <span
+                    className="flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-bold text-white"
+                    style={{
+                      background: 'linear-gradient(135deg,#FF6B35,#F72585)',
+                      boxShadow: '0 0 16px rgba(247,37,133,0.4)',
+                      animation: 'pulse 2s ease-in-out infinite',
+                    }}
+                  >
+                    {t('dealerDiscount')}
+                  </span>
+                </div>
+
+                {/* Price */}
+                <div className="mb-8">
+                  <div className="flex items-baseline gap-3 mb-1">
+                    <span className="text-lg line-through" style={{ color: 'rgba(160,160,176,0.6)' }}>
+                      {t('dealerNormalPrice')}
+                    </span>
+                  </div>
+                  <div className="flex items-end gap-1">
+                    <span className="text-5xl font-black gradient-text">{t('dealerPrice')}</span>
+                    <span className="text-[var(--text-secondary)] text-base mb-1.5">{t('month')}</span>
+                  </div>
+                </div>
+
+                {/* Features */}
+                <ul className="space-y-4 mb-10">
+                  {features.map((feat, i) => (
+                    <li key={i} className="flex items-center gap-3">
+                      <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 bg-gradient-to-r from-[var(--accent-orange)] to-[var(--accent-pink)]">
+                        <Check className="w-3 h-3 text-white" />
+                      </div>
+                      <span className="text-sm text-white">{feat}</span>
+                    </li>
+                  ))}
+                </ul>
+
+                {/* CTA */}
+                <a href="mailto:info@wheelvision.io?subject=Dealer%20Pro%20Paket%20Talebi" className="block w-full mb-3">
+                  <ShimmerButton className="w-full justify-center py-4 text-base font-bold">
+                    {t('dealerCta')}
+                  </ShimmerButton>
+                </a>
+
+                <a
+                  href="https://wa.me/905000000000?text=Merhaba%2C%20Dealer%20Pro%20paketi%20hakk%C4%B1nda%20bilgi%20almak%20istiyorum."
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block w-full text-center py-3 rounded-full text-sm font-semibold transition-colors border border-[var(--border-color)] text-[var(--text-secondary)] hover:border-white/30 hover:text-white"
                 >
-                  {plan.popular && (
-                    <div className="absolute -top-4 left-0 right-0 flex justify-center z-20">
-                      <span className="px-4 py-1 rounded-full text-xs font-bold bg-gradient-to-r from-[var(--accent-pink)] to-[var(--accent-purple)] text-white shadow-lg">
-                        {t('popular')}
-                      </span>
-                    </div>
-                  )}
+                  WhatsApp ile İletişim
+                </a>
 
-                  {plan.popular ? (
-                    <AnimatedBorder containerClassName="h-full" duration={4}>
-                      <PlanCard plan={plan} Icon={Icon} />
-                    </AnimatedBorder>
-                  ) : (
-                    <div className={`h-full rounded-2xl border bg-[var(--bg-card)] overflow-hidden ${plan.isFree ? 'border-[var(--border-color)] opacity-90' : 'border-[var(--border-color)]'}`}>
-                      <PlanCard plan={plan} Icon={Icon} />
-                    </div>
-                  )}
-                </motion.div>
-              );
-            })}
-          </div>
+                {/* Fine print */}
+                <p className="text-xs text-[var(--text-secondary)]/60 text-center mt-5 leading-relaxed">
+                  {t('dealerNote')}
+                </p>
+              </div>
+            </AnimatedBorder>
+          </motion.div>
 
           {/* FAQ */}
           <div className="mt-20 text-center">
@@ -158,101 +149,5 @@ export default function PricingPage() {
         </div>
       </main>
     </>
-  );
-}
-
-type PlanType = {
-  id: string;
-  name: string;
-  price: string;
-  period: string;
-  icon: React.ElementType;
-  description: string;
-  color: string;
-  popular: boolean;
-  isFree: boolean;
-  buyLabel: string;
-  features: { text: string; included: boolean; isLimit?: boolean }[];
-};
-
-function PlanCard({ plan, Icon }: { plan: PlanType; Icon: React.ElementType }) {
-  return (
-    <div className="flex flex-col h-full p-6">
-
-      {/* Plan header */}
-      <div className="flex items-center gap-3 mb-4">
-        <div className={`w-10 h-10 rounded-xl bg-gradient-to-r ${plan.color} flex items-center justify-center flex-shrink-0`}>
-          <Icon className="w-5 h-5 text-white" />
-        </div>
-        <div>
-          <h3 className="font-bold text-lg">{plan.name}</h3>
-          <p className="text-xs text-[var(--text-secondary)]">{plan.description}</p>
-        </div>
-      </div>
-
-      {/* Price */}
-      <div className="mb-6">
-        <div className="flex items-end gap-0.5">
-          <span className="text-4xl font-bold">{plan.price}</span>
-          {plan.period && (
-            <span className="text-[var(--text-secondary)] text-sm mb-1">{plan.period}</span>
-          )}
-        </div>
-        {plan.isFree && (
-          <p className="text-xs text-[var(--text-secondary)] mt-1 leading-snug">
-            🎁 Kayıt olunca otomatik tanımlanır
-          </p>
-        )}
-      </div>
-
-      {/* Features */}
-      <ul className="space-y-3 flex-1 mb-8">
-        {plan.features.map((feature, i) => (
-          <li key={i} className="flex items-center gap-3">
-            {feature.included ? (
-              <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${
-                feature.isLimit
-                  ? 'bg-yellow-500/20 border border-yellow-500/40'
-                  : `bg-gradient-to-r ${plan.color}`
-              }`}>
-                {feature.isLimit
-                  ? <span className="text-[9px] text-yellow-400 font-bold">!</span>
-                  : <Check className="w-3 h-3 text-white" />
-                }
-              </div>
-            ) : (
-              <div className="w-5 h-5 rounded-full bg-[var(--bg-dark)] border border-[var(--border-color)] flex items-center justify-center flex-shrink-0">
-                <X className="w-3 h-3 text-[var(--text-secondary)]" />
-              </div>
-            )}
-            <span className={`text-sm ${
-              feature.isLimit
-                ? 'text-yellow-400/80'
-                : feature.included ? 'text-white' : 'text-[var(--text-secondary)]'
-            }`}>
-              {feature.text}
-            </span>
-          </li>
-        ))}
-      </ul>
-
-      {/* CTA */}
-      {plan.popular ? (
-        <Link href="/register" className="block w-full">
-          <ShimmerButton className="w-full justify-center py-3">{plan.buyLabel}</ShimmerButton>
-        </Link>
-      ) : (
-        <Link
-          href="/register"
-          className={`block w-full text-center py-3 rounded-full border text-sm font-semibold transition-colors ${
-            plan.isFree
-              ? 'border-[var(--border-color)] text-[var(--text-secondary)] hover:border-white/30 hover:text-white'
-              : 'border-[var(--border-color)] hover:border-[var(--accent-orange)] hover:text-[var(--accent-orange)]'
-          }`}
-        >
-          {plan.buyLabel}
-        </Link>
-      )}
-    </div>
   );
 }
