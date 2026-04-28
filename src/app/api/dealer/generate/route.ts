@@ -186,7 +186,7 @@ export async function POST(request: NextRequest) {
     console.log('[dealer/generate] calling n8n...');
 
     const controller = new AbortController();
-    const timeoutId  = setTimeout(() => controller.abort(), 60_000);
+    const timeoutId  = setTimeout(() => controller.abort(), 90_000);
 
     let n8nRes: Response;
     try {
