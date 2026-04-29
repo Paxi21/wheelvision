@@ -46,7 +46,8 @@
     "insufficientCredits": "Insufficient credits. Please purchase credits.",
     "sessionExpired": "Session expired. Please log in again.",
     "uploadClick": "Click or drag here",
-    "uploadFormats": "JPG, PNG, WEBP"
+    "uploadFormats": "JPG, PNG, WEBP",
+    "uploadTip": "💡 Tip: For best results, take a close-up photo of the wheel in good lighting. Avoid screenshots or social media photos."
   },
   "pricing": {
     "title": "Pricing",

@@ -910,6 +910,10 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
                     </div>
                   </div>
                 )}
+                {/* Upload tip */}
+                <p className="mt-3 text-xs leading-relaxed" style={{ color: 'rgba(160,160,176,0.5)' }}>
+                  💡 İpucu: En iyi sonuç için janta yakın çekim yapın, iyi aydınlatılmış ortamda çekin. Ekran görüntüsü veya sosyal medya fotoğrafı kullanmayın.
+                </p>
               </div>
 
               {/* Selected wheel card */}

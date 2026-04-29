@@ -46,7 +46,8 @@
     "insufficientCredits": "Yetersiz kredi. Lütfen kredi satın alın.",
     "sessionExpired": "Oturum süresi doldu. Lütfen tekrar giriş yapın.",
     "uploadClick": "Tıklayın veya sürükleyin",
-    "uploadFormats": "JPG, PNG, WEBP"
+    "uploadFormats": "JPG, PNG, WEBP",
+    "uploadTip": "💡 İpucu: En iyi sonuç için janta yakın çekim yapın, iyi aydınlatılmış ortamda çekin. Ekran görüntüsü veya sosyal medya fotoğrafı kullanmayın."
   },
   "pricing": {
     "title": "Fiyatlandırma",

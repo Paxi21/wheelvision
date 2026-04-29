@@ -289,6 +289,9 @@ export default function AppPage() {
                   <p className="text-xs text-[var(--text-secondary)]/60 mt-1">{t('uploadFormats')}</p>
                 </label>
               )}
+              <p className="mt-3 text-xs leading-relaxed px-1" style={{ color: 'rgba(160,160,176,0.55)' }}>
+                {t('uploadTip')}
+              </p>
             </div>
 
             {/* Wheel Upload */}
