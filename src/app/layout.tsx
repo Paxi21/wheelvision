@@ -14,9 +14,16 @@ export const metadata: Metadata = {
   icons: { icon: '/favicon.ico', shortcut: '/favicon.ico', apple: '/favicon.ico' },
   title: "WheelVision - AI Wheel Visualization",
   description: "See which wheels fit your car before you buy — AI visualization in 30 seconds.",
-  keywords: "wheel visualization, AI wheels, car wheel try, wheel simulation",
+  keywords: ["jant görselleştirme", "jant simulasyon", "AI jant", "jant deneme", "araba jant değiştirme", "wheel visualization", "wheel fitting", "AI wheel", "try wheels on car", "wheelvision"],
   authors: [{ name: "WheelVision" }],
   robots: "index, follow",
+  alternates: {
+    canonical: 'https://wheelvision.io',
+    languages: {
+      'tr': 'https://wheelvision.io/tr',
+      'en': 'https://wheelvision.io/en',
+    },
+  },
   openGraph: {
     type: "website",
     url: "https://wheelvision.io",
