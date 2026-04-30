@@ -107,7 +107,11 @@
     "faqQ3": "İşletme paketini nasıl iptal ederim?",
     "faqA3": "İstediğiniz zaman iptal edebilirsiniz. Mevcut dönem sonuna kadar hizmet aktif kalır.",
     "faqQ4": "WhatsApp lead bildirimi nasıl çalışır?",
-    "faqA4": "Müşteriniz görselleştirme yaptığında WhatsApp'ınıza otomatik bildirim gelir, lead'lerinizi kaçırmazsınız."
+    "faqA4": "Müşteriniz görselleştirme yaptığında WhatsApp'ınıza otomatik bildirim gelir, lead'lerinizi kaçırmazsınız.",
+    "comingSoonTitle": "Çok Yakında!",
+    "comingSoonDesc": "Bireysel paketler çok yakında sizlerle olacak.",
+    "comingSoonNote": "Haberdar olmak için bizi takip edin.",
+    "dealerWhatsApp": "WhatsApp ile Bilgi Al"
   },
   "privacy": {
     "title": "Gizlilik Politikası",

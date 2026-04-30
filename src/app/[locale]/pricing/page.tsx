@@ -7,7 +7,45 @@ import { Check, X, Sparkles, Building2, User, Zap, Gift, Crown, Gem } from 'luci
 import { ShimmerButton } from '@/components/ui/shimmer-button';
 import { AnimatedBorder } from '@/components/ui/animated-border';
 import { useTranslations } from 'next-intl';
-import { Link } from '@/i18n/navigation';
+
+const WHATSAPP_URL = 'https://wa.me/905375859524?text=Merhaba%2C%20WheelVision%20Dealer%20Pro%20paketi%20hakk%C4%B1nda%20bilgi%20almak%20istiyorum.';
+
+/* ─── Coming Soon Modal ──────────────────────────────────────────────────── */
+function ComingSoonModal({ onClose, t }: { onClose: () => void; t: ReturnType<typeof useTranslations<'pricing'>> }) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ background: 'rgba(10,10,15,0.85)', backdropFilter: 'blur(8px)' }}
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.9, y: 20 }}
+        transition={{ duration: 0.25 }}
+        className="relative max-w-sm w-full rounded-2xl border border-[var(--border-color)] bg-[var(--bg-card)] p-8 text-center shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 w-7 h-7 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10 transition-colors"
+        >
+          <X className="w-3.5 h-3.5 text-[var(--text-secondary)]" />
+        </button>
+
+        <div className="w-16 h-16 rounded-2xl bg-gradient-to-r from-[var(--accent-orange)] to-[var(--accent-pink)] flex items-center justify-center mx-auto mb-5 text-3xl">
+          🚀
+        </div>
+
+        <h3 className="text-xl font-bold mb-3">{t('comingSoonTitle')}</h3>
+        <p className="text-[var(--text-secondary)] text-sm leading-relaxed mb-5">
+          {t('comingSoonDesc')}
+        </p>
+        <p className="text-xs text-[var(--text-secondary)]/60">{t('comingSoonNote')}</p>
+      </motion.div>
+    </div>
+  );
+}
 
 /* ─── B2C Plan Card ──────────────────────────────────────────────────────── */
 type B2CPlan = {
@@ -25,7 +63,7 @@ type B2CPlan = {
   features: { text: string; included: boolean }[];
 };
 
-function B2CPlanCard({ plan }: { plan: B2CPlan }) {
+function B2CPlanCard({ plan, onCtaClick }: { plan: B2CPlan; onCtaClick: () => void }) {
   const Icon = plan.icon;
   const inner = (
     <div className={`flex flex-col h-full p-6 ${plan.dimmed ? 'opacity-80' : ''}`}>
@@ -70,12 +108,12 @@ function B2CPlanCard({ plan }: { plan: B2CPlan }) {
 
       {/* CTA */}
       {plan.popular ? (
-        <Link href="/register" className="block w-full">
+        <button onClick={onCtaClick} className="block w-full">
           <ShimmerButton className="w-full justify-center py-3">{plan.cta}</ShimmerButton>
-        </Link>
+        </button>
       ) : (
-        <Link
-          href="/register"
+        <button
+          onClick={onCtaClick}
           className={`block w-full text-center py-3 rounded-full border text-sm font-semibold transition-colors ${
             plan.dimmed
               ? 'border-[var(--border-color)] text-[var(--text-secondary)] hover:border-white/30 hover:text-white'
@@ -83,7 +121,7 @@ function B2CPlanCard({ plan }: { plan: B2CPlan }) {
           }`}
         >
           {plan.cta}
-        </Link>
+        </button>
       )}
 
       {plan.note && (
@@ -177,18 +215,23 @@ function B2BCard({ t }: { t: ReturnType<typeof useTranslations<'pricing'>> }) {
           </ul>
 
           {/* CTAs */}
-          <a href="mailto:info@wheelvision.io?subject=Dealer%20Pro%20Paket%20Talebi" className="block w-full mb-3">
+          <a
+            href={WHATSAPP_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block w-full mb-3"
+          >
             <ShimmerButton className="w-full justify-center py-4 text-base font-bold">
               {t('dealerCta')}
             </ShimmerButton>
           </a>
           <a
-            href="https://wa.me/905000000000?text=Merhaba%2C%20Dealer%20Pro%20paketi%20hakk%C4%B1nda%20bilgi%20almak%20istiyorum."
+            href={WHATSAPP_URL}
             target="_blank"
             rel="noopener noreferrer"
             className="block w-full text-center py-3 rounded-full text-sm font-semibold transition-colors border border-[var(--border-color)] text-[var(--text-secondary)] hover:border-white/30 hover:text-white"
           >
-            WhatsApp ile İletişim
+            {t('dealerWhatsApp')}
           </a>
 
           <p className="text-xs text-[var(--text-secondary)]/60 text-center mt-5 leading-relaxed">
@@ -204,6 +247,7 @@ function B2BCard({ t }: { t: ReturnType<typeof useTranslations<'pricing'>> }) {
 export default function PricingPage() {
   const t = useTranslations('pricing');
   const [tab, setTab] = useState<'b2c' | 'b2b'>('b2c');
+  const [showComingSoon, setShowComingSoon] = useState(false);
 
   const b2cPlans: B2CPlan[] = [
     {
@@ -289,6 +333,12 @@ export default function PricingPage() {
 
   return (
     <>
+      <AnimatePresence>
+        {showComingSoon && (
+          <ComingSoonModal key="coming-soon" onClose={() => setShowComingSoon(false)} t={t} />
+        )}
+      </AnimatePresence>
+
       <Navbar />
 
       <main className="min-h-screen pt-24 pb-16 px-4 relative overflow-hidden">
@@ -373,7 +423,7 @@ export default function PricingPage() {
                       transition={{ duration: 0.3, delay: i * 0.07 }}
                       className={plan.popular ? 'mt-4' : ''}
                     >
-                      <B2CPlanCard plan={plan} />
+                      <B2CPlanCard plan={plan} onCtaClick={() => setShowComingSoon(true)} />
                     </motion.div>
                   ))}
                 </div>

@@ -106,7 +106,11 @@
     "faqQ3": "Wie kündige ich das Business-Abonnement?",
     "faqA3": "Sie können jederzeit kündigen. Ihr Service bleibt bis zum Ende des aktuellen Abrechnungszeitraums aktiv.",
     "faqQ4": "Wie funktionieren WhatsApp Lead-Benachrichtigungen?",
-    "faqA4": "Wenn ein Kunde eine Visualisierung abschließt, erhalten Sie automatisch eine WhatsApp-Benachrichtigung."
+    "faqA4": "Wenn ein Kunde eine Visualisierung abschließt, erhalten Sie automatisch eine WhatsApp-Benachrichtigung.",
+    "comingSoonTitle": "Demnächst verfügbar!",
+    "comingSoonDesc": "Individuelle Pakete werden sehr bald verfügbar sein.",
+    "comingSoonNote": "Folgen Sie uns, um auf dem Laufenden zu bleiben.",
+    "dealerWhatsApp": "Info per WhatsApp"
   },
   "privacy": {
     "title": "Datenschutzrichtlinie",

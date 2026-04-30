@@ -107,7 +107,11 @@
     "faqQ3": "How do I cancel the business subscription?",
     "faqA3": "You can cancel at any time. Your service remains active until the end of the current billing period.",
     "faqQ4": "How do WhatsApp lead notifications work?",
-    "faqA4": "When a customer completes a visualization, you receive an automatic WhatsApp notification so you never miss a lead."
+    "faqA4": "When a customer completes a visualization, you receive an automatic WhatsApp notification so you never miss a lead.",
+    "comingSoonTitle": "Coming Soon!",
+    "comingSoonDesc": "Individual packages will be available very soon.",
+    "comingSoonNote": "Follow us to stay updated.",
+    "dealerWhatsApp": "Get Info via WhatsApp"
   },
   "privacy": {
     "title": "Privacy Policy",
