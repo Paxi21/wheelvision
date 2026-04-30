@@ -613,13 +613,7 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
     }
   }, [demoUsage]);
 
-  if (!showApp) {
-    return <WelcomeScreen dealer={dealer} wheels={wheels} onStart={() => setShowApp(true)} />;
-  }
-
-  const limitReached = dealer.kullanilan >= dealer.aylik_limit;
-  const canGenerate  = !!carImageUrl && !!selectedWheel && !limitReached && !generating;
-
+  // Must be before early return — hooks cannot be called conditionally
   const filteredWheels = useMemo(() => {
     let result = [...wheels];
     const q = searchQuery.trim().toLowerCase();
@@ -655,6 +649,13 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
     }
     return result;
   }, [wheels, searchQuery, categoryFilter, sizeFilter, sortOrder]);
+
+  if (!showApp) {
+    return <WelcomeScreen dealer={dealer} wheels={wheels} onStart={() => setShowApp(true)} />;
+  }
+
+  const limitReached = dealer.kullanilan >= dealer.aylik_limit;
+  const canGenerate  = !!carImageUrl && !!selectedWheel && !limitReached && !generating;
 
   const processFile = async (file: File) => {
     setCarPreview(URL.createObjectURL(file));
