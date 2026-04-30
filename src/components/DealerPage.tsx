@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import {
   Camera, ImageIcon, Check, Loader2,
-  X, RefreshCw, Download, ChevronRight, ChevronDown, ChevronLeft, Star,
+  X, RefreshCw, Download, ChevronRight, ChevronDown, ChevronLeft, Star, Search,
 } from 'lucide-react';
 import type { Dealer, Wheel } from '@/app/d/[slug]/page';
 
@@ -440,6 +440,21 @@ function WelcomeScreen({ dealer, wheels, onStart }: { dealer: Dealer; wheels: Wh
               ))}
             </div>
 
+            {/* Trust badges */}
+            <div className="flex flex-wrap items-center justify-center lg:justify-start gap-x-4 gap-y-1.5 mb-6 w-full max-w-sm lg:max-w-none"
+              style={{ animation: 'fadeSlideUp 0.5s ease-out 0.52s both' }}>
+              {[
+                { icon: '🔒', label: 'Güvenli' },
+                { icon: '⚡', label: '30 Saniye' },
+                { icon: '🎯', label: 'Gerçekçi Sonuç' },
+                { icon: '📱', label: 'Tüm Cihazlarda' },
+              ].map(({ icon, label }) => (
+                <span key={label} className="flex items-center gap-1 text-xs" style={{ color: 'rgba(160,160,176,0.5)' }}>
+                  <span>{icon}</span><span>{label}</span>
+                </span>
+              ))}
+            </div>
+
             {/* CTA */}
             <button onClick={onStart}
               className="relative overflow-hidden w-full max-w-sm lg:max-w-xs py-5 lg:py-4 rounded-2xl font-extrabold text-lg text-white flex items-center justify-center gap-2.5 active:scale-[0.98]"
@@ -524,6 +539,16 @@ function parseInchSize(ebat: string | null | undefined): number | null {
   return match ? parseInt(match[1]) : null;
 }
 
+/* ─── Category detection from wheel name + brand ─────────────────────────── */
+function detectCategory(wheel: Wheel): string {
+  const text = `${wheel.jant_adi ?? ''} ${wheel.marka ?? ''}`.toLowerCase();
+  if (/sport|racing|race|gtx|performance/.test(text)) return 'Sport';
+  if (/klasik|classic|vintage|retro/.test(text)) return 'Klasik';
+  if (/lüks|luxe|luxury|premium|bbs|brabus|hamann/.test(text)) return 'Lüks';
+  if (/offroad|off-road|4x4|terrain|truck/.test(text)) return 'Offroad';
+  return 'Diğer';
+}
+
 /* ─── Sample cars for instant demo ───────────────────────────────────────── */
 const SAMPLE_CARS = [
   { label: 'Mercedes SL',    path: '/gallery-before-1.jpg' },
@@ -551,6 +576,12 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
   const [detectedCarWheelSize, setDetectedCarWheelSize] = useState<number | null>(null);
   const [showSizeWarning,     setShowSizeWarning]     = useState(false);
   const [sizeWarningConfirmed, setSizeWarningConfirmed] = useState(false);
+
+  // Catalog filter/sort state
+  const [searchQuery,    setSearchQuery]    = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('Tümü');
+  const [sizeFilter,     setSizeFilter]     = useState('Tümü');
+  const [sortOrder,      setSortOrder]      = useState('Önerilen');
 
   const DEMO_LIMIT = 2;
   const DEMO_LIMIT_ENABLED = false; // TODO: testler bittikten sonra true yap
@@ -588,6 +619,42 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
 
   const limitReached = dealer.kullanilan >= dealer.aylik_limit;
   const canGenerate  = !!carImageUrl && !!selectedWheel && !limitReached && !generating;
+
+  const filteredWheels = useMemo(() => {
+    let result = [...wheels];
+    const q = searchQuery.trim().toLowerCase();
+    if (q) {
+      result = result.filter(w =>
+        w.jant_adi?.toLowerCase().includes(q) ||
+        w.marka?.toLowerCase().includes(q) ||
+        w.ebat?.toLowerCase().includes(q)
+      );
+    }
+    if (categoryFilter !== 'Tümü') {
+      result = result.filter(w => detectCategory(w) === categoryFilter);
+    }
+    if (sizeFilter !== 'Tümü') {
+      result = result.filter(w => {
+        const inch = parseInchSize(w.ebat);
+        if (!inch) return false;
+        if (sizeFilter === '15-16"') return inch >= 15 && inch <= 16;
+        if (sizeFilter === '17-18"') return inch >= 17 && inch <= 18;
+        if (sizeFilter === '19-20"') return inch >= 19 && inch <= 20;
+        if (sizeFilter === '21+"')   return inch >= 21;
+        return true;
+      });
+    }
+    if (sortOrder === 'Fiyat: Düşükten Yükseğe') {
+      result.sort((a, b) => (a.fiyat ?? Infinity) - (b.fiyat ?? Infinity));
+    } else if (sortOrder === 'Fiyat: Yüksekten Düşüğe') {
+      result.sort((a, b) => (b.fiyat ?? -Infinity) - (a.fiyat ?? -Infinity));
+    } else if (sortOrder === 'Ebat: Küçükten Büyüğe') {
+      result.sort((a, b) => (parseInchSize(a.ebat) ?? 0) - (parseInchSize(b.ebat) ?? 0));
+    } else if (sortOrder === 'Ebat: Büyükten Küçüğe') {
+      result.sort((a, b) => (parseInchSize(b.ebat) ?? 0) - (parseInchSize(a.ebat) ?? 0));
+    }
+    return result;
+  }, [wheels, searchQuery, categoryFilter, sizeFilter, sortOrder]);
 
   const processFile = async (file: File) => {
     setCarPreview(URL.createObjectURL(file));
@@ -782,6 +849,20 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
               <div className="hidden lg:block h-px bg-[var(--border-color)]" />
 
               {/* CTA buttons */}
+              {selectedWheel?.fiyat != null && (
+                <a
+                  href={`https://wa.me/${waPhone}?text=${encodeURIComponent(`Merhaba ${dealer.firma_adi},\n${selectedWheel.jant_adi}${selectedWheel.ebat ? ` (${selectedWheel.ebat})` : ''} jantını satın almak istiyorum. Fiyat: ₺${selectedWheel.fiyat.toLocaleString('tr-TR')}`)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2.5 py-4 rounded-2xl font-extrabold text-lg text-white active:scale-95 transition-all"
+                  style={{ background: 'linear-gradient(135deg,#FF6B35,#F72585,#7209B7)', boxShadow: '0 8px 32px rgba(247,37,133,0.35)' }}
+                  onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.transform = 'translateY(-2px)'; el.style.boxShadow = '0 16px 40px rgba(247,37,133,0.5)'; }}
+                  onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.transform = ''; el.style.boxShadow = '0 8px 32px rgba(247,37,133,0.35)'; }}
+                >
+                  🛒 Bu Jantı Al — ₺{selectedWheel.fiyat.toLocaleString('tr-TR')}
+                </a>
+              )}
+
               <a href={waUrl} target="_blank" rel="noopener noreferrer"
                 className="flex items-center justify-center gap-3 py-4 rounded-2xl font-bold text-lg text-white active:scale-95 transition-all"
                 style={{ background: '#25D366', animation: 'whatsappPulse 2s ease-in-out infinite' }}
@@ -1000,25 +1081,130 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
 
             {/* ── RIGHT PANEL: Catalog ── */}
             <div ref={catalogRef} className="mt-4 lg:mt-0">
-              <div className="flex items-center justify-between mb-5" style={{ animation: 'fadeSlideUp 0.4s ease-out 0.2s both' }}>
+
+              {/* Trust band */}
+              <p className="text-[10px] text-center mb-4" style={{ color: 'rgba(160,160,176,0.4)' }}>
+                🤖 AI ile oluşturuldu · 🔒 Fotoğraflarınız saklanmaz · ⚡ 30 saniyede sonuç
+              </p>
+
+              {/* Header row */}
+              <div className="flex items-center justify-between mb-4" style={{ animation: 'fadeSlideUp 0.4s ease-out 0.2s both' }}>
                 <div>
                   <h2 style={{ fontSize: '22px', fontWeight: 800 }}>Jant Kataloğu</h2>
                   <p className="text-xs text-[var(--text-secondary)] mt-0.5">Janta tıklayarak detay ve seçim yapın</p>
                 </div>
-                {wheels.length > 0 && (
+                {filteredWheels.length !== wheels.length ? (
+                  <span className="text-xs px-3 py-1.5 rounded-full font-semibold"
+                    style={{ background: 'rgba(255,107,53,0.1)', border: '1px solid rgba(255,107,53,0.25)', backdropFilter: 'blur(8px)', color: 'var(--accent-orange)' }}>
+                    {filteredWheels.length} sonuç
+                  </span>
+                ) : wheels.length > 0 ? (
                   <span className="text-xs px-3 py-1.5 rounded-full font-semibold"
                     style={{ background: 'rgba(18,18,26,0.8)', border: '1px solid var(--border-color)', backdropFilter: 'blur(8px)', color: 'var(--text-secondary)' }}>
                     {wheels.length} model
                   </span>
-                )}
+                ) : null}
               </div>
+
+              {wheels.length > 0 && (
+                <div className="space-y-3 mb-5" style={{ animation: 'fadeSlideUp 0.4s ease-out 0.25s both' }}>
+                  {/* Search */}
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" style={{ color: 'rgba(160,160,176,0.5)' }} />
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={e => setSearchQuery(e.target.value)}
+                      placeholder="Jant ara... (örn: BBS, Sport, 19 inch)"
+                      className="w-full pl-9 pr-4 py-2.5 rounded-xl text-sm outline-none"
+                      style={{ background: 'rgba(18,18,26,0.8)', border: '1px solid var(--border-color)', backdropFilter: 'blur(8px)', color: 'white' }}
+                      onFocus={e => { (e.currentTarget as HTMLInputElement).style.borderColor = 'rgba(255,107,53,0.5)'; }}
+                      onBlur={e => { (e.currentTarget as HTMLInputElement).style.borderColor = 'var(--border-color)'; }}
+                    />
+                    {searchQuery && (
+                      <button onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2">
+                        <X className="w-3.5 h-3.5" style={{ color: 'rgba(160,160,176,0.6)' }} />
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Filters row */}
+                  <div className="flex items-start gap-2">
+                    {/* Category pills — horizontal scroll */}
+                    <div className="flex-1 flex gap-1.5 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
+                      {['Tümü', 'Sport', 'Klasik', 'Lüks', 'Offroad'].map(cat => (
+                        <button key={cat} onClick={() => setCategoryFilter(cat)}
+                          className="flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-all"
+                          style={categoryFilter === cat ? {
+                            background: 'linear-gradient(135deg,#FF6B35,#F72585)',
+                            color: '#fff',
+                            boxShadow: '0 4px 12px rgba(247,37,133,0.25)',
+                          } : {
+                            background: 'rgba(18,18,26,0.8)',
+                            border: '1px solid var(--border-color)',
+                            color: 'var(--text-secondary)',
+                          }}>
+                          {cat}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Sort dropdown */}
+                    <div className="relative flex-shrink-0">
+                      <select
+                        value={sortOrder}
+                        onChange={e => setSortOrder(e.target.value)}
+                        className="appearance-none pl-3 pr-7 py-1.5 rounded-full text-xs font-semibold outline-none cursor-pointer"
+                        style={{ background: 'rgba(18,18,26,0.8)', border: '1px solid var(--border-color)', color: 'var(--text-secondary)' }}
+                      >
+                        <option>Önerilen</option>
+                        <option>Fiyat: Düşükten Yükseğe</option>
+                        <option>Fiyat: Yüksekten Düşüğe</option>
+                        <option>Ebat: Küçükten Büyüğe</option>
+                        <option>Ebat: Büyükten Küçüğe</option>
+                      </select>
+                      <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 pointer-events-none" style={{ color: 'rgba(160,160,176,0.5)' }} />
+                    </div>
+                  </div>
+
+                  {/* Size pills */}
+                  <div className="flex gap-1.5 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
+                    {['Tümü', '15-16"', '17-18"', '19-20"', '21+"'].map(s => (
+                      <button key={s} onClick={() => setSizeFilter(s)}
+                        className="flex-shrink-0 px-3 py-1 rounded-full text-xs font-medium transition-all"
+                        style={sizeFilter === s ? {
+                          background: 'rgba(114,9,183,0.3)',
+                          border: '1px solid rgba(114,9,183,0.6)',
+                          color: '#c084fc',
+                        } : {
+                          background: 'rgba(18,18,26,0.6)',
+                          border: '1px solid var(--border-color)',
+                          color: 'var(--text-secondary)',
+                        }}>
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {wheels.length === 0 ? (
                 <p className="py-12 text-center text-sm text-[var(--text-secondary)]">Henüz jant eklenmemiş.</p>
+              ) : filteredWheels.length === 0 ? (
+                <div className="py-16 flex flex-col items-center gap-3">
+                  <span className="text-4xl">🔍</span>
+                  <p className="text-sm font-semibold text-white">Aramanızla eşleşen jant bulunamadı</p>
+                  <button onClick={() => { setSearchQuery(''); setCategoryFilter('Tümü'); setSizeFilter('Tümü'); setSortOrder('Önerilen'); }}
+                    className="text-xs px-4 py-2 rounded-full transition-colors"
+                    style={{ background: 'rgba(255,107,53,0.1)', border: '1px solid rgba(255,107,53,0.25)', color: 'var(--accent-orange)' }}>
+                    Filtreleri Temizle
+                  </button>
+                </div>
               ) : (
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-[10px] lg:gap-4">
-                  {wheels.map((wheel, idx) => {
+                  {filteredWheels.map((wheel, idx) => {
                     const isSelected = selectedWheel?.id === wheel.id;
+                    const inchSize = parseInchSize(wheel.ebat);
                     return (
                       <button key={wheel.id} onClick={() => setModalWheel(wheel)}
                         className="group relative text-left rounded-2xl overflow-hidden active:scale-[0.97]"
@@ -1032,13 +1218,28 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
                         onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.transform = 'translateY(-6px)'; if (!isSelected) { el.style.borderColor = 'rgba(255,107,53,0.3)'; el.style.boxShadow = '0 12px 32px rgba(0,0,0,0.3),0 0 16px rgba(255,107,53,0.08)'; } }}
                         onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.transform = ''; if (!isSelected) { el.style.borderColor = 'var(--border-color)'; el.style.boxShadow = 'none'; } }}
                       >
-                        <div className="aspect-square w-full overflow-hidden">
+                        {/* Image */}
+                        <div className="aspect-square w-full overflow-hidden relative">
                           <WheelImg src={wheel.jant_foto_url} alt={wheel.jant_adi} priority={idx < 8}
                             className="transition-transform duration-500 group-hover:scale-[1.08]" />
+                          {/* Brand badge */}
+                          {wheel.marka && (
+                            <span className="absolute top-2 left-2 px-1.5 py-0.5 rounded-md text-[9px] font-bold"
+                              style={{ background: 'rgba(10,10,15,0.75)', backdropFilter: 'blur(6px)', color: 'rgba(255,255,255,0.75)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                              {wheel.marka}
+                            </span>
+                          )}
+                          {/* Size badge */}
+                          {inchSize && (
+                            <span className="absolute top-2 right-2 px-1.5 py-0.5 rounded-md text-[9px] font-bold"
+                              style={{ background: 'rgba(114,9,183,0.6)', backdropFilter: 'blur(6px)', color: '#c084fc', border: '1px solid rgba(114,9,183,0.3)' }}>
+                              {inchSize}&quot;
+                            </span>
+                          )}
                         </div>
                         <div className="px-2 py-2 sm:px-3 sm:py-2.5">
                           <p className="text-[12px] sm:text-[13px] font-semibold leading-tight line-clamp-2 text-white">{wheel.jant_adi}</p>
-                          {wheel.marka && <p className="text-[10px] sm:text-[11px] text-[var(--text-secondary)] mt-0.5">{wheel.marka}</p>}
+                          {wheel.ebat && <p className="text-[10px] sm:text-[11px] text-[var(--text-secondary)] mt-0.5">{wheel.ebat}</p>}
                           {wheel.fiyat != null && (
                             <p className="text-[14px] mt-1.5"
                               style={{ background: 'linear-gradient(135deg,#FF6B35,#F72585)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', fontWeight: 800 }}>
@@ -1048,7 +1249,7 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
                         </div>
                         {isSelected && (
                           <>
-                            <div className="absolute top-2 right-2 w-6 h-6 rounded-full flex items-center justify-center shadow-lg"
+                            <div className="absolute bottom-[42px] right-2 w-6 h-6 rounded-full flex items-center justify-center shadow-lg"
                               style={{ background: 'linear-gradient(135deg,#FF6B35,#F72585)', boxShadow: '0 4px 12px rgba(255,107,53,0.4)' }}>
                               <Check className="w-3.5 h-3.5 text-white" />
                             </div>
