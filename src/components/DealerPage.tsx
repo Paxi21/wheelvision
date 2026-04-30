@@ -3,7 +3,7 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import {
   Camera, ImageIcon, Check, Loader2,
-  X, RefreshCw, Download, ChevronRight, ChevronDown, ChevronLeft, Star, Search,
+  X, RefreshCw, Download, ChevronRight, ChevronDown, ChevronLeft, Star, Search, Upload,
 } from 'lucide-react';
 import type { Dealer, Wheel } from '@/app/d/[slug]/page';
 
@@ -583,12 +583,18 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
   const [sizeFilter,     setSizeFilter]     = useState('Tümü');
   const [sortOrder,      setSortOrder]      = useState('Önerilen');
 
+  // Custom wheel upload state
+  const [customWheelPreview,   setCustomWheelPreview]   = useState<string | null>(null);
+  const [customWheelUrl,       setCustomWheelUrl]       = useState<string | null>(null);
+  const [customWheelUploading, setCustomWheelUploading] = useState(false);
+
   const DEMO_LIMIT = 2;
   const DEMO_LIMIT_ENABLED = false; // TODO: testler bittikten sonra true yap
 
-  const galleryRef = useRef<HTMLInputElement>(null);
-  const cameraRef  = useRef<HTMLInputElement>(null);
-  const catalogRef = useRef<HTMLDivElement>(null);
+  const galleryRef    = useRef<HTMLInputElement>(null);
+  const cameraRef     = useRef<HTMLInputElement>(null);
+  const catalogRef    = useRef<HTMLDivElement>(null);
+  const customWheelRef = useRef<HTMLInputElement>(null);
 
   /* Advance genStep on a fixed schedule during generation */
   useEffect(() => {
@@ -730,7 +736,14 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
       const res  = await fetch('/api/dealer/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ dealer_id: dealer.id, slug: dealer.slug, car_image: carImageUrl, wheel_id: selectedWheel!.id, generation_type: generationType }),
+        body: JSON.stringify({
+          dealer_id: dealer.id,
+          slug: dealer.slug,
+          car_image: carImageUrl,
+          wheel_id: selectedWheel!.id,
+          generation_type: generationType,
+          ...(selectedWheel!.id === '__custom__' ? { custom_wheel_url: selectedWheel!.jant_foto_url } : {}),
+        }),
       });
       const data = await res.json() as { output_url?: string; error?: string };
       if (!res.ok) throw new Error(data.error ?? 'Görsel oluşturulamadı');
@@ -749,6 +762,39 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
     setSelectedWheel(null);
     clearCar();
     setError(null);
+    setCustomWheelPreview(null);
+    setCustomWheelUrl(null);
+    if (customWheelRef.current) customWheelRef.current.value = '';
+  };
+
+  const handleCustomWheelFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (customWheelRef.current) customWheelRef.current.value = '';
+    setCustomWheelUploading(true);
+    setCustomWheelPreview(URL.createObjectURL(file));
+    setResultUrl(null);
+    setError(null);
+    try {
+      const compressed = await compressImage(file);
+      const url = await uploadToCloudinary(compressed);
+      setCustomWheelUrl(url);
+      setSelectedWheel({
+        id: '__custom__',
+        dealer_id: dealer.id,
+        jant_adi: 'Özel Jant',
+        jant_foto_url: url,
+        marka: null,
+        ebat: null,
+        fiyat: null,
+      });
+    } catch {
+      setError('Jant fotoğrafı yüklenemedi. Tekrar deneyin.');
+      setCustomWheelPreview(null);
+      setCustomWheelUrl(null);
+    } finally {
+      setCustomWheelUploading(false);
+    }
   };
 
   const closeUploadSheet = () => {
@@ -1203,6 +1249,74 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
                 </div>
               ) : (
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-[10px] lg:gap-4">
+                  {/* Custom wheel upload card */}
+                  {(() => {
+                    const isCustomSelected = selectedWheel?.id === '__custom__';
+                    return (
+                      <div className="relative">
+                        <button
+                          onClick={() => {
+                            if (customWheelUploading) return;
+                            customWheelRef.current?.click();
+                          }}
+                          className="group w-full text-left rounded-2xl overflow-hidden active:scale-[0.97]"
+                          style={{
+                            border: isCustomSelected ? '2px solid var(--accent-orange)' : '1.5px dashed rgba(255,107,53,0.4)',
+                            boxShadow: isCustomSelected ? '0 0 24px rgba(255,107,53,0.2)' : 'none',
+                            background: 'rgba(18,18,26,0.5)', backdropFilter: 'blur(8px)',
+                            transition: 'all 0.3s cubic-bezier(0.4,0,0.2,1)',
+                          }}
+                          onMouseEnter={e => { if (!isCustomSelected) { const el = e.currentTarget as HTMLElement; el.style.borderColor = 'rgba(255,107,53,0.7)'; el.style.background = 'rgba(255,107,53,0.04)'; } }}
+                          onMouseLeave={e => { if (!isCustomSelected) { const el = e.currentTarget as HTMLElement; el.style.borderColor = 'rgba(255,107,53,0.4)'; el.style.background = 'rgba(18,18,26,0.5)'; } }}
+                        >
+                          <div className="aspect-square w-full overflow-hidden relative flex items-center justify-center">
+                            {customWheelUploading ? (
+                              <div className="flex flex-col items-center gap-2">
+                                <Loader2 className="w-8 h-8 animate-spin text-[var(--accent-orange)]" />
+                                <p className="text-[10px] text-[var(--text-secondary)]">Yükleniyor...</p>
+                              </div>
+                            ) : customWheelPreview ? (
+                              <>
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img src={customWheelPreview} alt="Özel Jant" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.08]" />
+                                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                  <div className="flex flex-col items-center gap-1">
+                                    <Upload className="w-5 h-5 text-white" />
+                                    <p className="text-[10px] text-white font-semibold">Değiştir</p>
+                                  </div>
+                                </div>
+                              </>
+                            ) : (
+                              <div className="flex flex-col items-center gap-2 p-3">
+                                <div className="w-10 h-10 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110"
+                                  style={{ background: 'rgba(255,107,53,0.12)' }}>
+                                  <Upload className="w-5 h-5 text-[var(--accent-orange)]" />
+                                </div>
+                                <p className="text-[11px] font-semibold text-white text-center leading-tight">Kendi Jantını Yükle</p>
+                                <p className="text-[10px] text-[var(--text-secondary)] text-center">JPG · PNG · WEBP</p>
+                              </div>
+                            )}
+                          </div>
+                          <div className="px-2 py-2 sm:px-3 sm:py-2.5">
+                            <p className="text-[12px] sm:text-[13px] font-semibold leading-tight text-white">
+                              {customWheelPreview ? 'Özel Jant' : 'Fotoğraf Yükle'}
+                            </p>
+                            <p className="text-[10px] text-[var(--text-secondary)] mt-0.5">Kendi kataloğundan</p>
+                          </div>
+                          {isCustomSelected && (
+                            <>
+                              <div className="absolute top-2 right-2 w-6 h-6 rounded-full flex items-center justify-center shadow-lg"
+                                style={{ background: 'linear-gradient(135deg,#FF6B35,#F72585)', boxShadow: '0 4px 12px rgba(255,107,53,0.4)' }}>
+                                <Check className="w-3.5 h-3.5 text-white" />
+                              </div>
+                              <p style={{ fontSize: '10px', textAlign: 'center', color: 'var(--accent-orange)', paddingBottom: '6px', fontWeight: 600 }}>✓ Seçildi</p>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    );
+                  })()}
+
                   {filteredWheels.map((wheel, idx) => {
                     const isSelected = selectedWheel?.id === wheel.id;
                     const inchSize = parseInchSize(wheel.ebat);
@@ -1492,8 +1606,9 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
         </>
       )}
 
-      <input ref={galleryRef} type="file" accept="image/*"                       className="hidden" onChange={handleFileChange} />
-      <input ref={cameraRef}  type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFileChange} />
+      <input ref={galleryRef}    type="file" accept="image/*"                       className="hidden" onChange={handleFileChange} />
+      <input ref={cameraRef}     type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFileChange} />
+      <input ref={customWheelRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handleCustomWheelFile} />
     </div>
   );
 }

@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Geçersiz istek' }, { status: 400 });
     }
 
-    const { dealer_id, slug, car_image, wheel_id, generation_type } = body;
+    const { dealer_id, slug, car_image, wheel_id, generation_type, custom_wheel_url } = body;
     console.log('[dealer/generate] dealer_id:', dealer_id, 'slug:', slug, 'wheel_id:', wheel_id, 'generation_type:', generation_type);
 
     if (!isValidCloudinaryUrl(car_image)) {
@@ -104,24 +104,37 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Aylık görsel limiti doldu' }, { status: 402 });
     }
 
-    // 3. Validate wheel ownership
-    const { data: wheel, error: wheelErr } = await supabase
-      .from('dealer_wheels')
-      .select('id, jant_adi, jant_foto_url')
-      .eq('id', wheel_id)
-      .eq('dealer_id', dealer_id)
-      .single();
+    // 3. Resolve wheel image
+    let wheelImageUrl: string;
+    let dbWheelId: string | null = null;
 
-    if (wheelErr || !wheel) {
-      console.error('[dealer/generate] wheel not found:', wheelErr?.message);
-      return NextResponse.json({ error: 'Jant bulunamadı' }, { status: 404 });
+    if (wheel_id === '__custom__') {
+      if (!isValidCloudinaryUrl(custom_wheel_url)) {
+        console.error('[dealer/generate] invalid custom_wheel_url:', custom_wheel_url);
+        return NextResponse.json({ error: 'Geçersiz jant görseli' }, { status: 400 });
+      }
+      wheelImageUrl = custom_wheel_url as string;
+      console.log('[dealer/generate] using custom wheel URL:', wheelImageUrl);
+    } else {
+      const { data: wheel, error: wheelErr } = await supabase
+        .from('dealer_wheels')
+        .select('id, jant_adi, jant_foto_url')
+        .eq('id', wheel_id)
+        .eq('dealer_id', dealer_id)
+        .single();
+
+      if (wheelErr || !wheel) {
+        console.error('[dealer/generate] wheel not found:', wheelErr?.message);
+        return NextResponse.json({ error: 'Jant bulunamadı' }, { status: 404 });
+      }
+      if (!wheel.jant_foto_url) {
+        console.error('[dealer/generate] wheel has no image URL:', wheel.id);
+        return NextResponse.json({ error: 'Bu janta ait görsel bulunamadı. Lütfen başka bir jant seçin.' }, { status: 400 });
+      }
+      console.log('[dealer/generate] wheel OK:', wheel.jant_adi);
+      wheelImageUrl = wheel.jant_foto_url;
+      dbWheelId = wheel.id;
     }
-    if (!wheel.jant_foto_url) {
-      console.error('[dealer/generate] wheel has no image URL:', wheel.id);
-      return NextResponse.json({ error: 'Bu janta ait görsel bulunamadı. Lütfen başka bir jant seçin.' }, { status: 400 });
-    }
-    console.log('[dealer/generate] wheel OK:', wheel.jant_adi);
-    console.log('[dealer/generate] wheel image URL:', wheel.jant_foto_url);
 
     // 4. Ensure dealer service user exists in Supabase so n8n credit check passes.
     //    If not found, create it on-the-fly with high credits.
@@ -180,7 +193,7 @@ export async function POST(request: NextRequest) {
     const n8nPayload = {
       user_email: 'dealer@wheelvision.io',
       car_image,
-      wheel_image: wheel.jant_foto_url,
+      wheel_image: wheelImageUrl,
       prompt,
     };
     console.log('[dealer/generate] calling n8n...');
@@ -250,13 +263,15 @@ export async function POST(request: NextRequest) {
     }
     console.log('[dealer/generate] output URL:', outputUrl);
 
-    // 6. Save to DB
-    await supabase.from('dealer_generations').insert({
-      dealer_id: dealer.id,
-      wheel_id:  wheel.id,
-      araba_foto_url: car_image as string,
-      sonuc_foto_url: outputUrl,
-    });
+    // 6. Save to DB (skip for custom wheel uploads)
+    if (dbWheelId) {
+      await supabase.from('dealer_generations').insert({
+        dealer_id: dealer.id,
+        wheel_id:  dbWheelId,
+        araba_foto_url: car_image as string,
+        sonuc_foto_url: outputUrl,
+      });
+    }
 
     // 7. Increment usage
     await supabase
