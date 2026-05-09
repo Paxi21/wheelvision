@@ -11,6 +11,9 @@ export type Dealer = {
   aktif: boolean;
   aylik_limit: number;
   kullanilan: number;
+  credits?: number;
+  plan_type?: string;
+  plan_name?: string;
 };
 
 export type Wheel = {
@@ -41,7 +44,7 @@ export default async function DealerSlugPage({
   // Fetch dealer by slug
   const { data: dealer } = await supabase
     .from('dealers')
-    .select('id, firma_adi, slug, whatsapp, logo_url, aktif, aylik_limit, kullanilan')
+    .select('id, firma_adi, slug, whatsapp, logo_url, aktif, aylik_limit, kullanilan, credits, plan_type, plan_name')
     .eq('slug', slug)
     .single();
 

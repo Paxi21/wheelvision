@@ -3,15 +3,18 @@
 import { useState } from 'react';
 import Navbar from '@/components/Navbar';
 import { motion, AnimatePresence } from 'motion/react';
-import { Check, X, Sparkles, Building2, User, Zap, Gift, Crown, Gem } from 'lucide-react';
+import {
+  Check, X, Sparkles, Building2, User, Zap, Crown, Gem, Phone, Gift,
+} from 'lucide-react';
 import { ShimmerButton } from '@/components/ui/shimmer-button';
 import { AnimatedBorder } from '@/components/ui/animated-border';
 import { useTranslations } from 'next-intl';
+import { Link } from '@/i18n/navigation';
 
-const WHATSAPP_URL = 'https://wa.me/905375859524?text=Merhaba%2C%20WheelVision%20Dealer%20Pro%20paketi%20hakk%C4%B1nda%20bilgi%20almak%20istiyorum.';
+const WHATSAPP_BASE = 'https://wa.me/905375859524?text=';
 
 /* ─── Coming Soon Modal ──────────────────────────────────────────────────── */
-function ComingSoonModal({ onClose, t }: { onClose: () => void; t: ReturnType<typeof useTranslations<'pricing'>> }) {
+function ComingSoonModal({ onClose }: { onClose: () => void }) {
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
@@ -32,110 +35,198 @@ function ComingSoonModal({ onClose, t }: { onClose: () => void; t: ReturnType<ty
         >
           <X className="w-3.5 h-3.5 text-[var(--text-secondary)]" />
         </button>
-
         <div className="w-16 h-16 rounded-2xl bg-gradient-to-r from-[var(--accent-orange)] to-[var(--accent-pink)] flex items-center justify-center mx-auto mb-5 text-3xl">
           🚀
         </div>
-
-        <h3 className="text-xl font-bold mb-3">{t('comingSoonTitle')}</h3>
+        <h3 className="text-xl font-bold mb-3">Çok Yakında!</h3>
         <p className="text-[var(--text-secondary)] text-sm leading-relaxed mb-5">
-          {t('comingSoonDesc')}
+          Online ödeme sistemi çok yakında aktif olacak. Şu an WhatsApp üzerinden paket satın alabilirsiniz.
         </p>
-        <p className="text-xs text-[var(--text-secondary)]/60">{t('comingSoonNote')}</p>
+        <a
+          href={WHATSAPP_BASE + encodeURIComponent('Merhaba, WheelVision paket satın almak istiyorum.')}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={onClose}
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#25D366] text-white text-sm font-semibold hover:bg-[#1ebe57] transition-colors"
+        >
+          📱 WhatsApp ile Satın Al
+        </a>
       </motion.div>
     </div>
   );
 }
 
-/* ─── B2C Plan Card ──────────────────────────────────────────────────────── */
+/* ─── B2C Plan types ─────────────────────────────────────────────────────── */
 type B2CPlan = {
   id: string;
   name: string;
-  price: string;
-  priceNote: string;
-  description: string;
+  desc: string;
+  credits: number;
+  price: number;
+  pricePerImage: number;
+  badge: string | null;
   icon: React.ElementType;
   color: string;
-  popular: boolean;
-  dimmed: boolean;
-  cta: string;
-  note?: string;
-  features: { text: string; included: boolean }[];
+  features: string[];
+  extra?: string[];
 };
 
-function B2CPlanCard({ plan, onCtaClick }: { plan: B2CPlan; onCtaClick: () => void }) {
+const B2C_PLANS: B2CPlan[] = [
+  {
+    id: 'free',
+    name: 'Ücretsiz',
+    desc: 'Ücretsiz dene, karar ver',
+    credits: 2,
+    price: 0,
+    pricePerImage: 0,
+    badge: null,
+    icon: Gift,
+    color: 'from-[#6B7280] to-[#4B5563]',
+    features: [
+      '2 deneme kredisi (kayıt bonusu)',
+      'Standart kalite',
+      'Filigranlı görsel',
+    ],
+  },
+  {
+    id: 'baslangic',
+    name: 'Başlangıç',
+    desc: 'Ara sıra kullananlar için',
+    credits: 10,
+    price: 249,
+    pricePerImage: 24.90,
+    badge: null,
+    icon: Zap,
+    color: 'from-[#FF6B35] to-[#F72585]',
+    features: [
+      '10 jant değiştirme görseli',
+      'Tüm jant kataloğuna erişim',
+      'Özel jant yükleme',
+      'Kullanılmayan krediler devredilir',
+      'Email destek',
+    ],
+  },
+  {
+    id: 'populer',
+    name: 'Popüler',
+    desc: 'En popüler seçim',
+    credits: 25,
+    price: 499,
+    pricePerImage: 19.96,
+    badge: 'Önerilen',
+    icon: Crown,
+    color: 'from-[#F72585] to-[#7209B7]',
+    features: [
+      '25 jant değiştirme görseli',
+      'Tüm jant kataloğuna erişim',
+      'Özel jant yükleme',
+      'Kullanılmayan krediler devredilir',
+      'Öncelikli email destek',
+      'Yüksek çözünürlük çıktı',
+    ],
+  },
+  {
+    id: 'pro',
+    name: 'Pro',
+    desc: 'Sık kullananlar için',
+    credits: 50,
+    price: 799,
+    pricePerImage: 15.98,
+    badge: null,
+    icon: Gem,
+    color: 'from-[#7209B7] to-[#3A0CA3]',
+    features: [
+      '50 jant değiştirme görseli',
+      'Tüm jant kataloğuna erişim',
+      'Özel jant yükleme',
+      'Kullanılmayan krediler devredilir',
+      'Öncelikli destek',
+      'Yüksek çözünürlük çıktı',
+      'Toplu işlem desteği',
+    ],
+  },
+];
+
+/* ─── B2C Card ───────────────────────────────────────────────────────────── */
+function B2CPlanCard({ plan, onBuy }: { plan: B2CPlan; onBuy: () => void }) {
   const Icon = plan.icon;
+  const isFeatured = plan.badge === 'Önerilen';
+  const isFree     = plan.id === 'free';
+
   const inner = (
-    <div className={`flex flex-col h-full p-6 ${plan.dimmed ? 'opacity-80' : ''}`}>
-      {/* Header */}
+    <div className={`flex flex-col h-full p-6 ${isFree ? 'opacity-80' : ''}`}>
+      {/* Icon + name */}
       <div className="flex items-center gap-3 mb-4">
         <div className={`w-10 h-10 rounded-xl bg-gradient-to-r ${plan.color} flex items-center justify-center flex-shrink-0`}>
           <Icon className="w-5 h-5 text-white" />
         </div>
         <div>
           <h3 className="font-bold text-lg">{plan.name}</h3>
-          <p className="text-xs text-[var(--text-secondary)]">{plan.description}</p>
+          <p className="text-xs text-[var(--text-secondary)]">{plan.desc}</p>
         </div>
       </div>
 
       {/* Price */}
-      <div className="mb-5">
+      <div className="mb-1">
         <div className="flex items-end gap-1">
-          <span className="text-4xl font-bold">{plan.price}</span>
+          <span className="text-4xl font-bold">{isFree ? '₺0' : `₺${plan.price}`}</span>
         </div>
-        <p className="text-xs text-[var(--text-secondary)] mt-1">{plan.priceNote}</p>
+        <p className="text-xs text-[var(--text-secondary)] mt-1">
+          {isFree ? 'Ücretsiz başla' : `₺${plan.pricePerImage.toFixed(2)} / görsel · Tek seferlik ödeme`}
+        </p>
+      </div>
+
+      {/* Credits pill */}
+      <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold mb-5 self-start bg-gradient-to-r ${plan.color} text-white`}>
+        🎫 {plan.credits} kredi
       </div>
 
       {/* Features */}
-      <ul className="space-y-3 flex-1 mb-6">
+      <ul className="space-y-2.5 flex-1 mb-6">
         {plan.features.map((feat, i) => (
           <li key={i} className="flex items-center gap-3">
-            {feat.included ? (
-              <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 bg-gradient-to-r ${plan.color}`}>
-                <Check className="w-3 h-3 text-white" />
-              </div>
-            ) : (
-              <div className="w-5 h-5 rounded-full bg-[var(--bg-dark)] border border-[var(--border-color)] flex items-center justify-center flex-shrink-0">
-                <X className="w-3 h-3 text-[var(--text-secondary)]" />
-              </div>
-            )}
-            <span className={`text-sm ${feat.included ? 'text-white' : 'text-[var(--text-secondary)]'}`}>
-              {feat.text}
-            </span>
+            <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 bg-gradient-to-r ${plan.color}`}>
+              <Check className="w-3 h-3 text-white" />
+            </div>
+            <span className="text-sm text-white">{feat}</span>
           </li>
         ))}
       </ul>
 
       {/* CTA */}
-      {plan.popular ? (
-        <button onClick={onCtaClick} className="block w-full">
-          <ShimmerButton className="w-full justify-center py-3">{plan.cta}</ShimmerButton>
+      {isFree ? (
+        <Link href="/register" className="block w-full">
+          <button className="w-full text-center py-3 rounded-full border border-[var(--border-color)] text-sm font-semibold transition-colors hover:border-white/30 hover:text-white text-[var(--text-secondary)]">
+            Ücretsiz Başla
+          </button>
+        </Link>
+      ) : isFeatured ? (
+        <button onClick={onBuy} className="block w-full">
+          <ShimmerButton className="w-full justify-center py-3">Satın Al</ShimmerButton>
         </button>
       ) : (
         <button
-          onClick={onCtaClick}
-          className={`block w-full text-center py-3 rounded-full border text-sm font-semibold transition-colors ${
-            plan.dimmed
-              ? 'border-[var(--border-color)] text-[var(--text-secondary)] hover:border-white/30 hover:text-white'
-              : 'border-[var(--border-color)] hover:border-[var(--accent-orange)] hover:text-[var(--accent-orange)]'
-          }`}
+          onClick={onBuy}
+          className="block w-full text-center py-3 rounded-full border border-[var(--border-color)] text-sm font-semibold transition-colors hover:border-[var(--accent-orange)] hover:text-[var(--accent-orange)]"
         >
-          {plan.cta}
+          Satın Al
         </button>
       )}
 
-      {plan.note && (
-        <p className="text-[10px] text-[var(--text-secondary)]/50 text-center mt-3 leading-relaxed">{plan.note}</p>
+      {!isFree && (
+        <p className="text-[10px] text-[var(--text-secondary)]/50 text-center mt-3">
+          Tek seferlik ödeme · Krediler bitene kadar geçerli
+        </p>
       )}
     </div>
   );
 
-  if (plan.popular) {
+  if (isFeatured) {
     return (
       <div className="relative">
         <div className="absolute -top-4 left-0 right-0 flex justify-center z-20">
           <span className="px-4 py-1 rounded-full text-xs font-bold bg-gradient-to-r from-[var(--accent-pink)] to-[var(--accent-purple)] text-white shadow-lg">
-            ⭐ Önerilen
+            ⭐ {plan.badge}
           </span>
         </div>
         <AnimatedBorder containerClassName="h-full" duration={4}>
@@ -152,93 +243,262 @@ function B2CPlanCard({ plan, onCtaClick }: { plan: B2CPlan; onCtaClick: () => vo
   );
 }
 
-/* ─── B2B Dealer Card ────────────────────────────────────────────────────── */
-function B2BCard({ t }: { t: ReturnType<typeof useTranslations<'pricing'>> }) {
-  const features = [
-    t('feat200Images'),
-    t('featHDNoWatermark'),
-    t('featCustomPage'),
-    t('featCatalog'),
-    t('featWhatsAppLead'),
-    t('featPrioritySupport'),
-    t('featSetup'),
-  ];
+/* ─── B2B Plan types ─────────────────────────────────────────────────────── */
+type B2BPlan = {
+  id: string;
+  name: string;
+  desc: string;
+  creditsMonthly: number;
+  basePrice: number;
+  badge: string | null;
+  icon: React.ElementType;
+  color: string;
+  features: string[];
+};
+
+const B2B_PLANS: B2BPlan[] = [
+  {
+    id: 'starter',
+    name: 'Starter',
+    desc: 'Küçük galeriler için',
+    creditsMonthly: 50,
+    basePrice: 890,
+    badge: null,
+    icon: Zap,
+    color: 'from-[#6B7280] to-[#4B5563]',
+    features: [
+      'Aylık 50 görsel',
+      'Kullanılmayan krediler devredilir',
+      'Tüm jant kataloğuna erişim',
+      'Özel jant yükleme',
+      'Email destek',
+      'API erişimi',
+    ],
+  },
+  {
+    id: 'business',
+    name: 'Business',
+    desc: 'Büyüyen işletmeler için',
+    creditsMonthly: 150,
+    basePrice: 1899,
+    badge: 'Popüler',
+    icon: Building2,
+    color: 'from-[#FF6B35] to-[#F72585]',
+    features: [
+      'Aylık 150 görsel',
+      'Kullanılmayan krediler devredilir',
+      'Tüm jant kataloğuna erişim',
+      'Özel jant yükleme',
+      'Öncelikli işleme',
+      'WhatsApp destek',
+      'Logo/watermark ekleme',
+      'API erişimi',
+    ],
+  },
+  {
+    id: 'premium',
+    name: 'Premium',
+    desc: 'Yüksek hacimli kullanım',
+    creditsMonthly: 400,
+    basePrice: 3499,
+    badge: 'Maksimum Değer',
+    icon: Crown,
+    color: 'from-[#F72585] to-[#7209B7]',
+    features: [
+      'Aylık 400 görsel',
+      'Kullanılmayan krediler devredilir',
+      'Tüm jant kataloğuna erişim',
+      'Özel jant yükleme',
+      'Öncelikli işleme',
+      'Telefon + WhatsApp destek',
+      'Logo/watermark ekleme',
+      'Özel prompt ayarı',
+      'Dedicated API key',
+      'API erişimi',
+    ],
+  },
+];
+
+const COMMITMENT_OPTIONS = [
+  { value: '1', label: 'Aylık',  discount: 0 },
+  { value: '3', label: '3 Ay',  discount: 10 },
+  { value: '6', label: '6 Ay',  discount: 15 },
+  { value: '12', label: '12 Ay', discount: 20 },
+];
+
+function calcPrice(base: number, discount: number): number {
+  return Math.round(base * (1 - discount / 100));
+}
+
+/* ─── B2B Plan Card ──────────────────────────────────────────────────────── */
+function B2BPlanCard({
+  plan,
+  commitment,
+  onBuy,
+}: {
+  plan: B2BPlan;
+  commitment: string;
+  onBuy: () => void;
+}) {
+  const Icon = plan.icon;
+  const discount = COMMITMENT_OPTIONS.find(o => o.value === commitment)?.discount ?? 0;
+  const price    = calcPrice(plan.basePrice, discount);
+  const perImage = (price / plan.creditsMonthly).toFixed(2);
+  const isPopular = !!plan.badge;
+
+  const inner = (
+    <div className="flex flex-col h-full p-6">
+      {/* Header */}
+      <div className="flex items-center gap-3 mb-4">
+        <div className={`w-10 h-10 rounded-xl bg-gradient-to-r ${plan.color} flex items-center justify-center flex-shrink-0`}>
+          <Icon className="w-5 h-5 text-white" />
+        </div>
+        <div>
+          <h3 className="font-bold text-lg">{plan.name}</h3>
+          <p className="text-xs text-[var(--text-secondary)]">{plan.desc}</p>
+        </div>
+      </div>
+
+      {/* Price */}
+      <div className="mb-1">
+        {discount > 0 && (
+          <span className="text-sm line-through text-[var(--text-secondary)]/60 block">
+            ₺{plan.basePrice.toLocaleString('tr-TR')}/ay
+          </span>
+        )}
+        <div className="flex items-end gap-1">
+          <span className="text-4xl font-bold">₺{price.toLocaleString('tr-TR')}</span>
+          <span className="text-[var(--text-secondary)] text-sm mb-1.5">/ay</span>
+        </div>
+        <p className="text-xs text-[var(--text-secondary)] mt-1">
+          ₺{perImage} / görsel
+          {discount > 0 && (
+            <span className="ml-2 text-green-400 font-semibold">%{discount} indirim</span>
+          )}
+        </p>
+      </div>
+
+      {/* Credits pill */}
+      <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold mb-5 self-start bg-gradient-to-r ${plan.color} text-white`}>
+        🎫 {plan.creditsMonthly} görsel/ay
+      </div>
+
+      {/* Features */}
+      <ul className="space-y-2.5 flex-1 mb-6">
+        {plan.features.map((feat, i) => (
+          <li key={i} className="flex items-center gap-3">
+            <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 bg-gradient-to-r ${plan.color}`}>
+              <Check className="w-3 h-3 text-white" />
+            </div>
+            <span className="text-sm text-white">{feat}</span>
+          </li>
+        ))}
+      </ul>
+
+      {/* CTA */}
+      {isPopular ? (
+        <button onClick={onBuy} className="block w-full">
+          <ShimmerButton className="w-full justify-center py-3">Başla</ShimmerButton>
+        </button>
+      ) : (
+        <button
+          onClick={onBuy}
+          className="block w-full text-center py-3 rounded-full border border-[var(--border-color)] text-sm font-semibold transition-colors hover:border-[var(--accent-orange)] hover:text-[var(--accent-orange)]"
+        >
+          Başla
+        </button>
+      )}
+    </div>
+  );
+
+  if (isPopular) {
+    return (
+      <div className="relative">
+        <div className="absolute -top-4 left-0 right-0 flex justify-center z-20">
+          <span className="px-4 py-1 rounded-full text-xs font-bold bg-gradient-to-r from-[var(--accent-pink)] to-[var(--accent-purple)] text-white shadow-lg">
+            ⭐ {plan.badge}
+          </span>
+        </div>
+        <AnimatedBorder containerClassName="h-full" duration={4}>
+          {inner}
+        </AnimatedBorder>
+      </div>
+    );
+  }
 
   return (
-    <div className="max-w-lg mx-auto">
-      <AnimatedBorder containerClassName="w-full" duration={4}>
-        <div className="flex flex-col p-8 md:p-10">
-          {/* Header */}
-          <div className="flex items-start justify-between gap-4 mb-6">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-r from-[var(--accent-orange)] to-[var(--accent-pink)] flex items-center justify-center flex-shrink-0">
-                <Building2 className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h2 className="font-bold text-xl">{t('dealerPro')}</h2>
-                <p className="text-sm text-[var(--text-secondary)]">{t('dealerProDesc')}</p>
-              </div>
-            </div>
-            <span
-              className="flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-bold text-white"
-              style={{
-                background: 'linear-gradient(135deg,#FF6B35,#F72585)',
-                boxShadow: '0 0 16px rgba(247,37,133,0.4)',
-                animation: 'pulse 2s ease-in-out infinite',
-              }}
-            >
-              {t('dealerDiscount')}
-            </span>
+    <div className="h-full rounded-2xl border border-[var(--border-color)] bg-[var(--bg-card)] overflow-hidden">
+      {inner}
+    </div>
+  );
+}
+
+/* ─── Enterprise Card ────────────────────────────────────────────────────── */
+const ENTERPRISE_FEATURES = [
+  'Sınırsız görsel',
+  'SLA garantisi',
+  'Özel entegrasyon',
+  'Hesap yöneticisi',
+  'Tüm Premium özellikler',
+  'Özel fiyatlandırma',
+];
+
+function EnterpriseCard() {
+  const mailtoHref =
+    'mailto:info@wheelvision.io' +
+    '?subject=' + encodeURIComponent('WheelVision Enterprise Plan Talebi') +
+    '&body=' + encodeURIComponent('Merhaba, WheelVision Enterprise plan hakkında bilgi almak istiyorum.');
+
+  return (
+    <div
+      className="rounded-2xl overflow-hidden"
+      style={{
+        background: 'linear-gradient(135deg, rgba(114,9,183,0.15), rgba(58,12,163,0.15))',
+        border: '1px solid rgba(114,9,183,0.4)',
+      }}
+    >
+      <div className="p-6 flex flex-col h-full">
+        {/* Header */}
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-[#7209B7] to-[#3A0CA3] flex items-center justify-center flex-shrink-0">
+            <Phone className="w-5 h-5 text-white" />
           </div>
-
-          {/* Price */}
-          <div className="mb-8">
-            <span className="text-lg line-through" style={{ color: 'rgba(160,160,176,0.6)' }}>
-              {t('dealerNormalPrice')}
-            </span>
-            <div className="flex items-end gap-1 mt-1">
-              <span className="text-5xl font-black gradient-text">{t('dealerPrice')}</span>
-              <span className="text-[var(--text-secondary)] text-base mb-1.5">{t('month')}</span>
-            </div>
+          <div>
+            <h3 className="font-bold text-lg">Enterprise</h3>
+            <p className="text-xs text-[var(--text-secondary)]">Büyük galeriler için</p>
           </div>
-
-          {/* Features */}
-          <ul className="space-y-4 mb-10">
-            {features.map((feat, i) => (
-              <li key={i} className="flex items-center gap-3">
-                <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 bg-gradient-to-r from-[var(--accent-orange)] to-[var(--accent-pink)]">
-                  <Check className="w-3 h-3 text-white" />
-                </div>
-                <span className="text-sm text-white">{feat}</span>
-              </li>
-            ))}
-          </ul>
-
-          {/* CTAs */}
-          <a
-            href={WHATSAPP_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="block w-full mb-3"
-          >
-            <ShimmerButton className="w-full justify-center py-4 text-base font-bold">
-              {t('dealerCta')}
-            </ShimmerButton>
-          </a>
-          <a
-            href={WHATSAPP_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="block w-full text-center py-3 rounded-full text-sm font-semibold transition-colors border border-[var(--border-color)] text-[var(--text-secondary)] hover:border-white/30 hover:text-white"
-          >
-            {t('dealerWhatsApp')}
-          </a>
-
-          <p className="text-xs text-[var(--text-secondary)]/60 text-center mt-5 leading-relaxed">
-            {t('dealerNote')}
-          </p>
         </div>
-      </AnimatedBorder>
+
+        {/* Price */}
+        <div className="mb-5">
+          <p className="text-3xl font-bold">Özel Fiyat</p>
+          <p className="text-xs text-[var(--text-secondary)] mt-1">İhtiyacınıza göre fiyatlandırma</p>
+        </div>
+
+        {/* Features */}
+        <ul className="space-y-2.5 flex-1 mb-6">
+          {ENTERPRISE_FEATURES.map((feat, i) => (
+            <li key={i} className="flex items-center gap-3">
+              <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 bg-gradient-to-r from-[#7209B7] to-[#3A0CA3]">
+                <Check className="w-3 h-3 text-white" />
+              </div>
+              <span className="text-sm text-white">{feat}</span>
+            </li>
+          ))}
+        </ul>
+
+        {/* CTA */}
+        <a
+          href={mailtoHref}
+          className="block w-full text-center py-3 rounded-full text-sm font-semibold transition-colors border border-purple-500/50 text-purple-300 hover:border-purple-400 hover:text-purple-200"
+        >
+          İletişime Geçin →
+        </a>
+
+        <p className="text-[10px] text-[var(--text-secondary)]/50 text-center mt-3">
+          info@wheelvision.io
+        </p>
+      </div>
     </div>
   );
 }
@@ -246,102 +506,22 @@ function B2BCard({ t }: { t: ReturnType<typeof useTranslations<'pricing'>> }) {
 /* ─── Main Page ──────────────────────────────────────────────────────────── */
 export default function PricingPage() {
   const t = useTranslations('pricing');
-  const [tab, setTab] = useState<'b2c' | 'b2b'>('b2c');
+  const [tab, setTab]           = useState<'b2c' | 'b2b'>('b2c');
+  const [commitment, setCommitment] = useState('1');
   const [showComingSoon, setShowComingSoon] = useState(false);
-
-  const b2cPlans: B2CPlan[] = [
-    {
-      id: 'free',
-      name: t('free'),
-      price: t('freePrice'),
-      priceNote: t('freeNote'),
-      description: t('planFreeDesc'),
-      icon: Gift,
-      color: 'from-[#6B7280] to-[#4B5563]',
-      popular: false,
-      dimmed: true,
-      cta: t('freeCta'),
-      features: [
-        { text: t('feat2Credits'), included: true },
-        { text: t('featStandardQuality'), included: true },
-        { text: t('featWatermark'), included: true },
-        { text: t('featHistory'), included: false },
-        { text: t('featPriorityProcessing'), included: false },
-      ],
-    },
-    {
-      id: 'credit10',
-      name: t('credit10'),
-      price: t('credit10Price'),
-      priceNote: t('oneTimePay'),
-      description: t('planCredit10Desc'),
-      icon: Zap,
-      color: 'from-[#FF6B35] to-[#F72585]',
-      popular: false,
-      dimmed: false,
-      cta: t('buyCta'),
-      note: t('creditNote'),
-      features: [
-        { text: t('feat10Credits'), included: true },
-        { text: t('featHDNoWatermark'), included: true },
-        { text: t('featHistory'), included: true },
-        { text: t('featEmailSupport'), included: true },
-        { text: t('featPriorityProcessing'), included: false },
-      ],
-    },
-    {
-      id: 'credit30',
-      name: t('credit30'),
-      price: t('credit30Price'),
-      priceNote: t('oneTimePay'),
-      description: t('planCredit30Desc'),
-      icon: Crown,
-      color: 'from-[#F72585] to-[#7209B7]',
-      popular: true,
-      dimmed: false,
-      cta: t('buyCta'),
-      note: t('creditNote'),
-      features: [
-        { text: t('feat30Credits'), included: true },
-        { text: t('featHDNoWatermark'), included: true },
-        { text: t('featHistory'), included: true },
-        { text: t('featEmailSupport'), included: true },
-        { text: t('featPriorityProcessing'), included: true },
-      ],
-    },
-    {
-      id: 'credit50',
-      name: t('credit50'),
-      price: t('credit50Price'),
-      priceNote: t('oneTimePay'),
-      description: t('planCredit50Desc'),
-      icon: Gem,
-      color: 'from-[#7209B7] to-[#3A0CA3]',
-      popular: false,
-      dimmed: false,
-      cta: t('buyCta'),
-      note: t('creditNote'),
-      features: [
-        { text: t('feat50Credits'), included: true },
-        { text: t('featHDNoWatermark'), included: true },
-        { text: t('featHistory'), included: true },
-        { text: t('featPriorityProcessing'), included: true },
-        { text: t('featPrioritySupport'), included: true },
-      ],
-    },
-  ];
 
   return (
     <>
       <AnimatePresence>
         {showComingSoon && (
-          <ComingSoonModal key="coming-soon" onClose={() => setShowComingSoon(false)} t={t} />
+          <ComingSoonModal key="modal" onClose={() => setShowComingSoon(false)} />
         )}
       </AnimatePresence>
 
       <Navbar />
 
       <main className="min-h-screen pt-24 pb-16 px-4 relative overflow-hidden">
+        {/* Background blobs */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-[var(--accent-orange)] rounded-full blur-[150px] opacity-10" />
           <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-[var(--accent-purple)] rounded-full blur-[150px] opacity-10" />
@@ -406,7 +586,9 @@ export default function PricingPage() {
 
           {/* Tab Content */}
           <AnimatePresence mode="wait">
-            {tab === 'b2c' ? (
+
+            {/* ── B2C ── */}
+            {tab === 'b2c' && (
               <motion.div
                 key="b2c"
                 initial={{ opacity: 0, y: 20 }}
@@ -415,15 +597,15 @@ export default function PricingPage() {
                 transition={{ duration: 0.3 }}
               >
                 <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6 max-w-6xl mx-auto items-start">
-                  {b2cPlans.map((plan, i) => (
+                  {B2C_PLANS.map((plan, i) => (
                     <motion.div
                       key={plan.id}
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.3, delay: i * 0.07 }}
-                      className={plan.popular ? 'mt-4' : ''}
+                      className={plan.badge === 'Önerilen' ? 'mt-4' : ''}
                     >
-                      <B2CPlanCard plan={plan} onCtaClick={() => setShowComingSoon(true)} />
+                      <B2CPlanCard plan={plan} onBuy={() => setShowComingSoon(true)} />
                     </motion.div>
                   ))}
                 </div>
@@ -432,7 +614,10 @@ export default function PricingPage() {
                   {t('creditStackNote')}
                 </p>
               </motion.div>
-            ) : (
+            )}
+
+            {/* ── B2B ── */}
+            {tab === 'b2b' && (
               <motion.div
                 key="b2b"
                 initial={{ opacity: 0, y: 20 }}
@@ -440,7 +625,80 @@ export default function PricingPage() {
                 exit={{ opacity: 0, y: -20 }}
                 transition={{ duration: 0.3 }}
               >
-                <B2BCard t={t} />
+                {/* Commitment Toggle */}
+                <div className="flex flex-col items-center mb-10">
+                  <p className="text-sm text-[var(--text-secondary)] mb-3 font-medium">Taahhüt Süresi</p>
+                  <div className="inline-flex p-1 rounded-2xl border border-[var(--border-color)] bg-[var(--bg-card)] gap-1">
+                    {COMMITMENT_OPTIONS.map((opt) => (
+                      <button
+                        key={opt.value}
+                        onClick={() => setCommitment(opt.value)}
+                        className="relative flex flex-col items-center px-4 py-2 rounded-xl text-xs font-semibold transition-all duration-200 min-w-[60px]"
+                        style={commitment === opt.value ? {
+                          background: 'linear-gradient(135deg,#FF6B35,#F72585)',
+                          color: '#fff',
+                          boxShadow: '0 4px 12px rgba(247,37,133,0.3)',
+                        } : { color: 'var(--text-secondary)' }}
+                      >
+                        <span>{opt.label}</span>
+                        {opt.discount > 0 && (
+                          <span className={`text-[10px] font-bold ${commitment === opt.value ? 'text-white/80' : 'text-green-400'}`}>
+                            %{opt.discount} off
+                          </span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                  {commitment !== '1' && (
+                    <motion.p
+                      initial={{ opacity: 0, y: -6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="text-sm text-green-400 font-semibold mt-3"
+                    >
+                      🎉 %{COMMITMENT_OPTIONS.find(o => o.value === commitment)?.discount} indirim uygulandı!
+                    </motion.p>
+                  )}
+                </div>
+
+                {/* Plan Cards */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6 max-w-6xl mx-auto items-start">
+                  {B2B_PLANS.map((plan, i) => (
+                    <motion.div
+                      key={plan.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3, delay: i * 0.07 }}
+                      className={plan.badge ? 'mt-4' : ''}
+                    >
+                      <B2BPlanCard
+                        plan={plan}
+                        commitment={commitment}
+                        onBuy={() => setShowComingSoon(true)}
+                      />
+                    </motion.div>
+                  ))}
+
+                  {/* Enterprise */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, delay: B2B_PLANS.length * 0.07 }}
+                  >
+                    <EnterpriseCard />
+                  </motion.div>
+                </div>
+
+                {/* Rollover note */}
+                <div className="flex items-start gap-3 max-w-2xl mx-auto mt-8 p-4 rounded-2xl border border-[var(--border-color)] bg-[var(--bg-card)]">
+                  <span className="text-xl mt-0.5">♻️</span>
+                  <div>
+                    <p className="text-sm font-semibold">Kredi Devretme</p>
+                    <p className="text-xs text-[var(--text-secondary)] mt-0.5 leading-relaxed">
+                      Her ay başında aylık krediler eklenir. Kullanılmayan krediler bir sonraki aya devredilir.
+                      Abonelik iptal edilirse kalan krediler 30 gün daha geçerli kalır.
+                    </p>
+                  </div>
+                </div>
               </motion.div>
             )}
           </AnimatePresence>
@@ -457,6 +715,7 @@ export default function PricingPage() {
               ))}
             </div>
           </div>
+
         </div>
       </main>
     </>

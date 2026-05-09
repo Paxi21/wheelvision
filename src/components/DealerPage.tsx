@@ -572,7 +572,8 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
   const [uploadSheet,     setUploadSheet]     = useState(false);
   const [sheetClosing,    setSheetClosing]    = useState(false);
   const [demoUsage,           setDemoUsage]           = useState(0);
-  const [showLimitModal,      setShowLimitModal]      = useState(false);
+  const [showLimitModal,       setShowLimitModal]       = useState(false);
+  const [showDealerLimitModal, setShowDealerLimitModal] = useState(false);
   const [detectedCarWheelSize, setDetectedCarWheelSize] = useState<number | null>(null);
   const [showSizeWarning,     setShowSizeWarning]     = useState(false);
   const [sizeWarningConfirmed, setSizeWarningConfirmed] = useState(false);
@@ -661,7 +662,7 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
   }
 
   const limitReached = dealer.kullanilan >= dealer.aylik_limit;
-  const canGenerate  = !!carImageUrl && !!selectedWheel && !limitReached && !generating;
+  const canGenerate  = !!carImageUrl && !!selectedWheel && !generating;
 
   const processFile = async (file: File) => {
     setCarPreview(URL.createObjectURL(file));
@@ -714,6 +715,7 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
 
   const handleGenerate = async () => {
     if (!canGenerate) return;
+    if (limitReached) { setShowDealerLimitModal(true); return; }
     if (DEMO_LIMIT_ENABLED && demoUsage >= DEMO_LIMIT) { setShowLimitModal(true); return; }
 
     // Size mismatch check
@@ -733,7 +735,8 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
     setResultUrl(null);
     setSizeWarningConfirmed(false);
     try {
-      const res  = await fetch('/api/dealer/generate', {
+      // 1. İşlemi başlat — hemen generation_id döner
+      const res = await fetch('/api/dealer/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -745,11 +748,33 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
           ...(selectedWheel!.id === '__custom__' ? { custom_wheel_url: selectedWheel!.jant_foto_url } : {}),
         }),
       });
-      const data = await res.json() as { output_url?: string; error?: string };
+      const data = await res.json() as { generation_id?: string; status?: string; error?: string };
       if (!res.ok) throw new Error(data.error ?? 'Görsel oluşturulamadı');
-      setResultLoaded(false);
-      setResultUrl(data.output_url!);
-      setDemoUsage(prev => prev + 1);
+
+      const generationId = data.generation_id;
+      if (!generationId) throw new Error('İşlem başlatılamadı');
+
+      // 2. Sonuç hazır olana kadar polling (5sn aralıkla, max 4dk)
+      const maxAttempts = 48;
+      for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        await new Promise(r => setTimeout(r, 5000));
+
+        const statusRes = await fetch(`/api/dealer/status?id=${generationId}`);
+        const statusData = await statusRes.json() as { status: string; output_url?: string };
+
+        if (statusData.status === 'done' && statusData.output_url) {
+          setResultLoaded(false);
+          setResultUrl(statusData.output_url);
+          setDemoUsage(prev => prev + 1);
+          return;
+        }
+        if (statusData.status === 'error') {
+          throw new Error('Görsel oluşturulamadı. Lütfen tekrar deneyin.');
+        }
+        // 'processing' → devam et
+      }
+
+      throw new Error('İşlem zaman aşımına uğradı. Lütfen tekrar deneyin.');
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -837,9 +862,13 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
 
       {limitReached && (
         <div className="max-w-6xl mx-auto w-full px-4 lg:px-8 pt-4" style={{ position: 'relative', zIndex: 10 }}>
-          <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm text-center">
-            Bu ay için görsel hakkı dolmuştur.
-          </div>
+          <button
+            onClick={() => setShowDealerLimitModal(true)}
+            className="w-full p-4 rounded-xl text-sm text-center transition-opacity hover:opacity-80"
+            style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', color: '#f87171' }}
+          >
+            ⚠️ Bu ay için görsel hakkı dolmuştur ({dealer.kullanilan}/{dealer.aylik_limit}). Planı yükseltmek için tıklayın →
+          </button>
         </div>
       )}
 
@@ -1116,6 +1145,13 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
                   <p className="text-xs text-[var(--text-secondary)]">
                     {!carImageUrl && !selectedWheel ? 'Araç fotoğrafı ve jant seçin' : !carImageUrl ? 'Araç fotoğrafı ekleyin' : 'Katalogdan jant seçin'}
                   </p>
+                </div>
+              )}
+              {canGenerate && limitReached && !generating && (
+                <div className="hidden lg:flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl"
+                  style={{ background: 'rgba(239,68,68,0.06)', backdropFilter: 'blur(8px)', border: '1px solid rgba(239,68,68,0.2)' }}>
+                  <span className="text-xs">⚠️</span>
+                  <p className="text-xs" style={{ color: '#f87171' }}>Aylık görsel hakkı doldu. Devam etmek için plana tıklayın.</p>
                 </div>
               )}
               {DEMO_LIMIT_ENABLED && (
@@ -1548,6 +1584,61 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
                 >
                   <span aria-hidden style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: '40%', background: 'linear-gradient(90deg,transparent,rgba(255,255,255,0.15),transparent)', animation: 'shimmerBtn 3s linear infinite' }} />
                   Devam Et →
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ══ DEALER LIMIT MODAL ══════════════════════════════════════════════ */}
+      {showDealerLimitModal && (
+        <>
+          <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm" onClick={() => setShowDealerLimitModal(false)} />
+          <div
+            className="fixed inset-x-4 bottom-0 sm:inset-auto sm:left-1/2 sm:-translate-x-1/2 sm:bottom-auto sm:top-1/2 sm:-translate-y-1/2 sm:w-[400px] z-50 rounded-t-3xl sm:rounded-2xl border border-[var(--border-color)] overflow-hidden"
+            style={{ background: 'rgba(18,18,26,0.95)', backdropFilter: 'blur(24px)', animation: 'modalIn 0.25s ease-out' }}
+          >
+            <div className="sm:hidden w-12 h-1 rounded-full bg-[var(--border-color)] mx-auto mt-3" />
+            <div className="p-6">
+              <div className="text-center mb-6">
+                <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4"
+                  style={{ background: 'linear-gradient(135deg,rgba(239,68,68,0.15),rgba(247,37,133,0.15))' }}>
+                  <span className="text-3xl">⚠️</span>
+                </div>
+                <h3 className="font-bold text-lg text-white">Aylık Görsel Hakkı Doldu</h3>
+                <p className="text-sm text-[var(--text-secondary)] mt-2 leading-relaxed">
+                  Bu ay için görsel oluşturma hakkınız tükenmiştir.<br />
+                  Planınızı yükseltmek veya ek kredi almak için bizimle iletişime geçin.
+                </p>
+                <div className="mt-3 px-4 py-2 rounded-xl inline-flex items-center gap-2 text-xs"
+                  style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', color: '#f87171' }}>
+                  <span>{dealer.kullanilan}/{dealer.aylik_limit} görsel kullanıldı</span>
+                </div>
+              </div>
+              <div className="space-y-3">
+                <a
+                  href={`https://wa.me/905375859524?text=${encodeURIComponent(`Merhaba, ${dealer.firma_adi} hesabımın aylık görsel hakkı doldu. Planımı yükseltmek istiyorum.`)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="relative overflow-hidden w-full py-3.5 rounded-xl font-bold text-sm text-white flex items-center justify-center gap-2"
+                  style={{ background: '#25D366', boxShadow: '0 4px 16px rgba(37,211,102,0.3)' }}
+                >
+                  📱 WhatsApp ile Plan Yükselt
+                </a>
+                <a
+                  href={`mailto:info@wheelvision.io?subject=${encodeURIComponent(`Plan Yükseltme Talebi — ${dealer.firma_adi}`)}&body=${encodeURIComponent(`Merhaba,\n\n${dealer.firma_adi} hesabımın aylık görsel hakkı doldu. Planımı yükseltmek istiyorum.\n\nTeşekkürler.`)}`}
+                  className="w-full py-3.5 rounded-xl font-bold text-sm text-white flex items-center justify-center gap-2 transition-opacity hover:opacity-90"
+                  style={{ background: 'linear-gradient(135deg,#FF6B35,#F72585)', boxShadow: '0 4px 12px rgba(247,37,133,0.2)' }}
+                >
+                  📧 E-posta Gönder
+                </a>
+                <button
+                  onClick={() => setShowDealerLimitModal(false)}
+                  className="w-full py-3 rounded-xl text-sm text-[var(--text-secondary)] font-medium transition-colors hover:text-white"
+                  style={{ border: '1px solid var(--border-color)', background: 'transparent' }}
+                >
+                  Kapat
                 </button>
               </div>
             </div>
