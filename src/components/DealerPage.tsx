@@ -761,19 +761,42 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
           ...(selectedWheel!.id === '__custom__' ? { custom_wheel_url: selectedWheel!.jant_foto_url } : {}),
         }),
       });
-      const data = await res.json() as { generation_id?: string; status?: string; error?: string };
+      const data = await res.json() as {
+        generation_id?: string;
+        output_url?: string;   // n8n sync mode
+        status?: string;
+        error?: string;
+      };
+      console.log('[dealer/generate] response:', JSON.stringify(data));
       if (!res.ok) throw new Error(data.error ?? 'Görsel oluşturulamadı');
 
-      const generationId = data.generation_id;
-      if (!generationId) throw new Error('İşlem başlatılamadı');
+      // ── Mod A: n8n sync — output_url doğrudan döndü ──────────────────────
+      if (data.output_url) {
+        console.log('[dealer] sync mode — output_url:', data.output_url);
+        setResultLoaded(false);
+        setResultUrl(data.output_url);
+        setCurrentGenerationId(data.generation_id ?? null);
+        setShowLeadModal(true);
+        setDemoUsage(prev => prev + 1);
+        return;
+      }
 
-      // 2. Sonuç hazır olana kadar polling (5sn aralıkla, max 4dk)
+      // ── Mod B: async (Python API) — generation_id ile polling ────────────
+      const generationId = data.generation_id;
+      if (!generationId) {
+        console.error('[dealer] ne output_url ne generation_id geldi:', data);
+        throw new Error('Görsel oluşturulamadı. Lütfen tekrar deneyin.');
+      }
+      console.log('[dealer] async mode — polling generation_id:', generationId);
+
+      // Sonuç hazır olana kadar polling (5sn aralıkla, max 4dk)
       const maxAttempts = 48;
       for (let attempt = 0; attempt < maxAttempts; attempt++) {
         await new Promise(r => setTimeout(r, 5000));
 
         const statusRes = await fetch(`/api/dealer/status?id=${generationId}`);
         const statusData = await statusRes.json() as { status: string; output_url?: string };
+        console.log(`[dealer] poll #${attempt + 1}:`, statusData.status);
 
         if (statusData.status === 'done' && statusData.output_url) {
           setResultLoaded(false);
