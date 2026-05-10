@@ -574,6 +574,13 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
   const [demoUsage,           setDemoUsage]           = useState(0);
   const [showLimitModal,       setShowLimitModal]       = useState(false);
   const [showDealerLimitModal, setShowDealerLimitModal] = useState(false);
+  const [showLeadModal,        setShowLeadModal]        = useState(false);
+  const [leadSubmitted,        setLeadSubmitted]        = useState(false);
+  const [leadName,             setLeadName]             = useState('');
+  const [leadPhone,            setLeadPhone]            = useState('');
+  const [leadSubmitting,       setLeadSubmitting]       = useState(false);
+  const [currentGenerationId,  setCurrentGenerationId]  = useState<string | null>(null);
+  const [isPageVisible,        setIsPageVisible]        = useState(true);
   const [detectedCarWheelSize, setDetectedCarWheelSize] = useState<number | null>(null);
   const [showSizeWarning,     setShowSizeWarning]     = useState(false);
   const [sizeWarningConfirmed, setSizeWarningConfirmed] = useState(false);
@@ -619,6 +626,12 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
       localStorage.setItem('wheelvision_demo_usage', demoUsage.toString());
     }
   }, [demoUsage]);
+
+  useEffect(() => {
+    const handler = () => setIsPageVisible(document.visibilityState === 'visible');
+    document.addEventListener('visibilitychange', handler);
+    return () => document.removeEventListener('visibilitychange', handler);
+  }, []);
 
   // Must be before early return — hooks cannot be called conditionally
   const filteredWheels = useMemo(() => {
@@ -765,6 +778,8 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
         if (statusData.status === 'done' && statusData.output_url) {
           setResultLoaded(false);
           setResultUrl(statusData.output_url);
+          setCurrentGenerationId(generationId);
+          setShowLeadModal(true);
           setDemoUsage(prev => prev + 1);
           return;
         }
@@ -782,6 +797,37 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
     }
   };
 
+  const handleLeadSubmit = async () => {
+    if (!leadName.trim() || !leadPhone.trim()) return;
+    setLeadSubmitting(true);
+    try {
+      await fetch('/api/dealer/lead', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          generation_id: currentGenerationId,
+          musteri_isim: leadName.trim(),
+          musteri_telefon: leadPhone.trim(),
+        }),
+      });
+      // WhatsApp bildirim — bayiye arka planda gönder
+      if (dealer.whatsapp) {
+        const waText = `🔔 Yeni müşteri!\nİsim: ${leadName.trim()}\nTel: ${leadPhone.trim()}\nJant: ${selectedWheel?.jant_adi ?? '-'}`;
+        window.open(
+          `https://wa.me/${dealer.whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(waText)}`,
+          '_blank',
+          'noopener,noreferrer',
+        );
+      }
+    } catch {
+      // Supabase kaydı birincil hedef; WA bildirimi başarısız olsa da devam et
+    } finally {
+      setLeadSubmitted(true);
+      setShowLeadModal(false);
+      setLeadSubmitting(false);
+    }
+  };
+
   const handleReset = () => {
     setResultUrl(null);
     setSelectedWheel(null);
@@ -790,6 +836,11 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
     setCustomWheelPreview(null);
     setCustomWheelUrl(null);
     if (customWheelRef.current) customWheelRef.current.value = '';
+    setShowLeadModal(false);
+    setLeadSubmitted(false);
+    setLeadName('');
+    setLeadPhone('');
+    setCurrentGenerationId(null);
   };
 
   const handleCustomWheelFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -891,12 +942,62 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
                   </div>
                 </div>
               )}
-              <div className={`w-full h-full transition-opacity duration-700 ${resultLoaded ? 'opacity-100' : 'opacity-0'}`}>
+              {/* Protected result wrapper */}
+              <div
+                className={`w-full h-full relative transition-opacity duration-700 ${resultLoaded ? 'opacity-100' : 'opacity-0'}`}
+                style={{
+                  filter: !leadSubmitted
+                    ? 'blur(8px)'
+                    : !isPageVisible ? 'blur(12px)' : 'none',
+                  transition: 'filter 0.5s ease, opacity 0.7s',
+                  userSelect: 'none',
+                  WebkitUserSelect: 'none',
+                } as React.CSSProperties}
+                onContextMenu={e => e.preventDefault()}
+              >
                 <BeforeAfterSlider
                   before={carPreview}
                   after={resultUrl}
                   onAfterLoad={() => setResultLoaded(true)}
                 />
+
+                {/* CSS Watermark overlay */}
+                <div
+                  aria-hidden
+                  style={{
+                    position: 'absolute', inset: 0, display: 'flex',
+                    alignItems: 'center', justifyContent: 'center',
+                    pointerEvents: 'none', zIndex: 5, userSelect: 'none',
+                  }}
+                >
+                  <span style={{
+                    fontSize: 'clamp(24px,4.5vw,52px)', fontWeight: 900,
+                    color: 'rgba(255,255,255,0.18)',
+                    transform: 'rotate(-32deg)', letterSpacing: '5px',
+                    whiteSpace: 'nowrap', WebkitUserSelect: 'none',
+                    textShadow: '0 2px 8px rgba(0,0,0,0.2)',
+                  }}>
+                    WheelVision
+                  </span>
+                </div>
+
+                {/* Blur hint overlay (before lead submission) */}
+                {!leadSubmitted && resultLoaded && (
+                  <div style={{
+                    position: 'absolute', inset: 0, zIndex: 6,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    <div style={{
+                      textAlign: 'center', padding: '14px 22px',
+                      background: 'rgba(10,10,15,0.85)', backdropFilter: 'blur(4px)',
+                      borderRadius: '14px', border: '1px solid rgba(255,255,255,0.12)',
+                    }}>
+                      <p style={{ color: 'white', fontSize: '13px', fontWeight: 600 }}>
+                        🔒 Görseli görmek için bilgilerinizi girin
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -949,14 +1050,20 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
                 WhatsApp ile Sipariş Ver
               </a>
 
-              <button onClick={() => dealer.slug === 'testjant' ? downloadDirect(resultUrl, dealer.slug) : downloadWithWatermark(resultUrl, dealer.slug)}
+              <button
+                onClick={() => leadSubmitted ? (dealer.slug === 'testjant' ? downloadDirect(resultUrl, dealer.slug) : downloadWithWatermark(resultUrl, dealer.slug)) : setShowLeadModal(true)}
                 className="flex items-center justify-center gap-2 py-3.5 text-sm font-semibold rounded-2xl text-white transition-all"
-                style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.1)' }}
-                onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = 'rgba(255,255,255,0.2)'; el.style.background = 'rgba(255,255,255,0.05)'; }}
+                style={{
+                  background: 'transparent',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  opacity: leadSubmitted ? 1 : 0.45,
+                  cursor: leadSubmitted ? 'pointer' : 'not-allowed',
+                }}
+                onMouseEnter={e => { if (leadSubmitted) { const el = e.currentTarget as HTMLElement; el.style.borderColor = 'rgba(255,255,255,0.2)'; el.style.background = 'rgba(255,255,255,0.05)'; } }}
                 onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = 'rgba(255,255,255,0.1)'; el.style.background = 'transparent'; }}
               >
                 <Download className="w-4 h-4" />
-                Görseli İndir
+                {leadSubmitted ? 'Görseli İndir' : '🔒 Önce bilgilerinizi girin'}
               </button>
 
               <button onClick={handleReset}
@@ -1641,6 +1748,75 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
                   Kapat
                 </button>
               </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ══ LEAD CAPTURE MODAL ══════════════════════════════════════════════ */}
+      {showLeadModal && (
+        <>
+          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm" />
+          <div
+            className="fixed inset-x-4 bottom-0 sm:inset-auto sm:left-1/2 sm:-translate-x-1/2 sm:bottom-auto sm:top-1/2 sm:-translate-y-1/2 sm:w-[380px] z-50 rounded-t-3xl sm:rounded-2xl border border-[var(--border-color)] overflow-hidden"
+            style={{ background: 'rgba(18,18,26,0.97)', backdropFilter: 'blur(24px)', animation: 'modalIn 0.25s ease-out' }}
+          >
+            <div className="sm:hidden w-12 h-1 rounded-full bg-[var(--border-color)] mx-auto mt-3" />
+            <div className="p-6">
+              <div className="text-center mb-6">
+                <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4"
+                  style={{ background: 'linear-gradient(135deg,rgba(255,107,53,0.15),rgba(247,37,133,0.15))' }}>
+                  <span className="text-3xl">✨</span>
+                </div>
+                <h3 className="font-bold text-lg text-white">Görseliniz Hazır!</h3>
+                <p className="text-sm text-[var(--text-secondary)] mt-1 leading-relaxed">
+                  Görmek için isim ve telefon numaranızı girin.<br />
+                  Bayi sizinle iletişime geçebilir.
+                </p>
+              </div>
+
+              <div className="space-y-3 mb-5">
+                <input
+                  type="text"
+                  placeholder="Adınız Soyadınız *"
+                  value={leadName}
+                  onChange={e => setLeadName(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl text-sm outline-none text-white placeholder-[var(--text-secondary)]"
+                  style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-color)' }}
+                  onFocus={e => { (e.currentTarget as HTMLInputElement).style.borderColor = 'rgba(255,107,53,0.6)'; }}
+                  onBlur={e => { (e.currentTarget as HTMLInputElement).style.borderColor = 'var(--border-color)'; }}
+                  onKeyDown={e => { if (e.key === 'Enter') handleLeadSubmit(); }}
+                  autoFocus
+                />
+                <input
+                  type="tel"
+                  placeholder="Telefon Numaranız *"
+                  value={leadPhone}
+                  onChange={e => setLeadPhone(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl text-sm outline-none text-white placeholder-[var(--text-secondary)]"
+                  style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-color)' }}
+                  onFocus={e => { (e.currentTarget as HTMLInputElement).style.borderColor = 'rgba(255,107,53,0.6)'; }}
+                  onBlur={e => { (e.currentTarget as HTMLInputElement).style.borderColor = 'var(--border-color)'; }}
+                  onKeyDown={e => { if (e.key === 'Enter') handleLeadSubmit(); }}
+                />
+              </div>
+
+              <button
+                onClick={handleLeadSubmit}
+                disabled={!leadName.trim() || !leadPhone.trim() || leadSubmitting}
+                className="relative overflow-hidden w-full py-3.5 rounded-xl font-bold text-sm text-white flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{ background: 'linear-gradient(135deg,#FF6B35,#F72585,#7209B7)', boxShadow: '0 4px 16px rgba(247,37,133,0.3)' }}
+              >
+                {leadSubmitting ? (
+                  <><Loader2 className="w-4 h-4 animate-spin" /> Kaydediliyor...</>
+                ) : (
+                  <>✨ Görseli Gör</>
+                )}
+              </button>
+
+              <p className="text-[10px] text-[var(--text-secondary)]/50 text-center mt-3 leading-relaxed">
+                Bilgileriniz yalnızca {dealer.firma_adi} ile paylaşılır.
+              </p>
             </div>
           </div>
         </>
