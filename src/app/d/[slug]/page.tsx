@@ -44,7 +44,7 @@ export default async function DealerSlugPage({
   // Fetch dealer by slug
   const { data: dealer } = await supabase
     .from('dealers')
-    .select('id, firma_adi, slug, whatsapp, logo_url, aktif, aylik_limit, kullanilan, credits, plan_type, plan_name')
+    .select('id, firma_adi, slug, whatsapp, logo_url, aktif, aylik_limit, kullanilan')
     .eq('slug', slug)
     .single();
 
