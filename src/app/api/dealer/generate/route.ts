@@ -2,12 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { redis } from '@/lib/redis';
 
-export const maxDuration = 30;
+export const maxDuration = 120;
 
 const supabaseUrl  = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const serviceKey   = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+const n8nUrl       = process.env.N8N_WEBHOOK_URL!;
+const n8nSecret    = process.env.N8N_WEBHOOK_SECRET || '';
 const cloudName    = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME!;
-const WHEEL_SWAP_API = process.env.WHEEL_SWAP_API_URL || 'http://72.61.191.108:5679';
 
 const INTERNAL_KEYWORDS = ['dealer@wheelvision.io', 'supabase', 'Supabase', 'n8n', 'N8N', 'webhook', 'Webhook'];
 
@@ -32,22 +33,33 @@ function isValidCloudinaryUrl(url: unknown): boolean {
   }
 }
 
-// Python wheel swap API'ye fire-and-forget istek gönder
-// API async işler ve Supabase'i kendisi günceller
-function fireWheelSwap(generationId: string, carImageUrl: string, wheelImageUrl: string): void {
-  fetch(`${WHEEL_SWAP_API}/swap-wheels`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      generation_id: generationId,
-      car_image_url: carImageUrl,
-      wheel_image_url: wheelImageUrl,
-    }),
-    signal: AbortSignal.timeout(10000),
-  }).catch((e: Error) => {
-    console.error('[dealer/generate] fireWheelSwap error:', e.message);
-  });
+const TRUSTED = ['fal.media', 'v3.fal.media', 'res.cloudinary.com', 'storage.googleapis.com'];
+function isValidOutputUrl(url: unknown): url is string {
+  if (typeof url !== 'string') return false;
+  try {
+    const p = new URL(url);
+    return p.protocol === 'https:' && TRUSTED.some(d => p.hostname === d || p.hostname.endsWith(`.${d}`));
+  } catch { return false; }
 }
+
+const PROMPT_RIM_ONLY = `You are a professional automotive photo editor.
+Task: swap ONLY the wheel rims on the car in the first image using the exact rim design from the second image.
+The new rim must replicate the spoke pattern, finish, color, and design of the reference wheel precisely.
+Maintain the correct perspective, angle, and scale of the original wheel position on the car.
+Match all lighting, shadows, and reflections so the new rim looks naturally lit by the same environment.
+Keep the tire sidewall, brake calipers, and all surrounding car parts completely untouched.
+Do NOT change the car body, paint color, windows, interior, background, or road surface.
+The final result must look like a real professional photograph — seamless, photorealistic, no artificial edges or artifacts.
+Only the rim design changes. Everything else is identical to the original photo.`;
+
+const PROMPT_FULL_WHEEL = `You are a professional automotive photo editor.
+Task: replace the COMPLETE wheel assembly (rim AND tire) on the car using the wheel design from the second image.
+The new rim must exactly replicate the spoke pattern, finish, color, and design of the reference wheel.
+Adjust the tire sidewall height and profile proportionally to fit the new rim diameter.
+Maintain the correct perspective, angle, and scale for each wheel position on the car.
+Match all lighting, shadows, and reflections so the new wheels look naturally lit.
+Do NOT change the car body, paint color, windows, interior, background, or road surface.
+The final result must look like a real professional photograph — seamless, photorealistic, no artificial edges or artifacts.`;
 
 export async function POST(request: NextRequest) {
   console.log('[dealer/generate] request received');
@@ -129,7 +141,23 @@ export async function POST(request: NextRequest) {
       dbWheelId = wheel.id;
     }
 
-    // 4. Bekleyen generation kaydı oluştur
+    // 4. Dealer service user kredisini hazırla (n8n kredi kontrolü için)
+    const DEALER_EMAIL = 'dealer@wheelvision.io';
+    const { data: svcUser } = await supabase
+      .from('users')
+      .select('credits')
+      .eq('email', DEALER_EMAIL)
+      .maybeSingle();
+
+    if (!svcUser) {
+      await supabase.from('users').upsert({
+        email: DEALER_EMAIL, full_name: 'Dealer Service', credits: 99999, is_verified: true,
+      }, { onConflict: 'email' });
+    } else if (svcUser.credits < 100) {
+      await supabase.from('users').update({ credits: 99999 }).eq('email', DEALER_EMAIL);
+    }
+
+    // 5. Bekleyen generation kaydı oluştur
     const { data: genRow, error: genErr } = await supabase
       .from('dealer_generations')
       .insert({
@@ -149,20 +177,50 @@ export async function POST(request: NextRequest) {
     const generationId = genRow.id;
     console.log('[dealer/generate] generation_id:', generationId);
 
-    // 5. Kullanım sayacını artır
-    await supabase
-      .from('dealers')
-      .update({ kullanilan: dealer.kullanilan + 1 })
-      .eq('id', dealer.id);
+    // 6. n8n webhook çağrısı (sync, 90s)
+    const prompt = generation_type === 'full_wheel' ? PROMPT_FULL_WHEEL : PROMPT_RIM_ONLY;
 
-    // 6. Python wheel swap API'ye fire-and-forget gönder
-    // API async işler, sonucu dealer_generations.sonuc_foto_url'e yazar
-    fireWheelSwap(generationId, car_image as string, wheelImageUrl);
+    const n8nRes = await fetch(n8nUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Webhook-Secret': n8nSecret,
+      },
+      body: JSON.stringify({
+        car_image:   car_image,
+        wheel_image: wheelImageUrl,
+        prompt,
+        email: DEALER_EMAIL,
+      }),
+      signal: AbortSignal.timeout(90_000),
+    });
 
-    console.log('[dealer/generate] wheel swap API fired, returning immediately');
+    const n8nData = await n8nRes.json() as { output_url?: string; error?: string };
+    console.log('[dealer/generate] n8n response:', JSON.stringify(n8nData));
 
-    // 7. Frontend'e hemen cevap dön
-    return NextResponse.json({ generation_id: generationId, status: 'processing' });
+    if (!n8nRes.ok || !n8nData.output_url) {
+      const errMsg = n8nData.error ?? 'Görsel oluşturulamadı';
+      await supabase.from('dealer_generations').update({ sonuc_foto_url: '__error__' }).eq('id', generationId);
+      return NextResponse.json({ error: toUserMessage(errMsg) }, { status: 502 });
+    }
+
+    const outputUrl = n8nData.output_url;
+
+    if (!isValidOutputUrl(outputUrl)) {
+      await supabase.from('dealer_generations').update({ sonuc_foto_url: '__error__' }).eq('id', generationId);
+      return NextResponse.json({ error: 'Geçersiz sonuç görseli' }, { status: 502 });
+    }
+
+    // 7. Sonucu DB'ye yaz + kullanım sayacını artır
+    await Promise.all([
+      supabase.from('dealer_generations').update({ sonuc_foto_url: outputUrl }).eq('id', generationId),
+      supabase.from('dealers').update({ kullanilan: dealer.kullanilan + 1 }).eq('id', dealer.id),
+    ]);
+
+    console.log('[dealer/generate] done — output_url:', outputUrl);
+
+    // 8. Frontend'e hem output_url hem generation_id dön
+    return NextResponse.json({ output_url: outputUrl, generation_id: generationId });
 
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Bir hata oluştu';
