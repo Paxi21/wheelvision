@@ -198,17 +198,19 @@ export async function POST(request: NextRequest) {
     const n8nData = await n8nRes.json() as { output_url?: string; error?: string };
     console.log('[dealer/generate] n8n response:', JSON.stringify(n8nData));
 
+    const genHeaders = { 'X-Generation-Id': generationId };
+
     if (!n8nRes.ok || !n8nData.output_url) {
       const errMsg = n8nData.error ?? 'Görsel oluşturulamadı';
       await supabase.from('dealer_generations').update({ sonuc_foto_url: '__error__' }).eq('id', generationId);
-      return NextResponse.json({ error: toUserMessage(errMsg) }, { status: 502 });
+      return NextResponse.json({ error: toUserMessage(errMsg) }, { status: 502, headers: genHeaders });
     }
 
     const outputUrl = n8nData.output_url;
 
     if (!isValidOutputUrl(outputUrl)) {
       await supabase.from('dealer_generations').update({ sonuc_foto_url: '__error__' }).eq('id', generationId);
-      return NextResponse.json({ error: 'Geçersiz sonuç görseli' }, { status: 502 });
+      return NextResponse.json({ error: 'Geçersiz sonuç görseli' }, { status: 502, headers: genHeaders });
     }
 
     // 7. Sonucu DB'ye yaz + kullanım sayacını artır
@@ -220,7 +222,7 @@ export async function POST(request: NextRequest) {
     console.log('[dealer/generate] done — output_url:', outputUrl);
 
     // 8. Frontend'e hem output_url hem generation_id dön
-    return NextResponse.json({ output_url: outputUrl, generation_id: generationId });
+    return NextResponse.json({ output_url: outputUrl, generation_id: generationId }, { headers: genHeaders });
 
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Bir hata oluştu';

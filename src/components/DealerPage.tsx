@@ -747,8 +747,37 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
     setError(null);
     setResultUrl(null);
     setSizeWarningConfirmed(false);
+
+    const onSuccess = (outputUrl: string, generationId: string | null) => {
+      setResultLoaded(false);
+      setResultUrl(outputUrl);
+      setCurrentGenerationId(generationId);
+      setShowLeadModal(true);
+      setDemoUsage(prev => prev + 1);
+    };
+
+    const pollForResult = async (generationId: string) => {
+      const maxAttempts = 24; // max 2 dakika (5sn aralık)
+      for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        await new Promise(r => setTimeout(r, 5000));
+        const statusRes = await fetch(`/api/dealer/status?id=${generationId}`);
+        const statusData = await statusRes.json() as { status: string; output_url?: string };
+        console.log(`[dealer] poll #${attempt + 1}:`, statusData.status);
+        if (statusData.status === 'done' && statusData.output_url) {
+          onSuccess(statusData.output_url, generationId);
+          return;
+        }
+        if (statusData.status === 'error') {
+          throw new Error('Görsel oluşturulamadı. Lütfen tekrar deneyin.');
+        }
+      }
+      throw new Error('İşlem zaman aşımına uğradı. Lütfen tekrar deneyin.');
+    };
+
+    const controller = new AbortController();
+    const abortTimer = setTimeout(() => controller.abort(), 95_000);
+
     try {
-      // 1. İşlemi başlat — hemen generation_id döner
       const res = await fetch('/api/dealer/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -760,62 +789,55 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
           generation_type: generationType,
           ...(selectedWheel!.id === '__custom__' ? { custom_wheel_url: selectedWheel!.jant_foto_url } : {}),
         }),
+        signal: controller.signal,
       });
-      const data = await res.json() as {
-        generation_id?: string;
-        output_url?: string;   // n8n sync mode
-        status?: string;
-        error?: string;
-      };
+      clearTimeout(abortTimer);
+
+      // Header her zaman body'den önce gelir — JSON kırık olsa bile okunabilir
+      const headerGenId = res.headers.get('X-Generation-Id');
+
+      let data: { generation_id?: string; output_url?: string; status?: string; error?: string };
+      try {
+        const text = await res.text();
+        data = JSON.parse(text);
+      } catch {
+        // JSON parse hatası (truncated response) — header'daki ID ile polling yap
+        console.warn('[dealer] JSON parse hatası, fallback polling. headerGenId:', headerGenId);
+        if (headerGenId) {
+          await pollForResult(headerGenId);
+        } else {
+          throw new Error('Görsel oluşturulamadı. Lütfen tekrar deneyin.');
+        }
+        return;
+      }
+
       console.log('[dealer/generate] response:', JSON.stringify(data));
       if (!res.ok) throw new Error(data.error ?? 'Görsel oluşturulamadı');
 
       // ── Mod A: n8n sync — output_url doğrudan döndü ──────────────────────
       if (data.output_url) {
         console.log('[dealer] sync mode — output_url:', data.output_url);
-        setResultLoaded(false);
-        setResultUrl(data.output_url);
-        setCurrentGenerationId(data.generation_id ?? null);
-        setShowLeadModal(true);
-        setDemoUsage(prev => prev + 1);
+        onSuccess(data.output_url, data.generation_id ?? null);
         return;
       }
 
-      // ── Mod B: async (Python API) — generation_id ile polling ────────────
-      const generationId = data.generation_id;
+      // ── Mod B: generation_id ile polling (header fallback dahil) ─────────
+      const generationId = data.generation_id ?? headerGenId;
       if (!generationId) {
-        console.error('[dealer] ne output_url ne generation_id geldi:', data);
+        console.error('[dealer] ne output_url ne generation_id:', data);
         throw new Error('Görsel oluşturulamadı. Lütfen tekrar deneyin.');
       }
-      console.log('[dealer] async mode — polling generation_id:', generationId);
+      console.log('[dealer] polling generationId:', generationId);
+      await pollForResult(generationId);
 
-      // Sonuç hazır olana kadar polling (5sn aralıkla, max 4dk)
-      const maxAttempts = 48;
-      for (let attempt = 0; attempt < maxAttempts; attempt++) {
-        await new Promise(r => setTimeout(r, 5000));
-
-        const statusRes = await fetch(`/api/dealer/status?id=${generationId}`);
-        const statusData = await statusRes.json() as { status: string; output_url?: string };
-        console.log(`[dealer] poll #${attempt + 1}:`, statusData.status);
-
-        if (statusData.status === 'done' && statusData.output_url) {
-          setResultLoaded(false);
-          setResultUrl(statusData.output_url);
-          setCurrentGenerationId(generationId);
-          setShowLeadModal(true);
-          setDemoUsage(prev => prev + 1);
-          return;
-        }
-        if (statusData.status === 'error') {
-          throw new Error('Görsel oluşturulamadı. Lütfen tekrar deneyin.');
-        }
-        // 'processing' → devam et
-      }
-
-      throw new Error('İşlem zaman aşımına uğradı. Lütfen tekrar deneyin.');
     } catch (err) {
-      setError((err as Error).message);
+      if ((err as Error).name === 'AbortError') {
+        setError('İşlem zaman aşımına uğradı. Lütfen tekrar deneyin.');
+      } else {
+        setError((err as Error).message);
+      }
     } finally {
+      clearTimeout(abortTimer);
       setGenerating(false);
     }
   };
