@@ -4,13 +4,12 @@ import { redis } from '@/lib/redis';
 
 export const maxDuration = 120;
 
-const supabaseUrl  = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const serviceKey   = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-const n8nUrl       = process.env.N8N_WEBHOOK_URL!;
-const n8nSecret    = process.env.N8N_WEBHOOK_SECRET || '';
-const cloudName    = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME!;
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const serviceKey  = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+const falKey      = process.env.FAL_KEY!;
+const cloudName   = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME!;
 
-const INTERNAL_KEYWORDS = ['dealer@wheelvision.io', 'supabase', 'Supabase', 'n8n', 'N8N', 'webhook', 'Webhook'];
+const INTERNAL_KEYWORDS = ['supabase', 'Supabase', 'fal.run', 'FAL', 'webhook', 'Webhook'];
 
 function toUserMessage(msg: string): string {
   if (INTERNAL_KEYWORDS.some(k => msg.includes(k))) {
@@ -33,7 +32,7 @@ function isValidCloudinaryUrl(url: unknown): boolean {
   }
 }
 
-const TRUSTED = ['fal.media', 'v3.fal.media', 'res.cloudinary.com', 'storage.googleapis.com'];
+const TRUSTED = ['fal.media', 'v3.fal.media', 'v3b.fal.media', 'res.cloudinary.com', 'storage.googleapis.com'];
 function isValidOutputUrl(url: unknown): url is string {
   if (typeof url !== 'string') return false;
   try {
@@ -141,23 +140,7 @@ export async function POST(request: NextRequest) {
       dbWheelId = wheel.id;
     }
 
-    // 4. Dealer service user kredisini hazırla (n8n kredi kontrolü için)
-    const DEALER_EMAIL = 'dealer@wheelvision.io';
-    const { data: svcUser } = await supabase
-      .from('users')
-      .select('credits')
-      .eq('email', DEALER_EMAIL)
-      .maybeSingle();
-
-    if (!svcUser) {
-      await supabase.from('users').upsert({
-        email: DEALER_EMAIL, full_name: 'Dealer Service', credits: 99999, is_verified: true,
-      }, { onConflict: 'email' });
-    } else if (svcUser.credits < 100) {
-      await supabase.from('users').update({ credits: 99999 }).eq('email', DEALER_EMAIL);
-    }
-
-    // 5. Bekleyen generation kaydı oluştur
+    // 4. Bekleyen generation kaydı oluştur
     const { data: genRow, error: genErr } = await supabase
       .from('dealer_generations')
       .insert({
@@ -177,43 +160,44 @@ export async function POST(request: NextRequest) {
     const generationId = genRow.id;
     console.log('[dealer/generate] generation_id:', generationId);
 
-    // 6. n8n webhook çağrısı (sync, 90s)
+    // 5. Fal AI çağrısı (sync, 90s)
     const prompt = generation_type === 'full_wheel' ? PROMPT_FULL_WHEEL : PROMPT_RIM_ONLY;
 
-    const n8nRes = await fetch(n8nUrl, {
+    const falRes = await fetch('https://fal.run/fal-ai/nano-banana-2/edit', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-Webhook-Secret': n8nSecret,
+        'Authorization': `Key ${falKey}`,
       },
       body: JSON.stringify({
-        car_image:   car_image,
-        wheel_image: wheelImageUrl,
+        image_urls: [car_image, wheelImageUrl],
         prompt,
-        email: DEALER_EMAIL,
+        strength: 0.43,
+        guidance_scale: 9,
+        num_inference_steps: 50,
       }),
       signal: AbortSignal.timeout(90_000),
     });
 
-    const n8nData = await n8nRes.json() as { output_url?: string; error?: string };
-    console.log('[dealer/generate] n8n response:', JSON.stringify(n8nData));
+    const falData = await falRes.json() as { images?: { url: string }[]; error?: string };
+    console.log('[dealer/generate] fal response status:', falRes.status);
 
     const genHeaders = { 'X-Generation-Id': generationId };
 
-    if (!n8nRes.ok || !n8nData.output_url) {
-      const errMsg = n8nData.error ?? 'Görsel oluşturulamadı';
+    if (!falRes.ok || !falData.images?.[0]?.url) {
+      const errMsg = falData.error ?? 'Görsel oluşturulamadı';
       await supabase.from('dealer_generations').update({ sonuc_foto_url: '__error__' }).eq('id', generationId);
       return NextResponse.json({ error: toUserMessage(errMsg) }, { status: 502, headers: genHeaders });
     }
 
-    const outputUrl = n8nData.output_url;
+    const outputUrl = falData.images[0].url;
 
     if (!isValidOutputUrl(outputUrl)) {
       await supabase.from('dealer_generations').update({ sonuc_foto_url: '__error__' }).eq('id', generationId);
       return NextResponse.json({ error: 'Geçersiz sonuç görseli' }, { status: 502, headers: genHeaders });
     }
 
-    // 7. Sonucu DB'ye yaz + kullanım sayacını artır
+    // 6. Sonucu DB'ye yaz + kullanım sayacını artır
     await Promise.all([
       supabase.from('dealer_generations').update({ sonuc_foto_url: outputUrl }).eq('id', generationId),
       supabase.from('dealers').update({ kullanilan: dealer.kullanilan + 1 }).eq('id', dealer.id),
@@ -221,7 +205,7 @@ export async function POST(request: NextRequest) {
 
     console.log('[dealer/generate] done — output_url:', outputUrl);
 
-    // 8. Frontend'e hem output_url hem generation_id dön
+    // 7. Frontend'e hem output_url hem generation_id dön
     return NextResponse.json({ output_url: outputUrl, generation_id: generationId }, { headers: genHeaders });
 
   } catch (err) {
