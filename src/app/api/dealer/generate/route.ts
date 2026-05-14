@@ -41,15 +41,17 @@ function isValidOutputUrl(url: unknown): url is string {
   } catch { return false; }
 }
 
-const PROMPT_RIM_ONLY = `You are a professional automotive photo editor.
-Task: swap ONLY the wheel rims on the car in the first image using the exact rim design from the second image.
-The new rim must replicate the spoke pattern, finish, color, and design of the reference wheel precisely.
-Maintain the correct perspective, angle, and scale of the original wheel position on the car.
-Match all lighting, shadows, and reflections so the new rim looks naturally lit by the same environment.
-Keep the tire sidewall, brake calipers, and all surrounding car parts completely untouched.
-Do NOT change the car body, paint color, windows, interior, background, or road surface.
-The final result must look like a real professional photograph — seamless, photorealistic, no artificial edges or artifacts.
-Only the rim design changes. Everything else is identical to the original photo.`;
+const PROMPT_RIM_ONLY = `Professional automotive photo retouching task. You are given two images: IMAGE 1 is the car photo to edit, IMAGE 2 is the reference wheel/rim design to apply.
+TASK: Replace ONLY the wheel rims in IMAGE 1 with the rim design from IMAGE 2.
+CRITICAL RULES:
+1) Change NOTHING except the rim/wheel design — not the car body, not the color, not the paint, not the background.
+2) ALL VISIBLE WHEELS MUST BE CHANGED — Apply the new rim design to EVERY wheel visible in the image.
+3) LIGHTING — READ, DO NOT CREATE: inherit existing lighting at each wheel location.
+4) The tire sidewall must remain completely unchanged.
+5) Photorealistic, no artifacts.
+6) The new rim must exactly match the spoke count, spoke shape, color, finish and material of IMAGE 2.
+7) Maintain correct perspective and scale for each wheel position.
+ABSOLUTE PROHIBITION: Do not add shadows. Do not add light. Do not change car color. Do not change background.`;
 
 const PROMPT_FULL_WHEEL = `You are a professional automotive photo editor.
 Task: replace the COMPLETE wheel assembly (rim AND tire) on the car using the wheel design from the second image.
@@ -172,9 +174,9 @@ export async function POST(request: NextRequest) {
       body: JSON.stringify({
         image_urls: [car_image, wheelImageUrl],
         prompt,
-        strength: 0.43,
+        strength: 0.35,
         guidance_scale: 9,
-        num_inference_steps: 50,
+        num_inference_steps: 40,
       }),
       signal: AbortSignal.timeout(90_000),
     });
