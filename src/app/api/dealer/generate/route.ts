@@ -142,27 +142,27 @@ export async function POST(request: NextRequest) {
     const genHeaders   = { 'X-Generation-Id': generationId };
     console.log('[dealer/generate] generation_id:', generationId);
 
-    // 5. VPS swap-wheel API çağrısı (110s timeout)
-    const vpsRes = await fetch(VPS_SWAP_URL, {
+    // 5. VPS swap-wheel API çağrısı
+    const swapRes = await fetch(VPS_SWAP_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         car_image_url:   car_image,
         wheel_image_url: wheelImageUrl,
       }),
-      signal: AbortSignal.timeout(110_000),
+      signal: AbortSignal.timeout(90_000),
     });
 
-    const vpsData = await vpsRes.json() as { result_url?: string; error?: string };
-    console.log('[dealer/generate] vps response status:', vpsRes.status);
+    const swapData = await swapRes.json() as { result_url?: string; error?: string };
+    console.log('[dealer/generate] vps response status:', swapRes.status);
 
-    if (!vpsRes.ok || !vpsData.result_url) {
-      const errMsg = vpsData.error ?? 'Görsel oluşturulamadı';
+    if (!swapRes.ok || !swapData.result_url) {
+      const errMsg = swapData.error ?? 'Görsel oluşturulamadı';
       await supabase.from('dealer_generations').update({ sonuc_foto_url: '__error__' }).eq('id', generationId);
       return NextResponse.json({ error: toUserMessage(errMsg) }, { status: 502, headers: genHeaders });
     }
 
-    const outputUrl = vpsData.result_url;
+    const outputUrl = swapData.result_url;
 
     if (!isValidOutputUrl(outputUrl)) {
       await supabase.from('dealer_generations').update({ sonuc_foto_url: '__error__' }).eq('id', generationId);
