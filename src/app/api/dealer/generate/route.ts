@@ -162,17 +162,65 @@ export async function POST(request: NextRequest) {
     const generationId = genRow.id;
     console.log('[dealer/generate] generation_id:', generationId);
 
-    // 5. Fal AI çağrısı (sync, 90s)
+    // 5. Fal AI pipeline (sync, max ~90s toplam)
     const prompt = generation_type === 'full_wheel' ? PROMPT_FULL_WHEEL : PROMPT_RIM_ONLY;
+    const falHeaders = { 'Content-Type': 'application/json', 'Authorization': `Key ${falKey}` };
+
+    // Pipeline: SAM3 → Erase → Nano Banana 2
+    // Herhangi bir adım başarısız olursa direkt swap'a fallback
+    let finalCarImage = car_image as string;
+    let maskUrl: string | null = null;
+
+    try {
+      // Adım 1: SAM 3 — jant maskesi tespit
+      const sam3Res = await fetch('https://fal.run/fal-ai/sam-3/image', {
+        method: 'POST',
+        headers: falHeaders,
+        body: JSON.stringify({
+          image_url: car_image,
+          prompt: 'car wheel',
+          multimask_output: true,
+          apply_mask: false,
+        }),
+        signal: AbortSignal.timeout(30_000),
+      });
+      const sam3Data = await sam3Res.json() as { masks?: { url: string }[] };
+      maskUrl = sam3Data?.masks?.[0]?.url ?? null;
+      console.log('[dealer/generate] sam3 mask:', maskUrl ?? 'none');
+
+      // Adım 2: Erase — mevcut jantı inpainting ile sil
+      if (maskUrl) {
+        const eraseRes = await fetch('https://fal.run/fal-ai/inpaint', {
+          method: 'POST',
+          headers: falHeaders,
+          body: JSON.stringify({
+            image_url: car_image,
+            mask_url: maskUrl,
+            prompt: 'clean car body without wheels, smooth car body panel',
+          }),
+          signal: AbortSignal.timeout(30_000),
+        });
+        const eraseData = await eraseRes.json() as { images?: { url: string }[] };
+        const erasedUrl = eraseData?.images?.[0]?.url;
+        if (erasedUrl) {
+          finalCarImage = erasedUrl;
+          console.log('[dealer/generate] erase done:', erasedUrl);
+        }
+      }
+    } catch (pipelineErr) {
+      console.warn('[dealer/generate] SAM3/Erase pipeline failed, using direct swap:', pipelineErr);
+    }
+
+    // Adım 3: Nano Banana 2 — jant entegrasyonu
+    const imageUrls = maskUrl
+      ? [finalCarImage, wheelImageUrl, maskUrl]
+      : [finalCarImage, wheelImageUrl];
 
     const falRes = await fetch('https://fal.run/fal-ai/nano-banana-2/edit', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Key ${falKey}`,
-      },
+      headers: falHeaders,
       body: JSON.stringify({
-        image_urls: [car_image, wheelImageUrl],
+        image_urls: imageUrls,
         prompt,
         strength: 0.35,
         guidance_scale: 9,
