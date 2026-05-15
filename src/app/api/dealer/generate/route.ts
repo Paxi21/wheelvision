@@ -6,10 +6,10 @@ export const maxDuration = 120;
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const serviceKey  = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-const falKey      = process.env.FAL_KEY!;
 const cloudName   = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME!;
+const VPS_SWAP_URL = process.env.VPS_SWAP_URL || 'http://72.61.191.108:5679/swap-wheel';
 
-const INTERNAL_KEYWORDS = ['supabase', 'Supabase', 'fal.run', 'FAL', 'webhook', 'Webhook'];
+const INTERNAL_KEYWORDS = ['supabase', 'Supabase', 'fal.run', 'FAL', 'webhook', 'Webhook', '72.61'];
 
 function toUserMessage(msg: string): string {
   if (INTERNAL_KEYWORDS.some(k => msg.includes(k))) {
@@ -41,27 +41,6 @@ function isValidOutputUrl(url: unknown): url is string {
   } catch { return false; }
 }
 
-const PROMPT_RIM_ONLY = `Professional automotive photo retouching task. You are given two images: IMAGE 1 is the car photo to edit, IMAGE 2 is the reference wheel/rim design to apply.
-TASK: Replace ONLY the wheel rims in IMAGE 1 with the rim design from IMAGE 2.
-CRITICAL RULES:
-1) Change NOTHING except the rim/wheel design — not the car body, not the color, not the paint, not the background.
-2) ALL VISIBLE WHEELS MUST BE CHANGED — Apply the new rim design to EVERY wheel visible in the image.
-3) LIGHTING — READ, DO NOT CREATE: inherit existing lighting at each wheel location.
-4) The tire sidewall must remain completely unchanged.
-5) Photorealistic, no artifacts.
-6) The new rim must exactly match the spoke count, spoke shape, color, finish and material of IMAGE 2.
-7) Maintain correct perspective and scale for each wheel position.
-ABSOLUTE PROHIBITION: Do not add shadows. Do not add light. Do not change car color. Do not change background.`;
-
-const PROMPT_FULL_WHEEL = `You are a professional automotive photo editor.
-Task: replace the COMPLETE wheel assembly (rim AND tire) on the car using the wheel design from the second image.
-The new rim must exactly replicate the spoke pattern, finish, color, and design of the reference wheel.
-Adjust the tire sidewall height and profile proportionally to fit the new rim diameter.
-Maintain the correct perspective, angle, and scale for each wheel position on the car.
-Match all lighting, shadows, and reflections so the new wheels look naturally lit.
-Do NOT change the car body, paint color, windows, interior, background, or road surface.
-The final result must look like a real professional photograph — seamless, photorealistic, no artificial edges or artifacts.`;
-
 export async function POST(request: NextRequest) {
   console.log('[dealer/generate] request received');
 
@@ -89,7 +68,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Geçersiz istek' }, { status: 400 });
     }
 
-    const { dealer_id, slug, car_image, wheel_id, generation_type, custom_wheel_url } = body;
+    const { dealer_id, slug, car_image, wheel_id, custom_wheel_url } = body;
 
     if (!isValidCloudinaryUrl(car_image)) {
       return NextResponse.json({ error: 'Geçersiz araba görseli' }, { status: 400 });
@@ -142,7 +121,7 @@ export async function POST(request: NextRequest) {
       dbWheelId = wheel.id;
     }
 
-    // 4. Bekleyen generation kaydı oluştur
+    // 4. Generation kaydı oluştur
     const { data: genRow, error: genErr } = await supabase
       .from('dealer_generations')
       .insert({
@@ -160,87 +139,30 @@ export async function POST(request: NextRequest) {
     }
 
     const generationId = genRow.id;
+    const genHeaders   = { 'X-Generation-Id': generationId };
     console.log('[dealer/generate] generation_id:', generationId);
 
-    // 5. Fal AI pipeline (sync, max ~90s toplam)
-    const prompt = generation_type === 'full_wheel' ? PROMPT_FULL_WHEEL : PROMPT_RIM_ONLY;
-    const falHeaders = { 'Content-Type': 'application/json', 'Authorization': `Key ${falKey}` };
-
-    // Pipeline: SAM3 → Erase → Nano Banana 2
-    // Herhangi bir adım başarısız olursa direkt swap'a fallback
-    let finalCarImage = car_image as string;
-    let maskUrl: string | null = null;
-
-    try {
-      // Adım 1: SAM 3 — jant maskesi tespit
-      const sam3Res = await fetch('https://fal.run/fal-ai/sam-3/image', {
-        method: 'POST',
-        headers: falHeaders,
-        body: JSON.stringify({
-          image_url: car_image,
-          prompt: 'car wheel',
-          multimask_output: true,
-          apply_mask: false,
-        }),
-        signal: AbortSignal.timeout(30_000),
-      });
-      const sam3Data = await sam3Res.json() as { masks?: { url: string }[] };
-      maskUrl = sam3Data?.masks?.[0]?.url ?? null;
-      console.log('[dealer/generate] sam3 mask:', maskUrl ?? 'none');
-
-      // Adım 2: Erase — mevcut jantı inpainting ile sil
-      if (maskUrl) {
-        const eraseRes = await fetch('https://fal.run/fal-ai/inpaint', {
-          method: 'POST',
-          headers: falHeaders,
-          body: JSON.stringify({
-            image_url: car_image,
-            mask_url: maskUrl,
-            prompt: 'clean car body without wheels, smooth car body panel',
-          }),
-          signal: AbortSignal.timeout(30_000),
-        });
-        const eraseData = await eraseRes.json() as { images?: { url: string }[] };
-        const erasedUrl = eraseData?.images?.[0]?.url;
-        if (erasedUrl) {
-          finalCarImage = erasedUrl;
-          console.log('[dealer/generate] erase done:', erasedUrl);
-        }
-      }
-    } catch (pipelineErr) {
-      console.warn('[dealer/generate] SAM3/Erase pipeline failed, using direct swap:', pipelineErr);
-    }
-
-    // Adım 3: Nano Banana 2 — jant entegrasyonu
-    const imageUrls = maskUrl
-      ? [finalCarImage, wheelImageUrl, maskUrl]
-      : [finalCarImage, wheelImageUrl];
-
-    const falRes = await fetch('https://fal.run/fal-ai/nano-banana-2/edit', {
+    // 5. VPS swap-wheel API çağrısı (110s timeout)
+    const vpsRes = await fetch(VPS_SWAP_URL, {
       method: 'POST',
-      headers: falHeaders,
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        image_urls: imageUrls,
-        prompt,
-        strength: 0.35,
-        guidance_scale: 9,
-        num_inference_steps: 40,
+        car_image_url:   car_image,
+        wheel_image_url: wheelImageUrl,
       }),
-      signal: AbortSignal.timeout(90_000),
+      signal: AbortSignal.timeout(110_000),
     });
 
-    const falData = await falRes.json() as { images?: { url: string }[]; error?: string };
-    console.log('[dealer/generate] fal response status:', falRes.status);
+    const vpsData = await vpsRes.json() as { result_url?: string; error?: string };
+    console.log('[dealer/generate] vps response status:', vpsRes.status);
 
-    const genHeaders = { 'X-Generation-Id': generationId };
-
-    if (!falRes.ok || !falData.images?.[0]?.url) {
-      const errMsg = falData.error ?? 'Görsel oluşturulamadı';
+    if (!vpsRes.ok || !vpsData.result_url) {
+      const errMsg = vpsData.error ?? 'Görsel oluşturulamadı';
       await supabase.from('dealer_generations').update({ sonuc_foto_url: '__error__' }).eq('id', generationId);
       return NextResponse.json({ error: toUserMessage(errMsg) }, { status: 502, headers: genHeaders });
     }
 
-    const outputUrl = falData.images[0].url;
+    const outputUrl = vpsData.result_url;
 
     if (!isValidOutputUrl(outputUrl)) {
       await supabase.from('dealer_generations').update({ sonuc_foto_url: '__error__' }).eq('id', generationId);
@@ -255,7 +177,6 @@ export async function POST(request: NextRequest) {
 
     console.log('[dealer/generate] done — output_url:', outputUrl);
 
-    // 7. Frontend'e hem output_url hem generation_id dön
     return NextResponse.json({ output_url: outputUrl, generation_id: generationId }, { headers: genHeaders });
 
   } catch (err) {
