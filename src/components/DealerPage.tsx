@@ -161,10 +161,10 @@ function BeforeAfterSlider({ before, after, onAfterLoad }: { before: string; aft
           onPointerMove={onPointerMove}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={cdnUrl(after, 1200)} alt="Sonra" onLoad={onAfterLoad} className="absolute inset-0 w-full h-full object-cover pointer-events-none" draggable={false} />
+          <img src={cdnUrl(after, 1200)} alt="Sonra" onLoad={onAfterLoad} className="absolute inset-0 w-full h-full object-contain pointer-events-none" draggable={false} />
           <div className="absolute inset-0" style={{ clipPath: `inset(0 ${100 - position}% 0 0)` }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={before} alt="Önce" className="w-full h-full object-cover pointer-events-none" draggable={false} />
+            <img src={before} alt="Önce" className="w-full h-full object-contain pointer-events-none" draggable={false} />
           </div>
           <div className="absolute top-3 left-3 px-3 py-1.5 rounded-full backdrop-blur-md bg-black/50 border border-white/15 text-xs font-semibold text-white/80 pointer-events-none">ÖNCE</div>
           <div className="absolute top-3 right-3 px-3 py-1.5 rounded-full backdrop-blur-md border border-white/20 text-xs font-bold text-white pointer-events-none"
