@@ -1150,9 +1150,9 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
                   <p className="text-xs font-semibold text-[var(--text-secondary)]">Araç Fotoğrafı</p>
                 </div>
                 {carPreview ? (
-                  <div className="relative rounded-xl overflow-hidden" style={{ aspectRatio: '4/3' }}>
+                  <div className="relative rounded-xl overflow-hidden bg-gray-900 flex items-center justify-center" style={{ aspectRatio: '4/3' }}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={carPreview} alt="Araç" className="w-full h-full object-cover" />
+                    <img src={carPreview} alt="Araç" className="w-full h-full object-contain" />
                     {uploading && (
                       <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center gap-2">
                         <Loader2 className="w-7 h-7 animate-spin text-white" />
