@@ -7,7 +7,7 @@ export const maxDuration = 120;
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const serviceKey  = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 const cloudName   = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME!;
-const VPS_SWAP_URL = process.env.VPS_SWAP_URL || 'http://72.61.191.108:5679/swap-wheel';
+const N8N_URL = process.env.VPS_SWAP_URL || process.env.N8N_WEBHOOK_URL || 'https://n8n.wheelvision.io/webhook/jant-v4';
 
 const INTERNAL_KEYWORDS = ['supabase', 'Supabase', 'fal.run', 'FAL', 'webhook', 'Webhook', '72.61'];
 
@@ -142,27 +142,61 @@ export async function POST(request: NextRequest) {
     const genHeaders   = { 'X-Generation-Id': generationId };
     console.log('[dealer/generate] generation_id:', generationId);
 
-    // 5. VPS swap-wheel API çağrısı
-    const swapRes = await fetch(VPS_SWAP_URL, {
+    // 5. n8n webhook API çağrısı
+    const n8nHeaders: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (process.env.N8N_WEBHOOK_SECRET) n8nHeaders['X-Webhook-Secret'] = process.env.N8N_WEBHOOK_SECRET;
+
+    const swapRes = await fetch(N8N_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: n8nHeaders,
       body: JSON.stringify({
-        car_image_url:   car_image,
-        wheel_image_url: wheelImageUrl,
+        user_email: 'dealer@wheelvision.io',
+        car_image:   car_image,
+        wheel_image: wheelImageUrl,
+        prompt: 'You are a professional automotive photo editor. Task: swap ONLY the wheel rims on the car in the first image using the exact rim design from the second image. The new rim must replicate the spoke pattern, finish, color, and design of the reference wheel precisely. Maintain the correct perspective, angle, and scale of the original wheel position on the car. Match all lighting, shadows, and reflections so the new rim looks naturally lit by the same environment. Keep the tire sidewall, brake calipers, and all surrounding car parts completely untouched. Do NOT change the car body, paint color, windows, interior, background, or road surface. The final result must look like a real professional photograph — seamless, photorealistic, no artificial edges or artifacts. Only the rim design changes. Everything else is identical to the original photo.',
       }),
       signal: AbortSignal.timeout(90_000),
     });
 
-    const swapData = await swapRes.json() as { result_url?: string; error?: string };
-    console.log('[dealer/generate] vps response status:', swapRes.status);
+    console.log('[dealer/generate] n8n response status:', swapRes.status);
 
-    if (!swapRes.ok || !swapData.result_url) {
-      const errMsg = swapData.error ?? 'Görsel oluşturulamadı';
+    if (!swapRes.ok) {
+      const errText = await swapRes.text().catch(() => '');
+      console.error('[dealer/generate] n8n error:', errText);
       await supabase.from('dealer_generations').update({ sonuc_foto_url: '__error__' }).eq('id', generationId);
-      return NextResponse.json({ error: toUserMessage(errMsg) }, { status: 502, headers: genHeaders });
+      return NextResponse.json({ error: 'Görsel oluşturulamadı. Lütfen tekrar deneyin.' }, { status: 502, headers: genHeaders });
     }
 
-    const outputUrl = swapData.result_url;
+    const swapText = await swapRes.text();
+    if (!swapText?.trim()) {
+      await supabase.from('dealer_generations').update({ sonuc_foto_url: '__error__' }).eq('id', generationId);
+      return NextResponse.json({ error: 'Görsel oluşturulamadı.' }, { status: 502, headers: genHeaders });
+    }
+
+    let swapData: Record<string, unknown>;
+    try {
+      swapData = JSON.parse(swapText);
+    } catch {
+      console.error('[dealer/generate] invalid JSON:', swapText);
+      await supabase.from('dealer_generations').update({ sonuc_foto_url: '__error__' }).eq('id', generationId);
+      return NextResponse.json({ error: 'Görsel oluşturulamadı.' }, { status: 502, headers: genHeaders });
+    }
+
+    // n8n farklı formatlarda dönebilir
+    const candidates = [
+      swapData.output_url,
+      (swapData.images as { url?: string }[])?.[0]?.url,
+      (swapData.image as { url?: string })?.url,
+      swapData.url,
+      swapData.result_url,
+    ];
+    const outputUrl = candidates.find(u => typeof u === 'string' && u.startsWith('https://')) as string | undefined;
+
+    if (!outputUrl) {
+      console.error('[dealer/generate] no valid URL in response:', swapData);
+      await supabase.from('dealer_generations').update({ sonuc_foto_url: '__error__' }).eq('id', generationId);
+      return NextResponse.json({ error: 'Görsel oluşturulamadı.' }, { status: 502, headers: genHeaders });
+    }
 
     if (!isValidOutputUrl(outputUrl)) {
       await supabase.from('dealer_generations').update({ sonuc_foto_url: '__error__' }).eq('id', generationId);
