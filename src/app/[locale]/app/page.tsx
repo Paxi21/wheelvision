@@ -20,7 +20,6 @@ export default function AppPage() {
   const [resultImage, setResultImage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  // Cache in-flight upload promises so generate doesn't re-upload the same file
   const carUploadRef = useRef<Promise<string> | null>(null);
   const wheelUploadRef = useRef<Promise<string> | null>(null);
   const router = useRouter();
@@ -86,7 +85,6 @@ export default function AppPage() {
       setCarFile(file);
       setCarImage(prev => { if (prev) URL.revokeObjectURL(prev); return URL.createObjectURL(file); });
       setResultImage(null);
-      // Start Cloudinary upload immediately in background
       carUploadRef.current = uploadToCloudinary(file);
     }
   }, [uploadToCloudinary]);
@@ -97,7 +95,6 @@ export default function AppPage() {
       setWheelFile(file);
       setWheelImage(prev => { if (prev) URL.revokeObjectURL(prev); return URL.createObjectURL(file); });
       setResultImage(null);
-      // Start Cloudinary upload immediately in background
       wheelUploadRef.current = uploadToCloudinary(file);
     }
   }, [uploadToCloudinary]);
@@ -114,10 +111,9 @@ export default function AppPage() {
     setError('');
     setResultImage(null);
 
-    // Helper: reuse in-progress upload if available, otherwise upload fresh
     const resolveUpload = async (ref: React.MutableRefObject<Promise<string> | null>, file: File) => {
       if (ref.current) {
-        try { return await ref.current; } catch { /* fall through to fresh upload */ }
+        try { return await ref.current; } catch { /* fall through */ }
       }
       return uploadToCloudinary(file);
     };
@@ -163,18 +159,48 @@ export default function AppPage() {
         throw new Error((data.error as string) || `Sunucu hatası: ${response.status}`);
       }
 
-      const imageUrl = data.output_url as string | undefined;
-
-      if (imageUrl) {
-        // Show result immediately — don't wait for watermark
+      // Immediate result (cache hit)
+      if (data.output_url) {
+        const imageUrl = data.output_url as string;
         setResultImage(imageUrl);
         setLocalCredits((prev) => (prev !== null ? prev - 1 : 0));
-        void refreshUser(); // sync Navbar credit count in background
-        // Apply watermark async, update result when done
+        void refreshUser();
         applyWatermark(imageUrl).then((wm) => setResultImage(wm)).catch(() => {});
-      } else {
-        throw new Error('Görsel URL bulunamadı.');
+        return;
       }
+
+      // Async polling — n8n returns job_id, we poll Supabase
+      if (data.job_id) {
+        const jobId = data.job_id as string;
+        const maxAttempts = 60; // 60 x 3s = 180 seconds max
+
+        for (let i = 0; i < maxAttempts; i++) {
+          await new Promise(resolve => setTimeout(resolve, 3000));
+
+          const statusRes = await fetch(`/api/generate/status?job_id=${jobId}`, {
+            headers: { 'Authorization': `Bearer ${session.access_token}` },
+          });
+
+          const statusData = await statusRes.json() as Record<string, unknown>;
+
+          if (statusData.status === 'completed' && statusData.output_url) {
+            const imageUrl = statusData.output_url as string;
+            setResultImage(imageUrl);
+            setLocalCredits((prev) => (prev !== null ? prev - 1 : 0));
+            void refreshUser();
+            applyWatermark(imageUrl).then((wm) => setResultImage(wm)).catch(() => {});
+            return;
+          }
+
+          if (statusData.status === 'error') {
+            throw new Error('Görsel oluşturulamadı. Lütfen tekrar deneyin.');
+          }
+        }
+
+        throw new Error('İşlem zaman aşımına uğradı. Lütfen tekrar deneyin.');
+      }
+
+      throw new Error('Beklenmeyen yanıt.');
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Bir hata oluştu';
       setError(errorMessage);
@@ -190,7 +216,6 @@ export default function AppPage() {
       let blob: Blob;
 
       if (resultImage.startsWith('data:')) {
-        // Canvas data URL — convert directly without fetch (works in all browsers)
         const [header, base64] = resultImage.split(',');
         const mime = header.match(/:(.*?);/)![1];
         const binary = atob(base64);
@@ -198,7 +223,6 @@ export default function AppPage() {
         for (let i = 0; i < binary.length; i++) buffer[i] = binary.charCodeAt(i);
         blob = new Blob([buffer], { type: mime });
       } else {
-        // Remote URL — route through proxy to avoid CORS
         const res = await fetch(`/api/proxy-image?url=${encodeURIComponent(resultImage)}`);
         if (!res.ok) throw new Error('proxy error');
         blob = await res.blob();
@@ -213,7 +237,6 @@ export default function AppPage() {
       document.body.removeChild(a);
       setTimeout(() => URL.revokeObjectURL(blobUrl), 100);
     } catch {
-      // Last resort: open in new tab
       window.open(resultImage, '_blank');
     }
   }, [resultImage]);
@@ -360,12 +383,10 @@ export default function AppPage() {
             <div className="gradient-border p-4 md:p-6">
               {loading ? (
                 <div className="max-w-3xl mx-auto bg-[var(--bg-dark)] rounded-xl py-16 md:py-24 flex flex-col items-center gap-8">
-                  {/* Spinner */}
                   <div className="relative w-20 h-20 md:w-28 md:h-28">
                     <div className="absolute inset-0 rounded-full border-4 border-[var(--accent-orange)]/20 border-t-[var(--accent-orange)] animate-spin" />
                     <div className="absolute inset-3 rounded-full border-4 border-[var(--accent-purple)]/20 border-b-[var(--accent-purple)] animate-spin" style={{ animationDirection: 'reverse', animationDuration: '1.8s' }} />
                   </div>
-                  {/* Labels */}
                   <div className="text-center">
                     <p className="text-xl md:text-2xl font-semibold text-white mb-2">{t('visualizing')}</p>
                     <p className="text-sm text-[var(--text-secondary)]">{t('timeTip')}</p>
