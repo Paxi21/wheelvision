@@ -169,31 +169,27 @@ export default function AppPage() {
         return;
       }
 
-      // Async polling — n8n returns job_id, we poll Supabase
+      // Async polling — poll Supabase directly
       if (data.job_id) {
         const jobId = data.job_id as string;
-        const maxAttempts = 60; // 60 x 3s = 180 seconds max
+        const maxAttempts = 60;
 
         for (let i = 0; i < maxAttempts; i++) {
           await new Promise(resolve => setTimeout(resolve, 3000));
 
-          const statusRes = await fetch(`/api/generate/status?job_id=${jobId}`, {
-            headers: { 'Authorization': `Bearer ${session.access_token}` },
-          });
+          const { data: genData } = await supabase
+            .from('dealer_generations')
+            .select('sonuc_foto_url')
+            .eq('id', jobId)
+            .single();
 
-          const statusData = await statusRes.json() as Record<string, unknown>;
-
-          if (statusData.status === 'completed' && statusData.output_url) {
-            const imageUrl = statusData.output_url as string;
+          if (genData?.sonuc_foto_url && genData.sonuc_foto_url !== 'processing' && !genData.sonuc_foto_url.startsWith('__')) {
+            const imageUrl = genData.sonuc_foto_url as string;
             setResultImage(imageUrl);
             setLocalCredits((prev) => (prev !== null ? prev - 1 : 0));
             void refreshUser();
             applyWatermark(imageUrl).then((wm) => setResultImage(wm)).catch(() => {});
             return;
-          }
-
-          if (statusData.status === 'error') {
-            throw new Error('Görsel oluşturulamadı. Lütfen tekrar deneyin.');
           }
         }
 
@@ -286,7 +282,6 @@ export default function AppPage() {
           </div>
 
           <div className="grid md:grid-cols-2 gap-4 mb-6">
-            {/* Car Upload */}
             <div className="card">
               <div className="flex items-center gap-3 mb-3">
                 <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-[var(--accent-orange)] to-[var(--accent-pink)] flex items-center justify-center">
@@ -317,7 +312,6 @@ export default function AppPage() {
               </p>
             </div>
 
-            {/* Wheel Upload */}
             <div className="card">
               <div className="flex items-center gap-3 mb-3">
                 <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-[var(--accent-pink)] to-[var(--accent-purple)] flex items-center justify-center">
