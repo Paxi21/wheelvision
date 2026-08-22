@@ -118,6 +118,7 @@ export async function POST(request: NextRequest) {
       user_email: user.email,
       car_image,
       wheel_image,
+      prompt: 'Replace the wheel rims on this car with the rim design from the second image. Keep the EXACT same car body, color, background, lighting, and camera angle. Do not change anything else.',
     };
 
     const controller = new AbortController();
@@ -125,9 +126,12 @@ export async function POST(request: NextRequest) {
 
     let n8nResponse: Response;
     try {
+      const n8nHeaders: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (process.env.N8N_WEBHOOK_SECRET) n8nHeaders['X-Webhook-Secret'] = process.env.N8N_WEBHOOK_SECRET;
+
       n8nResponse = await fetch(n8nUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: n8nHeaders,
         signal: controller.signal,
         body: JSON.stringify(n8nPayload),
       });
