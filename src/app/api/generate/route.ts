@@ -7,6 +7,7 @@ export const maxDuration = 30;
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 const n8nUrl = process.env.N8N_WEBHOOK_URL!;
 const cloudinaryCloud = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME!;
 
@@ -34,8 +35,11 @@ function isValidCloudinaryUrl(url: unknown): boolean {
 }
 
 export async function POST(request: NextRequest) {
+  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+    || request.headers.get('x-real-ip')
+    || 'unknown';
+
   try {
-    const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
     const key = `ratelimit:${ip}`;
     const count = await redis.incr(key);
     if (count === 1) await redis.expire(key, 60);
@@ -84,7 +88,7 @@ export async function POST(request: NextRequest) {
 
     const { data: userData, error: dbError } = await supabase
       .from('users')
-      .select('credits')
+      .select('credits, full_name, phone')
       .eq('email', user.email)
       .single();
 
@@ -113,8 +117,38 @@ export async function POST(request: NextRequest) {
       console.warn('[generate] Redis read failed:', redisErr);
     }
 
-    // Call n8n — returns immediately with job_id
+    // dealer_generations has no job_id/status column — the row's own id IS
+    // the job id. We create it here (service role, bypasses RLS) and n8n
+    // writes the result back into sonuc_foto_url on this same row, matched
+    // by generation_id in the webhook payload below.
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: { persistSession: false },
+    });
+
+    const { data: genRow, error: insertError } = await supabaseAdmin
+      .from('dealer_generations')
+      .insert({
+        araba_foto_url: car_image,
+        wheel_id: null,
+        dealer_id: null,
+        musteri_ip: ip,
+        musteri_isim: userData.full_name ?? null,
+        musteri_telefon: userData.phone ?? null,
+      })
+      .select('id')
+      .single();
+
+    if (insertError || !genRow) {
+      console.error('[generate] dealer_generations insert failed:', insertError);
+      throw new Error('Bir sorun oluştu. Lütfen tekrar deneyin.');
+    }
+
+    const generationId = genRow.id as string;
+
+    // Call n8n — fire the async job; the tracking row already exists for
+    // n8n's "update a row" step to write sonuc_foto_url into.
     const n8nPayload = {
+      generation_id: generationId,
       user_email: user.email,
       car_image,
       wheel_image,
@@ -136,6 +170,7 @@ export async function POST(request: NextRequest) {
         body: JSON.stringify(n8nPayload),
       });
     } catch (fetchErr) {
+      await supabaseAdmin.from('dealer_generations').delete().eq('id', generationId);
       if ((fetchErr as Error).name === 'AbortError') {
         throw new Error('Servis yanıt vermiyor. Lütfen tekrar deneyin.');
       }
@@ -145,20 +180,19 @@ export async function POST(request: NextRequest) {
     }
 
     if (!n8nResponse.ok) {
+      await supabaseAdmin.from('dealer_generations').delete().eq('id', generationId);
       throw new Error('Bir sorun oluştu. Lütfen tekrar deneyin.');
     }
 
-    const data = await n8nResponse.json();
+    const data = await n8nResponse.json().catch(() => ({} as Record<string, unknown>));
 
-    if (data.job_id) {
-      return NextResponse.json({ status: 'processing', job_id: data.job_id });
-    }
-
+    // Rare fast path: n8n answered synchronously with a result already.
     if (data.output_url) {
       return NextResponse.json({ output_url: data.output_url });
     }
 
-    throw new Error('Beklenmeyen yanıt.');
+    // Normal path: processing async — frontend polls dealer_generations by id.
+    return NextResponse.json({ status: 'processing', job_id: generationId });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Bir hata oluştu';
     return NextResponse.json({ error: toUserMessage(message) }, { status: 500 });

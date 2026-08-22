@@ -177,13 +177,18 @@ export default function AppPage() {
         for (let i = 0; i < maxAttempts; i++) {
           await new Promise(resolve => setTimeout(resolve, 3000));
 
-          const { data: genData } = await supabase
+          const { data: genData, error: genError } = await supabase
             .from('dealer_generations')
             .select('sonuc_foto_url')
             .eq('id', jobId)
-            .single();
+            .maybeSingle();
 
-          if (genData?.sonuc_foto_url && genData.sonuc_foto_url !== 'processing' && !genData.sonuc_foto_url.startsWith('__')) {
+          if (genError) {
+            console.warn('[app] poll error:', genError);
+            continue;
+          }
+
+          if (genData?.sonuc_foto_url) {
             const imageUrl = genData.sonuc_foto_url as string;
             setResultImage(imageUrl);
             setLocalCredits((prev) => (prev !== null ? prev - 1 : 0));
