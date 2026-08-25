@@ -12,7 +12,7 @@ import { applyWatermark } from '@/lib/watermark';
 interface Generation {
   id: string;
   user_email: string;
-  result_image_url: string;
+  sonuc_foto_url: string;
   created_at: string;
 }
 
@@ -138,7 +138,7 @@ export default function HistoryPage() {
       if (!session?.user?.email) { router.push('/login'); return; }
 
       const [genResult, userResult] = await Promise.all([
-        supabase.from('generations').select('id, user_email, result_image_url, created_at').eq('user_email', session.user.email).order('created_at', { ascending: false }),
+        supabase.from('dealer_generations').select('id, user_email, sonuc_foto_url, created_at').eq('user_email', session.user.email).order('created_at', { ascending: false }),
         supabase.from('users').select('email, plan').eq('email', session.user.email).maybeSingle(),
       ]);
 
@@ -193,11 +193,11 @@ export default function HistoryPage() {
           {generations.length > 0 && (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
               {generations.map((gen, index) => (
-                <motion.div key={gen.id} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.3, delay: index * 0.04 }} className="group cursor-pointer" onClick={() => gen.result_image_url && setModalUrl(gen.result_image_url)}>
+                <motion.div key={gen.id} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.3, delay: index * 0.04 }} className="group cursor-pointer" onClick={() => gen.sonuc_foto_url && setModalUrl(gen.sonuc_foto_url)}>
                   <div className="relative aspect-square rounded-2xl overflow-hidden bg-[var(--bg-card)] border border-[var(--border-color)]">
-                    {gen.result_image_url ? (
+                    {gen.sonuc_foto_url ? (
                       <>
-                        <img src={gen.result_image_url} alt={t('aiResult')} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
+                        <img src={gen.sonuc_foto_url} alt={t('aiResult')} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
                         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors duration-300" />
                         {!paid && (
                           <div className="absolute bottom-2 right-2 w-6 h-6 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">

@@ -131,6 +131,7 @@ export async function POST(request: NextRequest) {
         araba_foto_url: car_image,
         wheel_id: null,
         dealer_id: null,
+        user_email: user.email,
         musteri_ip: ip,
         musteri_isim: userData.full_name ?? null,
         musteri_telefon: userData.phone ?? null,
@@ -182,6 +183,17 @@ export async function POST(request: NextRequest) {
     if (!n8nResponse.ok) {
       await supabaseAdmin.from('dealer_generations').delete().eq('id', generationId);
       throw new Error('Bir sorun oluştu. Lütfen tekrar deneyin.');
+    }
+
+    // n8n accepted the job — deduct the credit now. The async path returns
+    // before the result is ready, so this is the last point in the request
+    // lifecycle where we can reliably charge for the generation.
+    const { error: creditError } = await supabaseAdmin
+      .from('users')
+      .update({ credits: userData.credits - 1 })
+      .eq('email', user.email);
+    if (creditError) {
+      console.error('[generate] credit deduction failed:', creditError);
     }
 
     const data = await n8nResponse.json().catch(() => ({} as Record<string, unknown>));
