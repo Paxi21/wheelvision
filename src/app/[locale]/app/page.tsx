@@ -121,15 +121,17 @@ export default function AppPage() {
     setProgress(0);
 
     if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
+    const PROGRESS_TICK_MS = 500;
     progressIntervalRef.current = setInterval(() => {
       setProgress((prev) => {
-        if (prev >= 90) return prev;
-        // Ramp fast at first, then slow down as it nears the 90% cap —
-        // real completion (100%) is only set once the result actually arrives.
-        const increment = prev < 20 ? 2.5 : prev < 60 ? 1.2 : 0.5;
-        return Math.min(90, prev + increment);
+        if (prev >= 95) return prev;
+        // Matches real generation timing: ~45s to fill 0-70%, then keeps
+        // creeping so it never visibly stalls before the result arrives —
+        // 100% is only ever set once the result is actually in hand.
+        const perSecond = prev < 70 ? 70 / 45 : prev < 85 ? 0.3 : 0.1;
+        return Math.min(95, prev + perSecond * (PROGRESS_TICK_MS / 1000));
       });
-    }, 400);
+    }, PROGRESS_TICK_MS);
 
     const resolveUpload = async (ref: React.MutableRefObject<Promise<string> | null>, file: File) => {
       if (ref.current) {
