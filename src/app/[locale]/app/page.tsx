@@ -19,9 +19,11 @@ export default function AppPage() {
   const [wheelFile, setWheelFile] = useState<File | null>(null);
   const [resultImage, setResultImage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [progress, setProgress] = useState(0);
   const [error, setError] = useState('');
   const carUploadRef = useRef<Promise<string> | null>(null);
   const wheelUploadRef = useRef<Promise<string> | null>(null);
+  const progressIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
 
@@ -34,6 +36,12 @@ export default function AppPage() {
   useEffect(() => {
     if (user) setLocalCredits(user.credits);
   }, [user]);
+
+  useEffect(() => {
+    return () => {
+      if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
+    };
+  }, []);
 
   const displayUser = user ? { ...user, credits: localCredits ?? user.credits } : null;
   const pageLoading = authLoading;
@@ -110,6 +118,18 @@ export default function AppPage() {
     setLoading(true);
     setError('');
     setResultImage(null);
+    setProgress(0);
+
+    if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
+    progressIntervalRef.current = setInterval(() => {
+      setProgress((prev) => {
+        if (prev >= 90) return prev;
+        // Ramp fast at first, then slow down as it nears the 90% cap —
+        // real completion (100%) is only set once the result actually arrives.
+        const increment = prev < 20 ? 2.5 : prev < 60 ? 1.2 : 0.5;
+        return Math.min(90, prev + increment);
+      });
+    }, 400);
 
     const resolveUpload = async (ref: React.MutableRefObject<Promise<string> | null>, file: File) => {
       if (ref.current) {
@@ -162,6 +182,7 @@ export default function AppPage() {
       // Immediate result (cache hit)
       if (data.output_url) {
         const imageUrl = data.output_url as string;
+        setProgress(100);
         setResultImage(imageUrl);
         setLocalCredits((prev) => (prev !== null ? prev - 1 : 0));
         void refreshUser();
@@ -172,10 +193,10 @@ export default function AppPage() {
       // Async polling — poll Supabase directly
       if (data.job_id) {
         const jobId = data.job_id as string;
-        const maxAttempts = 60;
+        const maxAttempts = 90;
 
         for (let i = 0; i < maxAttempts; i++) {
-          await new Promise(resolve => setTimeout(resolve, 3000));
+          await new Promise(resolve => setTimeout(resolve, 2000));
 
           const { data: genData, error: genError } = await supabase
             .from('dealer_generations')
@@ -190,6 +211,7 @@ export default function AppPage() {
 
           if (genData?.sonuc_foto_url) {
             const imageUrl = genData.sonuc_foto_url as string;
+            setProgress(100);
             setResultImage(imageUrl);
             setLocalCredits((prev) => (prev !== null ? prev - 1 : 0));
             void refreshUser();
@@ -207,6 +229,10 @@ export default function AppPage() {
       setError(errorMessage);
     } finally {
       setLoading(false);
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
+        progressIntervalRef.current = null;
+      }
     }
   };
 
@@ -386,9 +412,18 @@ export default function AppPage() {
                     <div className="absolute inset-0 rounded-full border-4 border-[var(--accent-orange)]/20 border-t-[var(--accent-orange)] animate-spin" />
                     <div className="absolute inset-3 rounded-full border-4 border-[var(--accent-purple)]/20 border-b-[var(--accent-purple)] animate-spin" style={{ animationDirection: 'reverse', animationDuration: '1.8s' }} />
                   </div>
-                  <div className="text-center">
-                    <p className="text-xl md:text-2xl font-semibold text-white mb-2">{t('visualizing')}</p>
-                    <p className="text-sm text-[var(--text-secondary)]">{t('timeTip')}</p>
+                  <div className="text-center w-full max-w-xs">
+                    <p className="text-xl md:text-2xl font-semibold text-white mb-2">
+                      {progress < 20 ? t('stepAnalyzing') : progress < 60 ? t('stepMounting') : t('stepFinishing')}
+                    </p>
+                    <p className="text-sm text-[var(--text-secondary)] mb-4">{t('timeTip')}</p>
+                    <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-gradient-to-r from-[var(--accent-orange)] to-[var(--accent-purple)] rounded-full transition-all duration-300 ease-out"
+                        style={{ width: `${progress}%` }}
+                      />
+                    </div>
+                    <p className="text-xs text-[var(--text-secondary)]/60 mt-2">{Math.round(progress)}%</p>
                   </div>
                 </div>
               ) : resultImage && (
