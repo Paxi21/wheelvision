@@ -142,7 +142,7 @@ export default function HistoryPage() {
         supabase.from('users').select('email, plan').eq('email', session.user.email).maybeSingle(),
       ]);
 
-      setGenerations(genResult.data ?? []);
+      setGenerations((genResult.data ?? []).filter((g) => g.sonuc_foto_url));
       if (userResult.data) setUserData(userResult.data);
       setLoading(false);
     };
