@@ -9,6 +9,68 @@ import { useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/navigation';
 import { applyWatermark } from '@/lib/watermark';
 
+function BeforeAfterSlider({ before, after }: { before: string; after: string }) {
+  const [position, setPosition] = useState(50);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const moveTo = useCallback((clientX: number) => {
+    if (!containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    setPosition(Math.max(2, Math.min(98, ((clientX - rect.left) / rect.width) * 100)));
+  }, []);
+
+  const onPointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    e.currentTarget.setPointerCapture(e.pointerId);
+    moveTo(e.clientX);
+  }, [moveTo]);
+
+  const onPointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.buttons === 0) return;
+    moveTo(e.clientX);
+  }, [moveTo]);
+
+  return (
+    <div
+      ref={containerRef}
+      className="relative w-full max-w-3xl mx-auto select-none cursor-col-resize overflow-hidden rounded-xl bg-[var(--bg-dark)]"
+      style={{ touchAction: 'none' }}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={after} alt="Sonuç" className="w-full h-auto block pointer-events-none" draggable={false} loading="lazy" decoding="async" />
+      <div className="absolute inset-0" style={{ clipPath: `inset(0 ${100 - position}% 0 0)` }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={before} alt="Orijinal" className="absolute inset-0 w-full h-full object-cover pointer-events-none" draggable={false} />
+      </div>
+      <div className="absolute top-3 left-3 px-3 py-1.5 rounded-full backdrop-blur-md bg-black/50 border border-white/15 text-xs font-semibold text-white/80 pointer-events-none">
+        ÖNCE
+      </div>
+      <div
+        className="absolute top-3 right-3 px-3 py-1.5 rounded-full backdrop-blur-md border border-white/20 text-xs font-bold text-white pointer-events-none"
+        style={{ background: 'linear-gradient(135deg, var(--accent-orange), var(--accent-pink))' }}
+      >
+        SONRA ✨
+      </div>
+      <div
+        className="absolute top-0 bottom-0 w-[2px] pointer-events-none"
+        style={{ left: `${position}%`, background: 'linear-gradient(to bottom, transparent, rgba(255,255,255,0.95) 15%, rgba(255,255,255,0.95) 85%, transparent)' }}
+      />
+      <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 pointer-events-none z-10" style={{ left: `${position}%` }}>
+        <div
+          className="w-11 h-11 rounded-full bg-white flex items-center justify-center border-2 border-white/90"
+          style={{ boxShadow: '0 0 0 4px rgba(247,37,133,0.3), 0 4px 20px rgba(0,0,0,0.4)' }}
+        >
+          <div className="flex items-center gap-0.5">
+            <svg width="8" height="12" viewBox="0 0 8 12" fill="none"><path d="M6 1L1 6L6 11" stroke="#374151" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+            <svg width="8" height="12" viewBox="0 0 8 12" fill="none"><path d="M2 1L7 6L2 11" stroke="#374151" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function AppPage() {
   const t = useTranslations('app');
   const { session, user, loading: authLoading, refreshUser } = useAuth();
@@ -430,7 +492,11 @@ export default function AppPage() {
                 </div>
               ) : resultImage && (
                 <div className="space-y-4">
-                  <img src={resultImage} alt="Visualization result" className="w-full max-w-3xl mx-auto rounded-xl block" loading="lazy" decoding="async" />
+                  {carImage ? (
+                    <BeforeAfterSlider before={carImage} after={resultImage} />
+                  ) : (
+                    <img src={resultImage} alt="Visualization result" className="w-full max-w-3xl mx-auto rounded-xl block" loading="lazy" decoding="async" />
+                  )}
                   <div className="flex justify-center">
                     <button
                       onClick={handleDownload}
