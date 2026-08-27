@@ -300,3 +300,86 @@ body {
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+
+.blog-content {
+  color: var(--text-secondary);
+  line-height: 1.75;
+  font-size: 1rem;
+}
+
+.blog-content h2 {
+  color: var(--text-primary);
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 2.25rem 0 1rem;
+}
+
+.blog-content h3 {
+  color: var(--text-primary);
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 1.75rem 0 0.75rem;
+}
+
+.blog-content h4 {
+  color: var(--text-primary);
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin: 1.5rem 0 0.5rem;
+}
+
+.blog-content p {
+  margin: 0 0 1.1rem;
+}
+
+.blog-content strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.blog-content em {
+  font-style: italic;
+}
+
+.blog-content code {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 0.15rem 0.4rem;
+  font-size: 0.9em;
+  color: var(--accent-orange);
+}
+
+.blog-content a {
+  color: var(--accent-orange);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.blog-content a:hover {
+  color: var(--accent-pink);
+}
+
+.blog-content ul,
+.blog-content ol {
+  margin: 0 0 1.1rem;
+  padding-left: 1.4rem;
+}
+
+.blog-content ul {
+  list-style: disc;
+}
+
+.blog-content ol {
+  list-style: decimal;
+}
+
+.blog-content li {
+  margin-bottom: 0.5rem;
+}
+
+.blog-content hr {
+  border: none;
+  border-top: 1px solid var(--border-color);
+  margin: 2rem 0;
+}

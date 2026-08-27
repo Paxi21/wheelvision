@@ -17,6 +17,13 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  // Blog posts are read from content/blog via fs at request time — Next's
+  // build tracing can't statically see a dynamic fs.readdirSync, so the
+  // directory has to be force-included or it goes missing in the deployed
+  // serverless function.
+  outputFileTracingIncludes: {
+    '/**/*': ['./content/blog/**'],
+  },
   async headers() {
     return [
       {

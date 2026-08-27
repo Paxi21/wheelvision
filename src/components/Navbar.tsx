@@ -26,6 +26,7 @@ export default function Navbar() {
   const navLinks = [
     { href: '/app', label: t('app') },
     { href: '/pricing', label: t('pricing') },
+    { href: '/blog', label: t('blog') },
     { href: '/history', label: t('history') },
   ];
 

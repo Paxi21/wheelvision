@@ -10,7 +10,7 @@ const LOCALES = new Set(['en', 'tr']);
 // Known app path segments — redirect to locale-prefixed version
 const APP_SEGMENTS = new Set([
   'app', 'pricing', 'history', 'login', 'register',
-  'settings', 'privacy', 'terms',
+  'settings', 'privacy', 'terms', 'blog',
 ]);
 
 export default function middleware(request: NextRequest) {
