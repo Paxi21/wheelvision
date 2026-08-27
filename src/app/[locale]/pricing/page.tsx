@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Navbar from '@/components/Navbar';
 import { motion, AnimatePresence } from 'motion/react';
 import {
-  Check, X, Sparkles, Building2, User, Zap, Crown, Gem, Phone, Gift,
+  Check, X, Sparkles, Building2, User, Zap, Gem, Phone, Gift,
 } from 'lucide-react';
 import { ShimmerButton } from '@/components/ui/shimmer-button';
 import { AnimatedBorder } from '@/components/ui/animated-border';
@@ -57,6 +57,8 @@ function ComingSoonModal({ onClose }: { onClose: () => void }) {
 }
 
 /* ─── B2C Plan types ─────────────────────────────────────────────────────── */
+type PlanFeature = { label: string; included: boolean };
+
 type B2CPlan = {
   id: string;
   name: string;
@@ -67,8 +69,7 @@ type B2CPlan = {
   badge: string | null;
   icon: React.ElementType;
   color: string;
-  features: string[];
-  extra?: string[];
+  features: PlanFeature[];
 };
 
 const B2C_PLANS: B2CPlan[] = [
@@ -83,9 +84,11 @@ const B2C_PLANS: B2CPlan[] = [
     icon: Gift,
     color: 'from-[#6B7280] to-[#4B5563]',
     features: [
-      '2 deneme kredisi (kayıt bonusu)',
-      'Standart kalite',
-      'Filigranlı görsel',
+      { label: 'Filigranlı görsel', included: true },
+      { label: 'Jant kataloğuna erişim', included: true },
+      { label: 'Özel jant yükleme', included: false },
+      { label: 'Görsel geçmişi', included: true },
+      { label: 'Email destek', included: false },
     ],
   },
   {
@@ -99,50 +102,29 @@ const B2C_PLANS: B2CPlan[] = [
     icon: Zap,
     color: 'from-[#FF6B35] to-[#F72585]',
     features: [
-      '10 jant değiştirme görseli',
-      'Tüm jant kataloğuna erişim',
-      'Özel jant yükleme',
-      'Kullanılmayan krediler devredilir',
-      'Email destek',
-    ],
-  },
-  {
-    id: 'populer',
-    name: 'Popüler',
-    desc: 'En popüler seçim',
-    credits: 25,
-    price: 499,
-    pricePerImage: 19.96,
-    badge: 'Önerilen',
-    icon: Crown,
-    color: 'from-[#F72585] to-[#7209B7]',
-    features: [
-      '25 jant değiştirme görseli',
-      'Tüm jant kataloğuna erişim',
-      'Özel jant yükleme',
-      'Kullanılmayan krediler devredilir',
-      'Öncelikli email destek',
-      'Yüksek çözünürlük çıktı',
+      { label: 'Filigransız görsel', included: true },
+      { label: 'Jant kataloğuna erişim', included: true },
+      { label: 'Özel jant yükleme', included: true },
+      { label: 'Görsel geçmişi', included: true },
+      { label: 'Email destek', included: true },
     ],
   },
   {
     id: 'pro',
     name: 'Pro',
     desc: 'Sık kullananlar için',
-    credits: 50,
-    price: 799,
-    pricePerImage: 15.98,
+    credits: 30,
+    price: 599,
+    pricePerImage: 19.97,
     badge: null,
     icon: Gem,
     color: 'from-[#7209B7] to-[#3A0CA3]',
     features: [
-      '50 jant değiştirme görseli',
-      'Tüm jant kataloğuna erişim',
-      'Özel jant yükleme',
-      'Kullanılmayan krediler devredilir',
-      'Öncelikli destek',
-      'Yüksek çözünürlük çıktı',
-      'Toplu işlem desteği',
+      { label: 'Filigransız görsel', included: true },
+      { label: 'Jant kataloğuna erişim', included: true },
+      { label: 'Özel jant yükleme', included: true },
+      { label: 'Görsel geçmişi', included: true },
+      { label: 'Email destek', included: true },
     ],
   },
 ];
@@ -185,10 +167,18 @@ function B2CPlanCard({ plan, onBuy }: { plan: B2CPlan; onBuy: () => void }) {
       <ul className="space-y-2.5 flex-1 mb-6">
         {plan.features.map((feat, i) => (
           <li key={i} className="flex items-center gap-3">
-            <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 bg-gradient-to-r ${plan.color}`}>
-              <Check className="w-3 h-3 text-white" />
+            <div
+              className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${
+                feat.included ? `bg-gradient-to-r ${plan.color}` : 'bg-white/10'
+              }`}
+            >
+              {feat.included
+                ? <Check className="w-3 h-3 text-white" />
+                : <X className="w-3 h-3 text-[var(--text-secondary)]" />}
             </div>
-            <span className="text-sm text-white">{feat}</span>
+            <span className={`text-sm ${feat.included ? 'text-white' : 'text-[var(--text-secondary)] line-through'}`}>
+              {feat.label}
+            </span>
           </li>
         ))}
       </ul>
@@ -261,60 +251,38 @@ const B2B_PLANS: B2BPlan[] = [
     id: 'starter',
     name: 'Starter',
     desc: 'Küçük galeriler için',
-    creditsMonthly: 50,
-    basePrice: 890,
+    creditsMonthly: 75,
+    basePrice: 1499,
     badge: null,
     icon: Zap,
     color: 'from-[#6B7280] to-[#4B5563]',
     features: [
-      'Aylık 50 görsel',
-      'Kullanılmayan krediler devredilir',
+      'Aylık 75 görsel',
+      'Filigransız görsel',
       'Tüm jant kataloğuna erişim',
       'Özel jant yükleme',
       'Email destek',
-      'API erişimi',
+      'WhatsApp destek',
+      'Öncelikli işleme',
     ],
   },
   {
     id: 'business',
     name: 'Business',
     desc: 'Büyüyen işletmeler için',
-    creditsMonthly: 150,
-    basePrice: 1899,
+    creditsMonthly: 200,
+    basePrice: 2999,
     badge: 'Popüler',
     icon: Building2,
     color: 'from-[#FF6B35] to-[#F72585]',
     features: [
-      'Aylık 150 görsel',
-      'Kullanılmayan krediler devredilir',
+      'Aylık 200 görsel',
+      'Filigransız görsel',
       'Tüm jant kataloğuna erişim',
       'Özel jant yükleme',
-      'Öncelikli işleme',
+      'Email destek',
       'WhatsApp destek',
-      'Logo/watermark ekleme',
-      'API erişimi',
-    ],
-  },
-  {
-    id: 'premium',
-    name: 'Premium',
-    desc: 'Yüksek hacimli kullanım',
-    creditsMonthly: 400,
-    basePrice: 3499,
-    badge: 'Maksimum Değer',
-    icon: Crown,
-    color: 'from-[#F72585] to-[#7209B7]',
-    features: [
-      'Aylık 400 görsel',
-      'Kullanılmayan krediler devredilir',
-      'Tüm jant kataloğuna erişim',
-      'Özel jant yükleme',
       'Öncelikli işleme',
-      'Telefon + WhatsApp destek',
-      'Logo/watermark ekleme',
-      'Özel prompt ayarı',
-      'Dedicated API key',
-      'API erişimi',
     ],
   },
 ];
@@ -436,10 +404,9 @@ function B2BPlanCard({
 /* ─── Enterprise Card ────────────────────────────────────────────────────── */
 const ENTERPRISE_FEATURES = [
   'Sınırsız görsel',
-  'SLA garantisi',
+  'Tüm Business özellikleri',
   'Özel entegrasyon',
   'Hesap yöneticisi',
-  'Tüm Premium özellikler',
   'Özel fiyatlandırma',
 ];
 
@@ -596,7 +563,7 @@ export default function PricingPage() {
                 exit={{ opacity: 0, y: -20 }}
                 transition={{ duration: 0.3 }}
               >
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6 max-w-6xl mx-auto items-start">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto items-start">
                   {B2C_PLANS.map((plan, i) => (
                     <motion.div
                       key={plan.id}
@@ -661,7 +628,7 @@ export default function PricingPage() {
                 </div>
 
                 {/* Plan Cards */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6 max-w-6xl mx-auto items-start">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto items-start">
                   {B2B_PLANS.map((plan, i) => (
                     <motion.div
                       key={plan.id}
