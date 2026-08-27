@@ -11,6 +11,25 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 const n8nUrl = process.env.N8N_WEBHOOK_URL!;
 const cloudinaryCloud = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME!;
 
+// `process.env.X!` only silences TypeScript — it does nothing at runtime.
+// If any of these are actually missing on Vercel, downstream SDKs (Supabase,
+// Upstash) throw with messages that only make sense if you already know
+// which var is unset. Check explicitly so the server log names the exact
+// culprit instead of a generic "supabaseKey is required." trace.
+const REQUIRED_ENV_VARS: Record<string, string | undefined> = {
+  NEXT_PUBLIC_SUPABASE_URL: supabaseUrl,
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: supabaseAnonKey,
+  SUPABASE_SERVICE_ROLE_KEY: supabaseServiceKey,
+  N8N_WEBHOOK_URL: n8nUrl,
+  NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: cloudinaryCloud,
+};
+
+function missingEnvVars(): string[] {
+  return Object.entries(REQUIRED_ENV_VARS)
+    .filter(([, value]) => !value)
+    .map(([key]) => key);
+}
+
 const INTERNAL_KEYWORDS = ['supabase', 'Supabase', 'n8n', 'N8N', 'webhook', 'Webhook', '@'];
 
 function toUserMessage(msg: string): string {
@@ -35,6 +54,12 @@ function isValidCloudinaryUrl(url: unknown): boolean {
 }
 
 export async function POST(request: NextRequest) {
+  const missing = missingEnvVars();
+  if (missing.length > 0) {
+    console.error('[generate] missing required env vars:', missing.join(', '));
+    return NextResponse.json({ error: 'Servis yapılandırması eksik.' }, { status: 503 });
+  }
+
   const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
     || request.headers.get('x-real-ip')
     || 'unknown';
@@ -51,10 +76,6 @@ export async function POST(request: NextRequest) {
     }
   } catch (e) {
     console.warn('[generate] rate limit check failed:', e);
-  }
-
-  if (!n8nUrl) {
-    return NextResponse.json({ error: 'Servis yapılandırması eksik.' }, { status: 503 });
   }
 
   try {
