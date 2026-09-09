@@ -211,10 +211,10 @@ async function handleDealerRequest(body: Record<string, unknown>) {
         'X-Webhook-Secret': n8nSecret,
       },
       body: JSON.stringify({
+        user_email: DEALER_SERVICE_EMAIL,
         car_image,
         wheel_image: wheelImageUrl,
         prompt,
-        email: DEALER_SERVICE_EMAIL,
       }),
       signal: AbortSignal.timeout(90_000),
     });
