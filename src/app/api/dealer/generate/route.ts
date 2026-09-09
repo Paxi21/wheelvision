@@ -215,6 +215,7 @@ async function handleDealerRequest(body: Record<string, unknown>) {
         car_image,
         wheel_image: wheelImageUrl,
         prompt,
+        generation_id: generationId,
       }),
       signal: AbortSignal.timeout(90_000),
     });
