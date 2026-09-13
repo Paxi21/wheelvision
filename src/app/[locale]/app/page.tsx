@@ -386,7 +386,7 @@ export default function AppPage() {
               </div>
               {carImage ? (
                 <div className="relative">
-                  <img src={carImage} alt="Car" className="w-full aspect-video object-cover rounded-lg" />
+                  <img src={carImage} alt="Car" className="w-full aspect-video object-contain rounded-lg bg-[var(--bg-dark)]" />
                   <button
                     onClick={() => { setCarImage(null); setCarFile(null); setResultImage(null); carUploadRef.current = null; }}
                     className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/60 flex items-center justify-center hover:bg-black/80 transition-colors"
