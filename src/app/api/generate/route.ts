@@ -174,7 +174,15 @@ export async function POST(request: NextRequest) {
       user_email: user.email,
       car_image,
       wheel_image,
-      prompt: 'Replace the wheel rims on this car with the rim design from the second image. Keep the EXACT same car body, color, background, lighting, and camera angle. Do not change anything else.',
+      prompt: `You are a professional automotive photo editor.
+Task: swap ONLY the wheel rims on the car in the first image using the exact rim design from the second image.
+The new rim must replicate the spoke pattern, finish, color, and design of the reference wheel precisely.
+Maintain the correct perspective, angle, and scale of the original wheel position on the car.
+Match all lighting, shadows, and reflections so the new rim looks naturally lit by the same environment.
+Keep the tire sidewall, brake calipers, and all surrounding car parts completely untouched.
+Do NOT change the car body, paint color, windows, interior, background, or road surface.
+The final result must look like a real professional photograph — seamless, photorealistic, no artificial edges or artifacts.
+Only the rim design changes. Everything else is identical to the original photo.`,
     };
 
     const controller = new AbortController();
