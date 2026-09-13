@@ -25,7 +25,7 @@ function Skeleton({ className = '' }: { className?: string }) {
 }
 
 /* Wheel image with skeleton + fade-in */
-function WheelImg({ src, alt, priority = false, className = '' }: { src: string; alt: string; priority?: boolean; className?: string }) {
+function WheelImg({ src, alt, priority = false, className = '', fit = 'cover' }: { src: string; alt: string; priority?: boolean; className?: string; fit?: 'cover' | 'contain' }) {
   const [loaded, setLoaded] = useState(false);
   const opt = cdnUrl(src, priority ? 600 : 400);
   return (
@@ -38,7 +38,7 @@ function WheelImg({ src, alt, priority = false, className = '' }: { src: string;
         loading={priority ? 'eager' : 'lazy'}
         decoding={priority ? 'sync' : 'async'}
         onLoad={() => setLoaded(true)}
-        className={`w-full h-full object-cover transition-opacity duration-500 ${loaded ? 'opacity-100' : 'opacity-0'}`}
+        className={`w-full h-full ${fit === 'contain' ? 'object-contain' : 'object-cover'} transition-opacity duration-500 ${loaded ? 'opacity-100' : 'opacity-0'}`}
         draggable={false}
       />
     </div>
@@ -1233,8 +1233,8 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
                   <p className="text-xs font-semibold text-[var(--text-secondary)]">Seçilen Jant</p>
                 </div>
                 {selectedWheel ? (
-                  <div className="relative rounded-xl overflow-hidden" style={{ aspectRatio: '4/3' }}>
-                    <WheelImg src={selectedWheel.jant_foto_url} alt={selectedWheel.jant_adi} priority />
+                  <div className="relative rounded-xl overflow-hidden bg-gray-900" style={{ aspectRatio: '4/3' }}>
+                    <WheelImg src={selectedWheel.jant_foto_url} alt={selectedWheel.jant_adi} priority fit="contain" />
                     <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/80 to-transparent">
                       <p className="text-sm font-bold text-white truncate">{selectedWheel.jant_adi}</p>
                       {selectedWheel.fiyat != null && (
