@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { createHash } from 'crypto';
 import { redis } from '@/lib/redis';
+import { getClientIp } from '@/lib/get-client-ip';
 import tinify from 'tinify';
 
 export const maxDuration = 300;
@@ -410,7 +411,7 @@ async function handleUserRequest(request: NextRequest, body: Record<string, unkn
 
 export async function POST(request: NextRequest) {
   try {
-    const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
+    const ip = getClientIp(request);
     const key = `ratelimit:dealer:${ip}`;
     const count = await redis.incr(key);
     if (count === 1) await redis.expire(key, 60);

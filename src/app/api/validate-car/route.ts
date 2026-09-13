@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { redis } from '@/lib/redis';
+import { getClientIp } from '@/lib/get-client-ip';
 
 export async function POST(req: NextRequest) {
   // IP rate limit — 10 requests/min, fail open on Redis error
   try {
-    const ip = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown';
+    const ip = getClientIp(req);
     const key = `ratelimit:validate:${ip}`;
     const count = await redis.incr(key);
     if (count === 1) await redis.expire(key, 60);

@@ -57,13 +57,25 @@ export default function RegisterPage() {
       });
       if (authError) throw authError;
       if (!authData.user) throw new Error('User creation failed.');
-      const { error: dbError } = await supabase.from('users').upsert({
-        id: authData.user.id,
-        email: email.toLowerCase().trim(),
-        full_name: fullName.trim(),
-        credits: 2,
-      }, { onConflict: 'id' });
-      if (dbError) throw dbError;
+
+      // users row (incl. the free signup credit) is created server-side, with a
+      // hardcoded credit amount — never trust the client for that value.
+      if (authData.session) {
+        const res = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${authData.session.access_token}`,
+          },
+          body: JSON.stringify({ full_name: fullName.trim() }),
+        });
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({} as { error?: string }));
+          throw new Error(data.error ?? 'Kayıt sırasında bir hata oluştu.');
+        }
+      }
+      // authData.session is null when email confirmation is required — the users row
+      // will need to be created once the user confirms and signs in for the first time.
       setSuccess(true);
       showToast(locale === 'tr' ? 'Hesabınız oluşturuldu!' : 'Account created!', 'success');
     } catch (err) {

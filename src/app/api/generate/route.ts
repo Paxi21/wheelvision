@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { createHash } from 'crypto';
 import { redis } from '@/lib/redis';
+import { getClientIp } from '@/lib/get-client-ip';
 
 export const maxDuration = 30;
 
@@ -60,9 +61,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Servis yapılandırması eksik.' }, { status: 503 });
   }
 
-  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
-    || request.headers.get('x-real-ip')
-    || 'unknown';
+  const ip = getClientIp(request);
 
   try {
     const key = `ratelimit:${ip}`;
