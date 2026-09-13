@@ -239,10 +239,22 @@ async function handleDealerRequest(body: Record<string, unknown>) {
   const n8nData = await n8nRes.json().catch(() => ({})) as { output_url?: string; error?: string };
   console.log('[dealer/generate] n8n response:', JSON.stringify(n8nData));
 
-  if (!n8nRes.ok || !isValidOutputImageUrl(n8nData.output_url)) {
+  // n8n webhook node'u açıkça bir HTTP hatası ya da error alanı döndürdüyse — bu gerçek bir
+  // hata, arkada devam eden bir üretim yok. Hemen '__error__' işaretle.
+  if (!n8nRes.ok || n8nData.error) {
     const errMsg = n8nData.error ?? 'Görsel oluşturulamadı';
     await supabase.from('dealer_generations').update({ sonuc_foto_url: '__error__' }).eq('id', generationId);
     return NextResponse.json({ error: toUserMessage(errMsg) }, { status: 502, headers: genHeaders });
+  }
+
+  // n8n 200 döndü ama henüz geçerli bir output_url yok — n8n hızlı bir ack ile dönüp asıl
+  // üretimi + "Update a row" ile dealer_generations yazımını arka planda tamamlıyor olabilir
+  // (webhook 90s timeout'undaki aynı race condition, burada da geçerli). Hata değil, pending
+  // kabul edip generation_id ile polling'e düş — aksi halde n8n az sonra başarıyla yazacağı
+  // sonucu frontend hiç görmeden "Görsel oluşturulamadı" hatası göstermiş oluyorduk.
+  if (!isValidOutputImageUrl(n8nData.output_url)) {
+    console.warn('[dealer/generate] n8n 200 döndü ama output_url yok, polling\'e düşülüyor:', generationId);
+    return NextResponse.json({ generation_id: generationId }, { headers: genHeaders });
   }
 
   const outputUrl = await compressAndStore(n8nData.output_url);
