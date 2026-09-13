@@ -220,11 +220,20 @@ async function handleDealerRequest(body: Record<string, unknown>) {
       signal: AbortSignal.timeout(90_000),
     });
   } catch (fetchErr) {
+    // n8n'in kendi "Update a row" node'u generation_id ile dealer_generations'ı doğrudan yazıyor;
+    // webhook isteği zaman aşımına uğrasa bile n8n workflow'u arka planda çalışmaya devam edip
+    // sonucu tabloya yazabilir. Bu durumda satırı '__error__' ile işaretlersek, n8n'in az sonra
+    // yazacağı gerçek sonucu göremeden frontend'e kalıcı hata döndürmüş oluruz — bunun yerine
+    // generation_id ile pending dönüp frontend'in polling'e düşmesini sağla.
+    if ((fetchErr as Error).name === 'AbortError') {
+      console.warn('[dealer/generate] n8n webhook 90s içinde yanıt vermedi, polling\'e düşülüyor:', generationId);
+      return NextResponse.json({ generation_id: generationId }, { headers: genHeaders });
+    }
     await supabase.from('dealer_generations').update({ sonuc_foto_url: '__error__' }).eq('id', generationId);
-    const msg = (fetchErr as Error).name === 'AbortError'
-      ? 'İşlem uzun sürdü. Lütfen tekrar deneyin.'
-      : 'Servis geçici olarak kullanılamıyor. Lütfen birkaç dakika sonra tekrar deneyin.';
-    return NextResponse.json({ error: msg }, { status: 502, headers: genHeaders });
+    return NextResponse.json(
+      { error: 'Servis geçici olarak kullanılamıyor. Lütfen birkaç dakika sonra tekrar deneyin.' },
+      { status: 502, headers: genHeaders },
+    );
   }
 
   const n8nData = await n8nRes.json().catch(() => ({})) as { output_url?: string; error?: string };
