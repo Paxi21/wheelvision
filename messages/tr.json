@@ -117,6 +117,19 @@
     "comingSoonNote": "Haberdar olmak için bizi takip edin.",
     "dealerWhatsApp": "WhatsApp ile Bilgi Al"
   },
+  "blog": {
+    "badge": "WheelVision Blog",
+    "heroTitle": "Jant Dünyası",
+    "heroDesc": "Jant seçimi, yapay zeka ile görselleştirme ve otomotiv kültürü hakkında rehberler ve ipuçları.",
+    "featuredBadge": "Yeni Yazı",
+    "readMore": "Devamını Oku",
+    "moreArticles": "Diğer Yazılar",
+    "backToBlog": "Tüm Yazılar",
+    "relatedTitle": "Diğer Yazılar",
+    "ctaTitle": "Jantı Aracınızda Görün",
+    "ctaDesc": "Ücretsiz kayıt olun, 2 kredi hediye — kredi kartı gerekmez.",
+    "ctaButton": "Jantınızı Şimdi Deneyin"
+  },
   "privacy": {
     "title": "Gizlilik Politikası",
     "lastUpdated": "Son güncelleme: Nisan 2026",

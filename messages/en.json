@@ -117,6 +117,19 @@
     "comingSoonNote": "Follow us to stay updated.",
     "dealerWhatsApp": "Get Info via WhatsApp"
   },
+  "blog": {
+    "badge": "WheelVision Blog",
+    "heroTitle": "Wheel World",
+    "heroDesc": "Guides and tips on wheel selection, AI visualization, and car culture.",
+    "featuredBadge": "Latest Post",
+    "readMore": "Read More",
+    "moreArticles": "More Articles",
+    "backToBlog": "All Articles",
+    "relatedTitle": "More Articles",
+    "ctaTitle": "See the Wheel on Your Car",
+    "ctaDesc": "Sign up for free, get 2 bonus credits — no credit card required.",
+    "ctaButton": "Try It Now"
+  },
   "privacy": {
     "title": "Privacy Policy",
     "lastUpdated": "Last updated: April 2026",

@@ -1,10 +1,11 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { Calendar, Clock, ArrowLeft } from 'lucide-react';
+import { Calendar, Clock, ArrowLeft, ArrowRight } from 'lucide-react';
+import { getTranslations } from 'next-intl/server';
 import Navbar from '@/components/Navbar';
 import BlogCTA from '@/components/BlogCTA';
 import { Link } from '@/i18n/navigation';
-import { getAllSlugs, getPostBySlug, formatBlogDate } from '@/lib/blog';
+import { getAllSlugs, getAllPosts, getPostBySlug, formatBlogDate, formatReadingTime } from '@/lib/blog';
 
 export function generateStaticParams() {
   return getAllSlugs().map((slug) => ({ slug }));
@@ -13,13 +14,13 @@ export function generateStaticParams() {
 export async function generateMetadata({
   params,
 }: {
-  params: Promise<{ slug: string }>;
+  params: Promise<{ locale: string; slug: string }>;
 }): Promise<Metadata> {
-  const { slug } = await params;
+  const { locale, slug } = await params;
   const post = getPostBySlug(slug);
   if (!post) return {};
 
-  const url = `https://wheelvision.io/tr/blog/${slug}`;
+  const url = `https://wheelvision.io/${locale}/blog/${slug}`;
 
   return {
     title: `${post.title} — WheelVision`,
@@ -47,11 +48,15 @@ export async function generateMetadata({
 export default async function BlogPostPage({
   params,
 }: {
-  params: Promise<{ slug: string }>;
+  params: Promise<{ locale: string; slug: string }>;
 }) {
-  const { slug } = await params;
+  const { locale, slug } = await params;
   const post = getPostBySlug(slug);
   if (!post) notFound();
+
+  const t = await getTranslations('blog');
+  const related = getAllPosts().filter((p) => p.slug !== slug).slice(0, 3);
+  const url = `https://wheelvision.io/${locale}/blog/${slug}`;
 
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -62,7 +67,7 @@ export default async function BlogPostPage({
     dateModified: post.date,
     author: { '@type': 'Organization', name: 'WheelVision' },
     publisher: { '@type': 'Organization', name: 'WheelVision', url: 'https://wheelvision.io' },
-    mainEntityOfPage: { '@type': 'WebPage', '@id': `https://wheelvision.io/tr/blog/${slug}` },
+    mainEntityOfPage: { '@type': 'WebPage', '@id': url },
   };
 
   return (
@@ -74,27 +79,29 @@ export default async function BlogPostPage({
       />
       <Navbar />
       <main className="min-h-screen pt-28 pb-20 px-4">
-        <article className="max-w-[720px] mx-auto">
+        <article className="max-w-3xl mx-auto">
           <Link
             href="/blog"
             className="inline-flex items-center gap-1.5 text-sm text-[var(--text-secondary)] hover:text-white transition-colors mb-8"
           >
             <ArrowLeft className="w-4 h-4" />
-            Tüm Yazılar
+            {t('backToBlog')}
           </Link>
 
-          <div className="flex items-center gap-4 text-xs text-[var(--text-secondary)] mb-4">
-            <span className="inline-flex items-center gap-1.5">
+          <div className="flex flex-wrap items-center gap-2 mb-6">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 text-xs text-[var(--text-secondary)]">
               <Calendar className="w-3.5 h-3.5" />
-              {formatBlogDate(post.date)}
+              {formatBlogDate(post.date, locale)}
             </span>
-            <span className="inline-flex items-center gap-1.5">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 text-xs text-[var(--text-secondary)]">
               <Clock className="w-3.5 h-3.5" />
-              {post.readingTime}
+              {formatReadingTime(post.readingMinutes, locale)}
             </span>
           </div>
 
-          <h1 className="text-3xl md:text-4xl font-bold mb-4 leading-tight">{post.title}</h1>
+          <h1 className="text-4xl md:text-5xl font-extrabold mb-5 leading-tight gradient-text">
+            {post.title}
+          </h1>
           <p className="text-lg text-[var(--text-secondary)] mb-10 leading-relaxed">{post.description}</p>
 
           <div
@@ -103,6 +110,40 @@ export default async function BlogPostPage({
           />
 
           <BlogCTA />
+
+          {related.length > 0 && (
+            <div className="mt-16">
+              <h2 className="text-xl font-bold mb-6">{t('relatedTitle')}</h2>
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {related.map((p) => (
+                  <Link
+                    key={p.slug}
+                    href={`/blog/${p.slug}`}
+                    className="group relative block"
+                  >
+                    <div className="absolute -inset-0.5 rounded-2xl bg-gradient-to-r from-[var(--accent-pink)] via-[var(--accent-purple)] to-[var(--accent-orange)] opacity-0 group-hover:opacity-100 blur transition-opacity duration-500" />
+                    <div className="relative rounded-2xl border border-[var(--border-color)] bg-[var(--bg-card)] overflow-hidden transition-transform duration-300 ease-out group-hover:scale-[1.02]">
+                      <div
+                        className="h-24 flex items-center justify-center text-4xl"
+                        style={{ background: 'linear-gradient(135deg, rgba(255,107,53,0.18), rgba(114,9,183,0.18))' }}
+                      >
+                        🛞
+                      </div>
+                      <div className="p-5">
+                        <h3 className="text-sm font-bold mb-2 leading-snug group-hover:text-[var(--accent-orange)] transition-colors">
+                          {p.title}
+                        </h3>
+                        <span className="inline-flex items-center gap-1 text-xs font-semibold text-[var(--accent-orange)]">
+                          {t('readMore')}
+                          <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
+                        </span>
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
         </article>
       </main>
     </>

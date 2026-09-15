@@ -10,7 +10,7 @@ export type BlogPostMeta = {
   description: string;
   date: string;
   keywords: string[];
-  readingTime: string;
+  readingMinutes: number;
 };
 
 export type BlogPost = BlogPostMeta & {
@@ -61,10 +61,9 @@ function arr(data: Frontmatter, key: string): string[] {
   return Array.isArray(v) ? v : [];
 }
 
-function readingTimeFor(content: string): string {
+function readingMinutesFor(content: string): number {
   const words = content.trim().split(/\s+/).filter(Boolean).length;
-  const minutes = Math.max(1, Math.round(words / 200));
-  return `${minutes} dk okuma`;
+  return Math.max(1, Math.round(words / 200));
 }
 
 function readPost(slug: string): { data: Frontmatter; content: string } {
@@ -89,7 +88,7 @@ export function getAllPosts(): BlogPostMeta[] {
         description: str(data, 'description'),
         date: str(data, 'date'),
         keywords: arr(data, 'keywords'),
-        readingTime: readingTimeFor(content),
+        readingMinutes: readingMinutesFor(content),
       };
     })
     .sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
@@ -104,7 +103,7 @@ export function getPostBySlug(slug: string): BlogPost | null {
       description: str(data, 'description'),
       date: str(data, 'date'),
       keywords: arr(data, 'keywords'),
-      readingTime: readingTimeFor(content),
+      readingMinutes: readingMinutesFor(content),
       contentHtml: markdownToHtml(content),
     };
   } catch {
@@ -112,8 +111,12 @@ export function getPostBySlug(slug: string): BlogPost | null {
   }
 }
 
-export function formatBlogDate(iso: string): string {
+export function formatBlogDate(iso: string, locale: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' });
+  return d.toLocaleDateString(locale === 'tr' ? 'tr-TR' : 'en-US', { day: 'numeric', month: 'long', year: 'numeric' });
+}
+
+export function formatReadingTime(minutes: number, locale: string): string {
+  return locale === 'tr' ? `${minutes} dk okuma` : `${minutes} min read`;
 }
