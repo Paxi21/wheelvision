@@ -43,6 +43,22 @@ const HERO_CAROUSEL_SETS: CarouselSet[] = [
 
 const CAROUSEL_PHASE_MS = 2000;
 
+// ─── Results Gallery (below hero) ───────────────────────────────────────────
+const RESULTS_GALLERY: CarouselSet[] = [
+  {
+    before: 'https://res.cloudinary.com/dxcok7tox/image/upload/w_600,c_limit/v1789594957/bkonia6ajvhkb2omy11o.jpg',
+    after: 'https://res.cloudinary.com/dxcok7tox/image/upload/w_600,c_limit/v1789595725/wheelvision-result-1789595178861_korcy9.jpg',
+  },
+  {
+    before: 'https://res.cloudinary.com/dxcok7tox/image/upload/w_600,c_limit/v1789595207/xh7r88ugbkdguqoahvy3.jpg',
+    after: 'https://res.cloudinary.com/dxcok7tox/image/upload/w_600,c_limit/v1789595725/wheelvision-result-1789595353292_lcv5mi.jpg',
+  },
+  {
+    before: 'https://res.cloudinary.com/dxcok7tox/image/upload/w_600,c_limit/v1789595369/gkc2cuuo7uoaradxsrwz.jpg',
+    after: 'https://res.cloudinary.com/dxcok7tox/image/upload/w_600,c_limit/v1789595727/wheelvision-result-1789595555912_w57uea.jpg',
+  },
+];
+
 function cldResize(url: string, transform = 'w_800,c_limit') {
   return url.replace('/image/upload/', `/image/upload/${transform}/`);
 }
@@ -202,6 +218,7 @@ export default function Home() {
   const tSocial   = useTranslations('social');
   const tFooter   = useTranslations('footerLinks');
   const tSP       = useTranslations('socialProof');
+  const tGallery  = useTranslations('gallery');
   const tB2B      = useTranslations('b2b');
   const tTmn      = useTranslations('testimonials');
   const tCta      = useTranslations('finalCta');
@@ -462,7 +479,83 @@ export default function Home() {
 
       <SectionSep />
 
-      {/* ── Before/After Gallery — şimdilik gizli ── */}
+      {/* ── Results Gallery ── */}
+      <section className="py-14 sm:py-24 relative">
+        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-12">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5 }}
+            className="text-center mb-12"
+          >
+            <h2 className="text-3xl md:text-4xl font-bold mb-3">
+              <span className="gradient-text">{tGallery('title')} {tGallery('titleHighlight')}</span>
+            </h2>
+            <p className="text-[var(--text-secondary)]">{tGallery('subtitle')}</p>
+          </motion.div>
+
+          <div className="grid md:grid-cols-3 gap-6">
+            {RESULTS_GALLERY.map((item, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: i * 0.12 }}
+                whileHover={{ scale: 1.02, transition: { duration: 0.25, ease: 'easeOut' } }}
+                className="rounded-xl overflow-hidden border border-white/10 bg-white/5 transition-shadow duration-300 hover:shadow-[0_0_0_1px_rgba(236,72,153,0.5),0_16px_40px_rgba(139,92,246,0.35)]"
+              >
+                <div className="relative aspect-[4/3]">
+                  <Image
+                    src={item.before}
+                    alt={`${t('before')} ${i + 1}`}
+                    fill
+                    priority={false}
+                    sizes="(max-width: 768px) 100vw, 33vw"
+                    className="object-cover"
+                  />
+                  <span className="absolute top-3 left-3 px-2.5 py-1 rounded-full backdrop-blur-md bg-black/60 border border-white/15 text-[10px] font-bold uppercase tracking-wide text-white">
+                    {t('before')}
+                  </span>
+                </div>
+                <div className="border-t border-white/10" />
+                <div className="relative aspect-[4/3]">
+                  <Image
+                    src={item.after}
+                    alt={`${t('after')} ${i + 1}`}
+                    fill
+                    priority={false}
+                    sizes="(max-width: 768px) 100vw, 33vw"
+                    className="object-cover"
+                  />
+                  <span
+                    className="absolute top-3 left-3 px-2.5 py-1 rounded-full border border-white/20 text-[10px] font-bold uppercase tracking-wide text-white"
+                    style={{ background: 'linear-gradient(135deg, rgba(236,72,153,0.9), rgba(139,92,246,0.9))' }}
+                  >
+                    {t('after')} ✨
+                  </span>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+            className="text-center mt-12"
+          >
+            <Link href="/app">
+              <ShimmerButton className="text-base px-8 py-4 mx-auto">
+                {tGallery('cta')}
+                <ArrowRight className="w-4 h-4" />
+              </ShimmerButton>
+            </Link>
+          </motion.div>
+        </div>
+      </section>
 
       <SectionSep />
 

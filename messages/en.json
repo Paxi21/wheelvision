@@ -274,7 +274,8 @@
   "gallery": {
     "title": "Real",
     "titleHighlight": "Results",
-    "subtitle": "Examples from our customers' vehicles",
+    "subtitle": "AI-generated — on real car photos",
+    "cta": "Try It Yourself",
     "more": "See more examples",
     "label1": "Mercedes SL · Star Wheels",
     "label2": "Aston Martin V8 · Gold BBS",
