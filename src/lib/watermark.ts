@@ -1,3 +1,19 @@
+// Emails that never get a watermark, regardless of plan (e.g. internal/admin accounts).
+const WATERMARK_EXEMPT_EMAILS = ['erhan.deniz421@gmail.com'];
+
+// Accounts provisioned with a very large credit balance are treated as admin/service
+// accounts and are exempt from the free-plan watermark too.
+const WATERMARK_EXEMPT_CREDITS_THRESHOLD = 999;
+
+/**
+ * True if this user should never receive a watermark, independent of their paid plan status.
+ */
+export function isWatermarkExempt(email?: string | null, credits?: number | null): boolean {
+  if (email && WATERMARK_EXEMPT_EMAILS.includes(email.trim().toLowerCase())) return true;
+  if (typeof credits === 'number' && credits >= WATERMARK_EXEMPT_CREDITS_THRESHOLD) return true;
+  return false;
+}
+
 /**
  * Applies a single centered WheelVision watermark to an image URL.
  * - Position: center of image

@@ -7,7 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Upload, Car, CircleDot, Sparkles, Download, RefreshCw, X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/navigation';
-import { applyWatermark } from '@/lib/watermark';
+import { applyWatermark, isWatermarkExempt } from '@/lib/watermark';
 
 function BeforeAfterSlider({ before, after }: { before: string; after: string }) {
   const [position, setPosition] = useState(50);
@@ -250,7 +250,9 @@ export default function AppPage() {
         setResultImage(imageUrl);
         setLocalCredits((prev) => (prev !== null ? prev - 1 : 0));
         void refreshUser();
-        applyWatermark(imageUrl).then((wm) => setResultImage(wm)).catch(() => {});
+        if (!isWatermarkExempt(user?.email, user?.credits)) {
+          applyWatermark(imageUrl).then((wm) => setResultImage(wm)).catch(() => {});
+        }
         return;
       }
 
@@ -279,7 +281,9 @@ export default function AppPage() {
             setResultImage(imageUrl);
             setLocalCredits((prev) => (prev !== null ? prev - 1 : 0));
             void refreshUser();
-            applyWatermark(imageUrl).then((wm) => setResultImage(wm)).catch(() => {});
+            if (!isWatermarkExempt(user?.email, user?.credits)) {
+              applyWatermark(imageUrl).then((wm) => setResultImage(wm)).catch(() => {});
+            }
             return;
           }
         }

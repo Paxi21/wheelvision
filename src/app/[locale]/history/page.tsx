@@ -7,7 +7,7 @@ import { Download, Car, ArrowRight, X, Lock } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Link, useRouter } from '@/i18n/navigation';
 import { useTranslations } from 'next-intl';
-import { applyWatermark } from '@/lib/watermark';
+import { applyWatermark, isWatermarkExempt } from '@/lib/watermark';
 
 interface Generation {
   id: string;
@@ -19,6 +19,7 @@ interface Generation {
 interface UserData {
   email: string;
   plan: string;
+  credits: number;
 }
 
 function isPaidPlan(plan: string): boolean {
@@ -58,8 +59,8 @@ function ImageModal({ url, isPaid, onClose }: { url: string; isPaid: boolean; on
   const displaySrc = isPaid ? url : (watermarked ?? url);
 
   const handleDownload = useCallback(async () => {
-    // Everyone downloads watermarked for now (paid clean-download coming later)
-    const toDownload = watermarkedRef.current ?? await applyWatermark(url);
+    // Paid/exempt users download the clean image; everyone else downloads watermarked
+    const toDownload = isPaid ? url : (watermarkedRef.current ?? await applyWatermark(url));
 
     try {
       let blob: Blob;
@@ -86,7 +87,7 @@ function ImageModal({ url, isPaid, onClose }: { url: string; isPaid: boolean; on
     } catch {
       window.open(toDownload, '_blank');
     }
-  }, [url]);
+  }, [url, isPaid]);
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm p-4">
@@ -139,7 +140,7 @@ export default function HistoryPage() {
 
       const [genResult, userResult] = await Promise.all([
         supabase.from('dealer_generations').select('id, user_email, sonuc_foto_url, created_at').eq('user_email', session.user.email).order('created_at', { ascending: false }),
-        supabase.from('users').select('email, plan').eq('email', session.user.email).maybeSingle(),
+        supabase.from('users').select('email, plan, credits').eq('email', session.user.email).maybeSingle(),
       ]);
 
       setGenerations((genResult.data ?? []).filter((g) => g.sonuc_foto_url));
@@ -149,7 +150,7 @@ export default function HistoryPage() {
     fetchData();
   }, [router, supabase]);
 
-  const paid = userData ? isPaidPlan(userData.plan) : false;
+  const paid = userData ? (isPaidPlan(userData.plan) || isWatermarkExempt(userData.email, userData.credits)) : false;
 
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 border-2 border-[var(--accent-orange)] border-t-transparent rounded-full animate-spin" /></div>;
