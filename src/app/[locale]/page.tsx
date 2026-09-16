@@ -14,7 +14,7 @@ function IGIcon({ size = 16 }: { size?: number }) {
     </svg>
   );
 }
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { Spotlight } from '@/components/ui/spotlight';
 import { ShimmerButton } from '@/components/ui/shimmer-button';
 import { AnimatedBorder } from '@/components/ui/animated-border';
@@ -23,131 +23,122 @@ import { createClient } from '@/lib/supabase';
 import { useTranslations, useLocale } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 
-const BEFORE_IMG = '/demo-before.jpg';
-const AFTER_IMG  = '/demo-after.jpg';
+// ─── Hero Before/After Carousel ─────────────────────────────────────────────
+type CarouselSet = { before: string; after: string };
 
-// ─── Before/After Slider ────────────────────────────────────────────────────
-type SliderSize = 'large' | 'small';
+const HERO_CAROUSEL_SETS: CarouselSet[] = [
+  {
+    before: 'https://res.cloudinary.com/dxcok7tox/image/upload/v1789594957/bkonia6ajvhkb2omy11o.jpg',
+    after: 'https://res.cloudinary.com/dxcok7tox/image/upload/v1789595725/wheelvision-result-1789595178861_korcy9.jpg',
+  },
+  {
+    before: 'https://res.cloudinary.com/dxcok7tox/image/upload/v1789595207/xh7r88ugbkdguqoahvy3.jpg',
+    after: 'https://res.cloudinary.com/dxcok7tox/image/upload/v1789595725/wheelvision-result-1789595353292_lcv5mi.jpg',
+  },
+  {
+    before: 'https://res.cloudinary.com/dxcok7tox/image/upload/v1789595369/gkc2cuuo7uoaradxsrwz.jpg',
+    after: 'https://res.cloudinary.com/dxcok7tox/image/upload/v1789595727/wheelvision-result-1789595555912_w57uea.jpg',
+  },
+];
 
-type PlateRect = { left: string; top: string; width: string; height: string };
+const CAROUSEL_PHASE_MS = 2000;
 
-function BeforeAfterSlider({ size = 'large', beforeSrc, afterSrc, plateCensors, suppressWatermark }: {
-  size?: SliderSize;
-  beforeSrc?: string;
-  afterSrc?: string;
-  plateCensors?: PlateRect[];
-  suppressWatermark?: boolean;
-}) {
+function cldResize(url: string, transform = 'w_800,c_limit') {
+  return url.replace('/image/upload/', `/image/upload/${transform}/`);
+}
+
+function HeroCarousel() {
   const t = useTranslations('hero');
-  const before = beforeSrc ?? BEFORE_IMG;
-  const after  = afterSrc  ?? AFTER_IMG;
-  const [position, setPosition] = useState(50);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const [tick, setTick] = useState(0);
 
-  const moveTo = useCallback((clientX: number) => {
-    if (!containerRef.current) return;
-    const rect = containerRef.current.getBoundingClientRect();
-    const pct = Math.max(2, Math.min(98, ((clientX - rect.left) / rect.width) * 100));
-    setPosition(pct);
-  }, []);
+  useEffect(() => {
+    const timer = setTimeout(() => setTick((v) => v + 1), CAROUSEL_PHASE_MS);
+    return () => clearTimeout(timer);
+  }, [tick]);
 
-  const onPointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
-    e.currentTarget.setPointerCapture(e.pointerId);
-    moveTo(e.clientX);
-  }, [moveTo]);
+  const index = Math.floor(tick / 2) % HERO_CAROUSEL_SETS.length;
+  const phase: 'before' | 'after' = tick % 2 === 0 ? 'before' : 'after';
+  const set = HERO_CAROUSEL_SETS[index];
+  const src = cldResize(phase === 'before' ? set.before : set.after);
 
-  const onPointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
-    if (e.buttons === 0) return;
-    moveTo(e.clientX);
-  }, [moveTo]);
-
-  const isLarge = size === 'large';
+  const goTo = useCallback((i: number) => setTick(i * 2), []);
 
   return (
     <div className="relative w-full">
-      {isLarge && (
-        <div className="absolute -inset-4 rounded-3xl bg-gradient-to-r from-[#ec4899]/20 via-[#8b5cf6]/20 to-[#ec4899]/20 blur-2xl pointer-events-none" />
-      )}
+      <div className="absolute -inset-4 rounded-3xl bg-gradient-to-r from-[#ec4899]/20 via-[#8b5cf6]/20 to-[#ec4899]/20 blur-2xl pointer-events-none" />
       <div
-        className={`relative p-[2px] rounded-2xl${isLarge ? ' slider-border' : ''}`}
-        style={isLarge
-          ? { background: 'linear-gradient(135deg, #ec4899, #8b5cf6, #ec4899)', backgroundSize: '200% 200%', animation: 'gradientShift 4s linear infinite' }
-          : { background: 'linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%)' }
-        }
+        className="relative p-[2px] rounded-2xl carousel-border"
+        style={{ background: 'linear-gradient(135deg, #ec4899, #8b5cf6, #ec4899)', backgroundSize: '200% 200%', animation: 'gradientShift 4s linear infinite' }}
       >
         <div
-          ref={containerRef}
-          className="relative select-none cursor-col-resize overflow-hidden rounded-[14px] bg-black"
-          style={{ touchAction: 'none', aspectRatio: isLarge ? '16/9' : '4/3' }}
-          onPointerDown={onPointerDown}
-          onPointerMove={onPointerMove}
+          className="relative select-none overflow-hidden rounded-[14px] bg-black"
+          style={{ aspectRatio: '16/9' }}
         >
-          <Image
-            src={after} alt="Sonra" fill
-            priority={isLarge}
-            sizes={isLarge
-              ? '(max-width: 390px) 390px, (max-width: 640px) 640px, (max-width: 1024px) 828px, 900px'
-              : '(max-width: 640px) 50vw, 400px'}
-            className="object-cover pointer-events-none" draggable={false}
-          />
-          {suppressWatermark && (
-            <div className="absolute inset-0 pointer-events-none" style={{ background: 'rgba(5,5,10,0.18)', mixBlendMode: 'multiply' }} />
-          )}
-          <div className="absolute inset-0" style={{ clipPath: `inset(0 ${100 - position}% 0 0)` }}>
-            <Image
-              src={before} alt="Önce" fill
-              priority={isLarge}
-              sizes={isLarge
-                ? '(max-width: 390px) 390px, (max-width: 640px) 640px, (max-width: 1024px) 828px, 900px'
-                : '(max-width: 640px) 50vw, 400px'}
-              className="object-cover pointer-events-none" draggable={false}
-            />
-          </div>
-          {plateCensors?.map((r, i) => (
-            <div key={i} className="absolute pointer-events-none rounded-sm z-10"
-                 style={{ left: r.left, top: r.top, width: r.width, height: r.height, backdropFilter: 'blur(10px) brightness(0.4)', background: 'rgba(0,0,0,0.45)' }} />
-          ))}
-          <div className="absolute top-2 left-2 px-2 py-1 rounded-full backdrop-blur-md bg-black/50 border border-white/15 text-[10px] font-semibold text-white/80 pointer-events-none">
-            {t('before')}
-          </div>
-          <div
-            className="absolute top-2 right-2 px-2 py-1 rounded-full backdrop-blur-md border border-white/20 text-[10px] font-bold text-white pointer-events-none"
-            style={{ background: 'linear-gradient(135deg, rgba(236,72,153,0.85), rgba(139,92,246,0.85))' }}
-          >
-            {t('after')} ✨
-          </div>
-          <div
-            className="absolute top-0 bottom-0 w-[2px] pointer-events-none"
-            style={{ left: `${position}%`, background: 'linear-gradient(to bottom, transparent, rgba(255,255,255,0.95) 15%, rgba(255,255,255,0.95) 85%, transparent)' }}
-          />
-          <div
-            className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 pointer-events-none z-10"
-            style={{ left: `${position}%` }}
-          >
-            <div
-              className="w-8 h-8 rounded-full bg-white flex items-center justify-center border-2 border-white/90"
-              style={{ boxShadow: '0 0 0 3px rgba(139,92,246,0.3), 0 4px 16px rgba(0,0,0,0.4)' }}
+          <AnimatePresence>
+            <motion.div
+              key={`${index}-${phase}`}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.8, ease: 'easeInOut' }}
+              className="absolute inset-0"
             >
-              <div className="flex items-center gap-0.5">
-                <svg width="6" height="10" viewBox="0 0 8 12" fill="none"><path d="M6 1L1 6L6 11" stroke="#374151" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                <svg width="6" height="10" viewBox="0 0 8 12" fill="none"><path d="M2 1L7 6L2 11" stroke="#374151" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-              </div>
-            </div>
-          </div>
+              <Image
+                src={src}
+                alt={phase === 'before' ? t('before') : t('after')}
+                fill
+                priority={index === 0}
+                sizes="(max-width: 390px) 390px, (max-width: 640px) 640px, (max-width: 1024px) 828px, 900px"
+                className="object-cover pointer-events-none"
+                draggable={false}
+              />
+              {phase === 'before' ? (
+                <div className="absolute top-2 left-2 px-2 py-1 rounded-full backdrop-blur-md bg-black/50 border border-white/15 text-[10px] font-semibold text-white/80 pointer-events-none">
+                  {t('before')}
+                </div>
+              ) : (
+                <div
+                  className="absolute top-2 right-2 px-2 py-1 rounded-full backdrop-blur-md border border-white/20 text-[10px] font-bold text-white pointer-events-none"
+                  style={{ background: 'linear-gradient(135deg, rgba(236,72,153,0.85), rgba(139,92,246,0.85))' }}
+                >
+                  {t('after')} ✨
+                </div>
+              )}
+            </motion.div>
+          </AnimatePresence>
         </div>
       </div>
-      {isLarge && (
-        <style>{`
-          @keyframes gradientShift {
-            0%   { background-position: 0% 50%; }
-            50%  { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-          }
-          @media (max-width: 640px), (prefers-reduced-motion: reduce) {
-            .slider-border { animation: none !important; }
-          }
-        `}</style>
-      )}
+
+      {/* Dot indicators */}
+      <div className="flex items-center justify-center gap-2 mt-4">
+        {HERO_CAROUSEL_SETS.map((_, i) => (
+          <button
+            key={i}
+            type="button"
+            aria-label={`Slide ${i + 1}`}
+            onClick={() => goTo(i)}
+            className="h-2 rounded-full cursor-pointer"
+            style={{
+              width: i === index ? 24 : 8,
+              background: i === index
+                ? 'linear-gradient(135deg, #ec4899, #8b5cf6)'
+                : 'rgba(255,255,255,0.2)',
+              transition: 'width 0.3s ease, background 0.3s ease',
+            }}
+          />
+        ))}
+      </div>
+
+      <style>{`
+        @keyframes gradientShift {
+          0%   { background-position: 0% 50%; }
+          50%  { background-position: 100% 50%; }
+          100% { background-position: 0% 50%; }
+        }
+        @media (max-width: 640px), (prefers-reduced-motion: reduce) {
+          .carousel-border { animation: none !important; }
+        }
+      `}</style>
     </div>
   );
 }
@@ -211,7 +202,6 @@ export default function Home() {
   const tSocial   = useTranslations('social');
   const tFooter   = useTranslations('footerLinks');
   const tSP       = useTranslations('socialProof');
-  const tGallery  = useTranslations('gallery');
   const tB2B      = useTranslations('b2b');
   const tTmn      = useTranslations('testimonials');
   const tCta      = useTranslations('finalCta');
@@ -248,30 +238,6 @@ export default function Home() {
     { quote: tTmn('q1'), author: tTmn('a1') },
     { quote: tTmn('q2'), author: tTmn('a2') },
     { quote: tTmn('q3'), author: tTmn('a3') },
-  ];
-
-  const galleryPairs = [
-    {
-      before: '/gallery-before-1.jpg',
-      after: '/gallery-after-1.jpg',
-      label: tGallery('label1'),
-      suppressWatermark: true,
-      plateCensors: [] as PlateRect[],
-    },
-    {
-      before: '/gallery-before-2.jpg',
-      after: '/gallery-after-2.jpg',
-      label: tGallery('label2'),
-      suppressWatermark: true,
-      plateCensors: [] as PlateRect[],
-    },
-    {
-      before: '/gallery-before-3.jpg',
-      after: '/gallery-after-3.jpg',
-      label: tGallery('label3'),
-      suppressWatermark: true,
-      plateCensors: [] as PlateRect[],
-    },
   ];
 
   const b2bFeatures = [tB2B('f1'), tB2B('f2'), tB2B('f3'), tB2B('f4')];
@@ -374,18 +340,14 @@ export default function Home() {
             <span>🎁 {tStats('free')}</span>
           </motion.div>
 
-          {/* Slider */}
+          {/* Before/After Carousel */}
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.45 }}
             className="w-full max-w-[900px]"
           >
-            <BeforeAfterSlider size="large" />
-            <p className="text-center text-xs text-[#52525b] mt-3 flex items-center justify-center gap-1.5">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 9l-3 3 3 3M9 5l3-3 3 3M15 19l-3 3-3-3M19 9l3 3-3 3"/></svg>
-              {t('compare')}
-            </p>
+            <HeroCarousel />
           </motion.div>
         </div>
       </section>
