@@ -11,14 +11,10 @@
   },
   "hero": {
     "badge": "🔥 Türkiye'nin İlk AI Jant Görselleştirme Platformu",
-    "title": "Jantı Al, Pişman Ol?",
-    "titleHighlight": "Önce Gör, Sonra Karar Ver.",
-    "description": "Binlerce lira harcamadan önce gör. Arabanın fotoğrafını yükle, jantı seç — AI 30 saniyede arabana yerleştiriyor.",
-    "descPre": "Arabanın fotoğrafını yükle, kataloğdan jantı seç — yapay zeka ",
-    "descHighlight1": "30 saniyede",
-    "descMid": " montajlasın. ",
-    "descHighlight2": "Binlerce lira",
-    "descPost": " harcamadan önce nasıl görüneceğini gör.",
+    "title": "Aynı Araba.",
+    "titleHighlight": "Farklı Karakter.",
+    "description": "Hayalindeki jantı arabanla buluştur — 1 dakika içinde.",
+    "desc": "Hayalindeki jantı arabanla buluştur — 1 dakika içinde.",
     "cta": "Ücretsiz Başla",
     "ctaLoggedIn": "Uygulamaya Git",
     "howItWorks": "Nasıl Çalışır?",
@@ -27,9 +23,9 @@
     "after": "Sonra"
   },
   "stats": {
-    "users": "500+ araç sahibi denedi",
-    "noCard": "Kart gerekmez",
-    "fast": "30 sn'de sonuç",
+    "users": "Ücretsiz başla",
+    "noCard": "Kayıt ol, hemen dene",
+    "fast": "1 dakikada sonuç",
     "free": "2 kredi ücretsiz"
   },
   "app": {
@@ -227,7 +223,7 @@
   },
   "steps": {
     "title": "3 Adım",
-    "subtitle": "Sadece 38 saniye — jant kararını kolaylaştır",
+    "subtitle": "Sadece 1 dakika — jant kararını kolaylaştır",
     "s1Title": "Araba Yükle",
     "s1Desc": "Araba fotoğrafını seç",
     "s2Title": "Jant Seç",
@@ -241,7 +237,7 @@
     "titleBrand": "WheelVision?",
     "subtitle": "Yanlış jant pahalıya mal olur. Biz bunu önlemek için buradayız.",
     "f1Title": "Anında Sonuç",
-    "f1Desc": "~30 saniyede yüksek kaliteli AI görselleştirme. Bekleme yok.",
+    "f1Desc": "~1 dakikada yüksek kaliteli AI görselleştirme. Bekleme yok.",
     "f2Title": "Gerçekçi AI",
     "f2Desc": "Işık, gölge ve yansımalar otomatik eşleştirilir. Gerçek görünür.",
     "f3Title": "Güvenli ve Gizli",
@@ -259,7 +255,7 @@
     "title": "Bir Sonraki Mükemmel Jantını Bul",
     "desc": "2 ücretsiz kredi ile başla, beğenirsen devam et.",
     "watermarkNote": "💡 Ücretli plana geç ve tüm filigranlar otomatik olarak kaldırılır",
-    "noCard": "Kart gerekmez · 30 saniyede kayıt ol"
+    "noCard": "Kart gerekmez · 1 dakikada kayıt ol"
   },
   "footerLinks": {
     "app": "Uygulama",
@@ -271,7 +267,7 @@
     "copyright": "© 2026 WheelVision. Tüm hakları saklıdır."
   },
   "socialProof": {
-    "feat1": "30 Saniyede Sonuç",
+    "feat1": "1 Dakikada Sonuç",
     "feat2": "Gerçekçi AI Montaj",
     "feat3": "Kart Gerekmez"
   },
@@ -308,7 +304,7 @@
   "finalCta": {
     "eyebrow": "Hâlâ Düşünüyor musun?",
     "title": "2 Ücretsiz Kredi Seni Bekliyor",
-    "desc": "30 saniyede jantını gör. Kart bilgisi gerekmez.",
+    "desc": "1 dakikada jantını gör. Kart bilgisi gerekmez.",
     "cta": "Hemen Başla — Ücretsiz"
   },
   "login": {

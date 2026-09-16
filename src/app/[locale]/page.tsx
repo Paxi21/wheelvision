@@ -20,7 +20,7 @@ import { ShimmerButton } from '@/components/ui/shimmer-button';
 import { AnimatedBorder } from '@/components/ui/animated-border';
 import { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import { createClient } from '@/lib/supabase';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 
 const BEFORE_IMG = '/demo-before.jpg';
@@ -215,6 +215,7 @@ export default function Home() {
   const tB2B      = useTranslations('b2b');
   const tTmn      = useTranslations('testimonials');
   const tCta      = useTranslations('finalCta');
+  const locale    = useLocale();
 
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showContactModal, setShowContactModal] = useState(false);
@@ -231,7 +232,7 @@ export default function Home() {
   const steps = [
     { icon: Upload, title: tSteps('s1Title'), desc: tSteps('s1Desc'), time: '5s',   gradient: 'from-[#FF6B35] to-[#F72585]', featured: false },
     { icon: Disc3,  title: tSteps('s2Title'), desc: tSteps('s2Desc'), time: '3s',   gradient: 'from-[#F72585] to-[#7209B7]', featured: false },
-    { icon: Eye,    title: tSteps('s3Title'), desc: tSteps('s3Desc'), time: '~30s', gradient: 'from-[#8b5cf6] to-[#ec4899]', featured: true  },
+    { icon: Eye,    title: tSteps('s3Title'), desc: tSteps('s3Desc'), time: locale === 'tr' ? '~1dk' : '~1min', gradient: 'from-[#8b5cf6] to-[#ec4899]', featured: true  },
   ];
 
   const features = [
@@ -329,12 +330,7 @@ export default function Home() {
             transition={{ duration: 0.5, delay: 0.15 }}
             className="text-base sm:text-lg md:text-xl text-[#a1a1aa] mb-6 sm:mb-8 max-w-2xl"
           >
-            {t('descPre')}
-            <strong style={{ color: 'var(--accent-orange)', fontWeight: 700 }}>{t('descHighlight1')}</strong>
-            {t('descMid')}
-            <br className="hidden sm:block" />
-            <span style={{ borderBottom: '2px solid rgba(247,37,133,0.5)', paddingBottom: '1px' }}>{t('descHighlight2')}</span>
-            {t('descPost')}
+            {t('desc')}
           </motion.p>
 
           {/* CTAs */}

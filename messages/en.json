@@ -11,14 +11,10 @@
   },
   "hero": {
     "badge": "🔥 Turkey's First AI Wheel Visualization Platform",
-    "title": "Buy Wheels, Regret It?",
-    "titleHighlight": "See First, Decide Later.",
-    "description": "See before you spend. Upload your car photo, choose a wheel — AI fits it in 30 seconds.",
-    "descPre": "Upload your car photo, pick a wheel from the catalog — AI will mount it ",
-    "descHighlight1": "in 30 seconds",
-    "descMid": ". ",
-    "descHighlight2": "Before spending thousands",
-    "descPost": ", see exactly how it looks.",
+    "title": "Same Car.",
+    "titleHighlight": "New Character.",
+    "description": "See your dream wheels on your ride — in under 1 minute.",
+    "desc": "See your dream wheels on your ride — in under 1 minute.",
     "cta": "Try Free",
     "ctaLoggedIn": "Go to App",
     "howItWorks": "How It Works?",
@@ -27,9 +23,9 @@
     "after": "After"
   },
   "stats": {
-    "users": "500+ car owners tried",
-    "noCard": "No card required",
-    "fast": "30 sec result",
+    "users": "Start free",
+    "noCard": "Sign up and try",
+    "fast": "Results in 1 minute",
     "free": "2 free credits"
   },
   "app": {
@@ -227,7 +223,7 @@
   },
   "steps": {
     "title": "3 Steps",
-    "subtitle": "Only 38 seconds — simplify your wheel decision",
+    "subtitle": "Just 1 minute — simplify your wheel decision",
     "s1Title": "Upload Car",
     "s1Desc": "Select your car photo",
     "s2Title": "Pick Wheel",
@@ -241,7 +237,7 @@
     "titleBrand": "WheelVision?",
     "subtitle": "Wrong wheels are expensive. We're here to prevent that.",
     "f1Title": "Instant Result",
-    "f1Desc": "~30 seconds for high-quality AI visualization. No waiting.",
+    "f1Desc": "~1 minute for high-quality AI visualization. No waiting.",
     "f2Title": "Realistic AI",
     "f2Desc": "Light, shadow and reflections matched automatically. Looks real.",
     "f3Title": "Safe & Private",
@@ -259,7 +255,7 @@
     "title": "Find Your Next Perfect Wheel",
     "desc": "Start with 2 free credits, continue if you like it.",
     "watermarkNote": "💡 Upgrade to paid plan and all watermarks are automatically removed",
-    "noCard": "No credit card · Sign up in 30 seconds"
+    "noCard": "No credit card · Sign up in under 1 minute"
   },
   "footerLinks": {
     "app": "App",
@@ -271,7 +267,7 @@
     "copyright": "© 2026 WheelVision. All rights reserved."
   },
   "socialProof": {
-    "feat1": "Results in 30 Seconds",
+    "feat1": "Results in 1 Minute",
     "feat2": "Realistic AI Fitting",
     "feat3": "No Card Required"
   },
@@ -308,7 +304,7 @@
   "finalCta": {
     "eyebrow": "Still Thinking?",
     "title": "2 Free Credits Are Waiting for You",
-    "desc": "See your wheels in 30 seconds. No card required.",
+    "desc": "See your wheels in under 1 minute. No card required.",
     "cta": "Start Now — Free"
   },
   "login": {

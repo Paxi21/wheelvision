@@ -7,8 +7,8 @@ import BlogCTA from '@/components/BlogCTA';
 import { Link } from '@/i18n/navigation';
 import { getAllSlugs, getAllPosts, getPostBySlug, formatBlogDate, formatReadingTime } from '@/lib/blog';
 
-export function generateStaticParams() {
-  return getAllSlugs().map((slug) => ({ slug }));
+export function generateStaticParams({ params }: { params: { locale: string } }) {
+  return getAllSlugs(params.locale).map((slug) => ({ slug }));
 }
 
 export async function generateMetadata({
@@ -17,7 +17,7 @@ export async function generateMetadata({
   params: Promise<{ locale: string; slug: string }>;
 }): Promise<Metadata> {
   const { locale, slug } = await params;
-  const post = getPostBySlug(slug);
+  const post = getPostBySlug(slug, locale);
   if (!post) return {};
 
   const url = `https://wheelvision.io/${locale}/blog/${slug}`;
@@ -51,11 +51,11 @@ export default async function BlogPostPage({
   params: Promise<{ locale: string; slug: string }>;
 }) {
   const { locale, slug } = await params;
-  const post = getPostBySlug(slug);
+  const post = getPostBySlug(slug, locale);
   if (!post) notFound();
 
   const t = await getTranslations('blog');
-  const related = getAllPosts().filter((p) => p.slug !== slug).slice(0, 3);
+  const related = getAllPosts(locale).filter((p) => p.slug !== slug).slice(0, 3);
   const url = `https://wheelvision.io/${locale}/blog/${slug}`;
 
   const jsonLd = {

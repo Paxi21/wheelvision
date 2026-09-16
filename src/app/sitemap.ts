@@ -4,10 +4,10 @@ import { getAllSlugs } from '@/lib/blog'
 export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrl = 'https://wheelvision.io'
 
-  const blogEntries: MetadataRoute.Sitemap = getAllSlugs().flatMap((slug) => [
-    { url: `${baseUrl}/tr/blog/${slug}`, lastModified: new Date(), changeFrequency: 'monthly' as const, priority: 0.7 },
-    { url: `${baseUrl}/en/blog/${slug}`, lastModified: new Date(), changeFrequency: 'monthly' as const, priority: 0.6 },
-  ])
+  const blogEntries: MetadataRoute.Sitemap = [
+    ...getAllSlugs('tr').map((slug) => ({ url: `${baseUrl}/tr/blog/${slug}`, lastModified: new Date(), changeFrequency: 'monthly' as const, priority: 0.7 })),
+    ...getAllSlugs('en').map((slug) => ({ url: `${baseUrl}/en/blog/${slug}`, lastModified: new Date(), changeFrequency: 'monthly' as const, priority: 0.6 })),
+  ]
 
   return [
     { url: baseUrl, lastModified: new Date(), changeFrequency: 'weekly', priority: 1 },

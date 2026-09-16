@@ -36,7 +36,7 @@ Piyasada jant deneme siteleri var ama çoğu eski teknoloji kullanıyor. 3D konf
 
 **Her jant, her araç** — Belirli marka veya modelle sınırlı değil. Herhangi bir araç fotoğrafı, herhangi bir jant fotoğrafı ile çalışır.
 
-**Hızlı** — Sonuç 30-60 saniye içinde hazır. Jantçıya gidip montaj yaptırmaya gerek yok.
+**Hızlı** — Sonuç yaklaşık 1 dakika içinde hazır. Jantçıya gidip montaj yaptırmaya gerek yok.
 
 ## Jant Deneme İçin En İyi Fotoğraf Nasıl Çekilir?
 

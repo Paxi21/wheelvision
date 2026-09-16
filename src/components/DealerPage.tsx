@@ -413,7 +413,7 @@ function WelcomeScreen({ dealer, wheels, onStart }: { dealer: Dealer; wheels: Wh
             <p className="text-[var(--text-secondary)] leading-relaxed mb-8 max-w-sm lg:max-w-none"
               style={{ fontSize: '15px', animation: 'fadeSlideUp 0.5s ease-out 0.2s both' }}>
               Fotoğrafını yükle, kataloğdan jantı seç —{' '}
-              <span className="font-bold" style={{ color: 'var(--accent-orange)' }}>yapay zeka 30 saniyede</span>{' '}
+              <span className="font-bold" style={{ color: 'var(--accent-orange)' }}>yapay zeka 1 dakikada</span>{' '}
               aracına montajlasın. Satın almadan önce gör.
             </p>
 
@@ -445,7 +445,7 @@ function WelcomeScreen({ dealer, wheels, onStart }: { dealer: Dealer; wheels: Wh
               style={{ animation: 'fadeSlideUp 0.5s ease-out 0.52s both' }}>
               {[
                 { icon: '🔒', label: 'Güvenli' },
-                { icon: '⚡', label: '30 Saniye' },
+                { icon: '⚡', label: '1 Dakika' },
                 { icon: '🎯', label: 'Gerçekçi Sonuç' },
                 { icon: '📱', label: 'Tüm Cihazlarda' },
               ].map(({ icon, label }) => (
@@ -467,7 +467,7 @@ function WelcomeScreen({ dealer, wheels, onStart }: { dealer: Dealer; wheels: Wh
             </button>
 
             <p className="text-xs text-[var(--text-secondary)] mt-4" style={{ animation: 'fadeSlideUp 0.5s ease-out 0.6s both' }}>
-              Ücretsiz · Kayıt gerekmez · 30 saniye
+              Ücretsiz · Kayıt gerekmez · 1 dakika
             </p>
 
             {/* Mobile-only demo slider */}
@@ -481,7 +481,7 @@ function WelcomeScreen({ dealer, wheels, onStart }: { dealer: Dealer; wheels: Wh
             {/* Stats bar */}
             <div className="flex items-center gap-6 mt-8 pt-8 border-t border-[var(--border-color)] w-full max-w-sm lg:max-w-none"
               style={{ animation: 'fadeSlideUp 0.5s ease-out 0.65s both' }}>
-              {[{ v: '30sn', l: 'Üretim Süresi' }, { v: 'AI', l: 'Yapay Zeka' }, { v: 'HD', l: 'Yüksek Kalite' }].map(({ v, l }) => (
+              {[{ v: '1dk', l: 'Üretim Süresi' }, { v: 'AI', l: 'Yapay Zeka' }, { v: 'HD', l: 'Yüksek Kalite' }].map(({ v, l }) => (
                 <div key={l} className="text-center flex-1">
                   <p className="font-extrabold text-xl gradient-text">{v}</p>
                   <p className="text-[11px] text-[var(--text-secondary)] mt-0.5">{l}</p>
@@ -1319,7 +1319,7 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
 
               {/* Trust band */}
               <p className="text-[10px] text-center mb-4" style={{ color: 'rgba(160,160,176,0.4)' }}>
-                🤖 AI ile oluşturuldu · 🔒 Fotoğraflarınız saklanmaz · ⚡ 30 saniyede sonuç
+                🤖 AI ile oluşturuldu · 🔒 Fotoğraflarınız saklanmaz · ⚡ 1 dakikada sonuç
               </p>
 
               {/* Header row */}
@@ -1617,7 +1617,7 @@ export default function DealerPage({ dealer, wheels }: { dealer: Dealer; wheels:
                 {genStep === 3 && 'Son rötuşlar yapılıyor...'}
                 {genStep >= 4 && 'Neredeyse hazır...'}
               </p>
-              <p className="text-[#A0A0B0] text-sm">Bu işlem yaklaşık 30 saniye sürer</p>
+              <p className="text-[#A0A0B0] text-sm">Bu işlem yaklaşık 1 dakika sürer</p>
             </div>
 
             {/* Progress bar */}

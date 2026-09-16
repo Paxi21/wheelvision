@@ -2,7 +2,13 @@ import fs from 'fs';
 import path from 'path';
 import { markdownToHtml } from './markdown';
 
-const BLOG_DIR = path.join(process.cwd(), 'content', 'blog');
+const BLOG_ROOT = path.join(process.cwd(), 'content', 'blog');
+const DEFAULT_BLOG_LOCALE = 'tr';
+
+function blogDir(locale: string): string {
+  const dir = path.join(BLOG_ROOT, locale);
+  return fs.existsSync(dir) ? dir : path.join(BLOG_ROOT, DEFAULT_BLOG_LOCALE);
+}
 
 export type BlogPostMeta = {
   slug: string;
@@ -66,22 +72,22 @@ function readingMinutesFor(content: string): number {
   return Math.max(1, Math.round(words / 200));
 }
 
-function readPost(slug: string): { data: Frontmatter; content: string } {
-  const filePath = path.join(BLOG_DIR, `${slug}.md`);
+function readPost(slug: string, locale: string): { data: Frontmatter; content: string } {
+  const filePath = path.join(blogDir(locale), `${slug}.md`);
   const raw = fs.readFileSync(filePath, 'utf-8');
   return parseFrontmatter(raw);
 }
 
-export function getAllSlugs(): string[] {
-  return fs.readdirSync(BLOG_DIR)
+export function getAllSlugs(locale: string = DEFAULT_BLOG_LOCALE): string[] {
+  return fs.readdirSync(blogDir(locale))
     .filter((f) => f.endsWith('.md'))
     .map((f) => f.replace(/\.md$/, ''));
 }
 
-export function getAllPosts(): BlogPostMeta[] {
-  return getAllSlugs()
+export function getAllPosts(locale: string = DEFAULT_BLOG_LOCALE): BlogPostMeta[] {
+  return getAllSlugs(locale)
     .map((slug) => {
-      const { data, content } = readPost(slug);
+      const { data, content } = readPost(slug, locale);
       return {
         slug,
         title: str(data, 'title', slug),
@@ -94,9 +100,9 @@ export function getAllPosts(): BlogPostMeta[] {
     .sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
 }
 
-export function getPostBySlug(slug: string): BlogPost | null {
+export function getPostBySlug(slug: string, locale: string = DEFAULT_BLOG_LOCALE): BlogPost | null {
   try {
-    const { data, content } = readPost(slug);
+    const { data, content } = readPost(slug, locale);
     return {
       slug,
       title: str(data, 'title', slug),

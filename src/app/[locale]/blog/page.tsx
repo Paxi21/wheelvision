@@ -43,7 +43,7 @@ export default async function BlogIndexPage({
 }) {
   const { locale } = await params;
   const t = await getTranslations('blog');
-  const posts = getAllPosts();
+  const posts = getAllPosts(locale);
   const [featured, ...rest] = posts;
 
   return (

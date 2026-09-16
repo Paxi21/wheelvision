@@ -32,7 +32,7 @@ Artıları: Gerçek fotoğrafınız üzerinde görürsünüz. Eksileri: Photosho
 
 2026 itibariyle yapay zeka teknolojisi bu işi otomatik hale getirdi. WheelVision gibi platformlar, arabanızın fotoğrafını yapay zekaya veriyor ve seçtiğiniz jantı saniyeler içinde arabanıza monte edilmiş haliyle gösteriyor.
 
-Artıları: Gerçek fotoğrafınız, herhangi bir jant, 30-60 saniye, gölge ve yansıma otomatik. Eksileri: İnternet bağlantısı gerekir ve yapay zekanın sonuçları her zaman mükemmel olmayabilir — ama çoğu durumda Photoshop'tan daha gerçekçi.
+Artıları: Gerçek fotoğrafınız, herhangi bir jant, ~1 dakika, gölge ve yansıma otomatik. Eksileri: İnternet bağlantısı gerekir ve yapay zekanın sonuçları her zaman mükemmel olmayabilir — ama çoğu durumda Photoshop'tan daha gerçekçi.
 
 ## Doğru Jant Seçimi İçin İpuçları
 

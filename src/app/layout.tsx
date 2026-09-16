@@ -13,7 +13,7 @@ const outfit = Outfit({
 export const metadata: Metadata = {
   icons: { icon: '/favicon.ico', shortcut: '/favicon.ico', apple: '/favicon.ico' },
   title: "WheelVision - AI Wheel Visualization",
-  description: "See which wheels fit your car before you buy — AI visualization in 30 seconds.",
+  description: "See which wheels fit your car before you buy — AI visualization in under 1 minute.",
   keywords: ["jant görselleştirme", "jant simulasyon", "AI jant", "jant deneme", "araba jant değiştirme", "wheel visualization", "wheel fitting", "AI wheel", "try wheels on car", "wheelvision"],
   authors: [{ name: "WheelVision" }],
   robots: "index, follow",
@@ -28,14 +28,14 @@ export const metadata: Metadata = {
     type: "website",
     url: "https://wheelvision.io",
     title: "WheelVision — Will That Wheel Fit Your Car?",
-    description: "See before you spend. AI wheel visualization in 30 seconds.",
+    description: "See before you spend. AI wheel visualization in under 1 minute.",
     siteName: "WheelVision",
     images: [{ url: "https://wheelvision.io/og-image.jpg", width: 1200, height: 630, alt: "WheelVision AI Wheel Visualization" }],
   },
   twitter: {
     card: "summary_large_image",
     title: "WheelVision — Will That Wheel Fit Your Car?",
-    description: "See before you spend. AI wheel visualization in 30 seconds.",
+    description: "See before you spend. AI wheel visualization in under 1 minute.",
     images: ["https://wheelvision.io/og-image.jpg"],
   },
 };

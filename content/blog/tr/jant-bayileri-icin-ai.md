@@ -10,7 +10,7 @@ Jant satışında en büyük engel nedir? Müşterinin kafasında "acaba araban�
 
 Müşteri mağazanıza geliyor, raflardaki jantlara bakıyor, beğeniyor ama karar veremiyor. "Bir düşüneyim" deyip gidiyor. Geri gelme oranı düşük. Çünkü hayal gücüyle karar vermek zor — özellikle binlerce lira söz konusu olduğunda.
 
-Ya müşterinize, telefonundaki araç fotoğrafıyla beğendiği jantı 30 saniyede gösterebilseydiniz?
+Ya müşterinize, telefonundaki araç fotoğrafıyla beğendiği jantı 1 dakikada gösterebilseydiniz?
 
 ## Satış Psikolojisi: Gör ve Satın Al
 
@@ -22,7 +22,7 @@ Jant sektöründe de aynı prensip geçerli. Müşteriniz jantı kendi arabasın
 
 WheelVision, jant bayileri için özel olarak tasarlanmış bir AI görselleştirme platformudur.
 
-**Mağazada kullanım:** Müşteri mağazanıza geldiğinde telefonundan araç fotoğrafı çekiyor, beğendiği jantı seçiyor, 30-60 saniye içinde sonucu görüyor. "Düşüneyim" yerine "bunu alıyorum" diyor.
+**Mağazada kullanım:** Müşteri mağazanıza geldiğinde telefonundan araç fotoğrafı çekiyor, beğendiği jantı seçiyor, yaklaşık 1 dakika içinde sonucu görüyor. "Düşüneyim" yerine "bunu alıyorum" diyor.
 
 **Online satışta kullanım:** Web sitenize veya Instagram'ınıza entegre edebilirsiniz. Müşterileriniz evden bile jant deneyebilir. Sonucu WhatsApp'tan size gönderip sipariş verebilir.
 
