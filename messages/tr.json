@@ -20,7 +20,8 @@
     "howItWorks": "Nasıl Çalışır?",
     "compare": "Kaydırarak orijinal ve AI sonucunu karşılaştırın",
     "before": "Önce",
-    "after": "Sonra"
+    "after": "Sonra",
+    "sliderHint": "Kaydırarak karşılaştır"
   },
   "stats": {
     "users": "Ücretsiz başla",

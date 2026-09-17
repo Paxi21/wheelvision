@@ -20,7 +20,8 @@
     "howItWorks": "How It Works?",
     "compare": "Drag to compare original and AI result",
     "before": "Before",
-    "after": "After"
+    "after": "After",
+    "sliderHint": "Drag to compare"
   },
   "stats": {
     "users": "Start free",

@@ -24,7 +24,8 @@
     "howItWorks": "Wie funktioniert's?",
     "compare": "Ziehen zum Vergleichen von Original und KI-Ergebnis",
     "before": "Vorher",
-    "after": "Nachher"
+    "after": "Nachher",
+    "sliderHint": "Zum Vergleichen ziehen"
   },
   "stats": {
     "users": "500+ Autobesitzer haben es probiert",

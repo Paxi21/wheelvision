@@ -2,6 +2,7 @@
 
 import Image from 'next/image';
 import Navbar from '@/components/Navbar';
+import BeforeAfterSlider from '@/components/BeforeAfterSlider';
 import {
   ArrowRight, Sparkles, Zap, Shield, Upload, Disc3, Eye, Play,
   Smartphone, Gift, Building2, MessageCircle, CheckCircle2, Mail,
@@ -14,36 +15,18 @@ function IGIcon({ size = 16 }: { size?: number }) {
     </svg>
   );
 }
-import { motion, AnimatePresence } from 'motion/react';
+import { motion } from 'motion/react';
 import { Spotlight } from '@/components/ui/spotlight';
 import { ShimmerButton } from '@/components/ui/shimmer-button';
 import { AnimatedBorder } from '@/components/ui/animated-border';
-import { useEffect, useState, useMemo, useRef, useCallback } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import { createClient } from '@/lib/supabase';
 import { useTranslations, useLocale } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 
-// ─── Hero Before/After Carousel ─────────────────────────────────────────────
+// ─── Results Gallery (below hero) ───────────────────────────────────────────
 type CarouselSet = { before: string; after: string };
 
-const HERO_CAROUSEL_SETS: CarouselSet[] = [
-  {
-    before: 'https://res.cloudinary.com/dxcok7tox/image/upload/v1789594957/bkonia6ajvhkb2omy11o.jpg',
-    after: 'https://res.cloudinary.com/dxcok7tox/image/upload/v1789595725/wheelvision-result-1789595178861_korcy9.jpg',
-  },
-  {
-    before: 'https://res.cloudinary.com/dxcok7tox/image/upload/v1789595207/xh7r88ugbkdguqoahvy3.jpg',
-    after: 'https://res.cloudinary.com/dxcok7tox/image/upload/v1789595725/wheelvision-result-1789595353292_lcv5mi.jpg',
-  },
-  {
-    before: 'https://res.cloudinary.com/dxcok7tox/image/upload/v1789595369/gkc2cuuo7uoaradxsrwz.jpg',
-    after: 'https://res.cloudinary.com/dxcok7tox/image/upload/v1789595727/wheelvision-result-1789595555912_w57uea.jpg',
-  },
-];
-
-const CAROUSEL_PHASE_MS = 2000;
-
-// ─── Results Gallery (below hero) ───────────────────────────────────────────
 const RESULTS_GALLERY: CarouselSet[] = [
   {
     before: 'https://res.cloudinary.com/dxcok7tox/image/upload/w_600,c_limit/v1789594957/bkonia6ajvhkb2omy11o.jpg',
@@ -58,106 +41,6 @@ const RESULTS_GALLERY: CarouselSet[] = [
     after: 'https://res.cloudinary.com/dxcok7tox/image/upload/w_600,c_limit/v1789595727/wheelvision-result-1789595555912_w57uea.jpg',
   },
 ];
-
-function cldResize(url: string, transform = 'w_800,c_limit') {
-  return url.replace('/image/upload/', `/image/upload/${transform}/`);
-}
-
-function HeroCarousel() {
-  const t = useTranslations('hero');
-  const [tick, setTick] = useState(0);
-
-  useEffect(() => {
-    const timer = setTimeout(() => setTick((v) => v + 1), CAROUSEL_PHASE_MS);
-    return () => clearTimeout(timer);
-  }, [tick]);
-
-  const index = Math.floor(tick / 2) % HERO_CAROUSEL_SETS.length;
-  const phase: 'before' | 'after' = tick % 2 === 0 ? 'before' : 'after';
-  const set = HERO_CAROUSEL_SETS[index];
-  const src = cldResize(phase === 'before' ? set.before : set.after);
-
-  const goTo = useCallback((i: number) => setTick(i * 2), []);
-
-  return (
-    <div className="relative w-full">
-      <div className="absolute -inset-4 rounded-3xl bg-gradient-to-r from-[#ec4899]/20 via-[#8b5cf6]/20 to-[#ec4899]/20 blur-2xl pointer-events-none" />
-      <div
-        className="relative p-[2px] rounded-2xl carousel-border"
-        style={{ background: 'linear-gradient(135deg, #ec4899, #8b5cf6, #ec4899)', backgroundSize: '200% 200%', animation: 'gradientShift 4s linear infinite' }}
-      >
-        <div
-          className="relative select-none overflow-hidden rounded-[14px] bg-black"
-          style={{ aspectRatio: '16/9' }}
-        >
-          <AnimatePresence>
-            <motion.div
-              key={`${index}-${phase}`}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.8, ease: 'easeInOut' }}
-              className="absolute inset-0"
-            >
-              <Image
-                src={src}
-                alt={phase === 'before' ? t('before') : t('after')}
-                fill
-                priority={index === 0}
-                sizes="(max-width: 390px) 390px, (max-width: 640px) 640px, (max-width: 1024px) 828px, 900px"
-                className="object-cover pointer-events-none"
-                draggable={false}
-              />
-              {phase === 'before' ? (
-                <div className="absolute top-2 left-2 px-2 py-1 rounded-full backdrop-blur-md bg-black/50 border border-white/15 text-[10px] font-semibold text-white/80 pointer-events-none">
-                  {t('before')}
-                </div>
-              ) : (
-                <div
-                  className="absolute top-2 right-2 px-2 py-1 rounded-full backdrop-blur-md border border-white/20 text-[10px] font-bold text-white pointer-events-none"
-                  style={{ background: 'linear-gradient(135deg, rgba(236,72,153,0.85), rgba(139,92,246,0.85))' }}
-                >
-                  {t('after')} ✨
-                </div>
-              )}
-            </motion.div>
-          </AnimatePresence>
-        </div>
-      </div>
-
-      {/* Dot indicators */}
-      <div className="flex items-center justify-center gap-2 mt-4">
-        {HERO_CAROUSEL_SETS.map((_, i) => (
-          <button
-            key={i}
-            type="button"
-            aria-label={`Slide ${i + 1}`}
-            onClick={() => goTo(i)}
-            className="h-2 rounded-full cursor-pointer"
-            style={{
-              width: i === index ? 24 : 8,
-              background: i === index
-                ? 'linear-gradient(135deg, #ec4899, #8b5cf6)'
-                : 'rgba(255,255,255,0.2)',
-              transition: 'width 0.3s ease, background 0.3s ease',
-            }}
-          />
-        ))}
-      </div>
-
-      <style>{`
-        @keyframes gradientShift {
-          0%   { background-position: 0% 50%; }
-          50%  { background-position: 100% 50%; }
-          100% { background-position: 0% 50%; }
-        }
-        @media (max-width: 640px), (prefers-reduced-motion: reduce) {
-          .carousel-border { animation: none !important; }
-        }
-      `}</style>
-    </div>
-  );
-}
 
 // ─── Animated counter ────────────────────────────────────────────────────────
 function CountUp({ end, suffix = '', duration = 1800, decimals = 0 }: {
@@ -357,14 +240,17 @@ export default function Home() {
             <span>🎁 {tStats('free')}</span>
           </motion.div>
 
-          {/* Before/After Carousel */}
+          {/* Before/After Slider */}
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.45 }}
             className="w-full max-w-[900px]"
           >
-            <HeroCarousel />
+            <BeforeAfterSlider
+              before="https://res.cloudinary.com/dxcok7tox/image/upload/w_1200,q_auto,f_auto/v1789663725/zzk18bvu7cw1bsbavuc1.jpg"
+              after="https://res.cloudinary.com/dxcok7tox/image/upload/w_1200,q_auto,f_auto/v1789664077/wheelvision-result-1789663925037_vqnrqw.jpg"
+            />
           </motion.div>
         </div>
       </section>
